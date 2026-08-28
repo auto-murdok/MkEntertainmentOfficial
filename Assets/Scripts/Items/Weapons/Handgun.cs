@@ -23,6 +23,7 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFireArm
         _context.gunKick = GunKickAmount;
         // test only
         _context.UIController = GetComponentInParent<CharacterUIController>();
+        OnStateChanged += state => Debug.Log($"[{gameObject.name}] -> {state}");
     }
 
     public void Prepare(int clipSize)
@@ -42,7 +43,10 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFireArm
 
     public void TriggerReload()
     {
-        _context.isReloading = true;
+        if (_context.clipSize < _context.maxClipSize)
+        {
+            _context.isReloading = true;
+        }
     }
 
     public void ExecuteActualShoot()

@@ -1,4 +1,4 @@
-public interface State<TStateKey, TContext> where TContext : struct
+public interface State<TStateKey, TContext> where TContext : Blackboard, new()
 {
     void EnterState(StateMachine<TStateKey, TContext> character);
     void UpdateState(StateMachine<TStateKey, TContext> character);

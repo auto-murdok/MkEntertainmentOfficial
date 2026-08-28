@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public struct HandgunContext
+public class HandgunContext : Blackboard
 {
     public Animator animator;
     public int maxClipSize;

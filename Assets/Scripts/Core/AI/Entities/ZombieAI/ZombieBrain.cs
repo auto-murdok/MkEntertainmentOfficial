@@ -12,6 +12,7 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
     public Vector3 position => transform.position;
     public Transform victimHook => _behavior.victimHook;
     public bool isPreparing => _behavior._context.isPreparing;
+    public bool isBitting => _behavior._context.isBitting;
 
     // IDamageable
     private const float MaxHitPoints = 100f;

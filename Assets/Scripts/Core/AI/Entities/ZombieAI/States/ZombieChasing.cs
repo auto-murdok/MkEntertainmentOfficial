@@ -43,11 +43,5 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
         {
             context.agent.SetDestination(context.target.TargetPosition);
         }
-
-        if (AITransformUtils.HasReachedTarget(character.transform, context.agent))
-        {
-            context.agent.ResetPath();
-            character.ChangeState(ZombieStates.Idle);
-        }
     }
 }

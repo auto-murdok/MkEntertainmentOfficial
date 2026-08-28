@@ -6,17 +6,14 @@ public class CharacterIdleState : State<CharacterState, CharacterStateContext>
     {
         CharacterStateContext context = stateMachine._context;
 
+        // Priority chain: being attacked wins over aiming/moving. The base
+        // StateMachine applies at most one transition per frame (first request
+        // wins), so ordering the checks here defines the priority.
         if (context.isBeingAttacked)
         {
             stateMachine.ChangeState(CharacterState.TakingBite);
         }
-
-        if (context.isAiming || context.isReloading)
-        {
-            stateMachine.ChangeState(CharacterState.Aiming);
-        }
-
-        if (context.isAiming)
+        else if (context.isAiming || context.isReloading)
         {
             stateMachine.ChangeState(CharacterState.Aiming);
         }

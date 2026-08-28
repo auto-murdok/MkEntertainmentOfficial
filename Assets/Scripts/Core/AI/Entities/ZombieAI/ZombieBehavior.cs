@@ -11,6 +11,9 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
     [SerializeField] private LayerMask _detectionLayerMask;
     [SerializeField] private LayerMask _ignoreLayerMask;
     [SerializeField] private float _detectionMaxDistance = 5f;
+    // Distance at which the zombie is close enough to bite. Used for hysteresis
+    // so the zombie settles at the survivor instead of ping-ponging Chasing<->Idle.
+    public const float BiteRange = 1.2f;
     public Transform victimHook => _victimHook;
 
     private const int MinDetectionAngle = 100;
@@ -20,7 +23,6 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
     {
         states[ZombieStates.Idle] = new ZombieIdle();
         states[ZombieStates.Chasing] = new ZombieChasing();
-        states[ZombieStates.Prepare] = new ZombiePrepareForSyncedAttack();
         states[ZombieStates.Bitting] = new ZombieBitting();
 
         // context
@@ -33,6 +35,7 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
 
         OnCommonUpdate += RelieveMovement;
         OnCommonUpdate += SearchForSurvivors;
+        OnStateChanged += state => Debug.Log($"[{gameObject.name}] -> {state}");
     }
 
     // Scans for a survivor inside the vision cone and updates the shared target.

@@ -8,8 +8,7 @@ public class CharacterWalkingState : State<CharacterState, CharacterStateContext
         {
             stateMachine.ChangeState(CharacterState.TakingBite);
         }
-
-        if (stateMachine._context.movementInput == Vector2.zero || stateMachine._context.isAiming)
+        else if (stateMachine._context.movementInput == Vector2.zero || stateMachine._context.isAiming)
         {
             stateMachine.ChangeState(CharacterState.Idle);
         }

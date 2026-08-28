@@ -13,10 +13,10 @@ public class ZombieHand : MonoBehaviour
         _handCollider = GetComponentInParent<Collider>();
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnTriggerStay(Collider other)
     {
         IInteractable survivor = other.GetComponentInParent<IInteractable>();
-        if (survivor != null)
+        if (survivor != null && !_zombieBrain.isBitting)
         {
             InteractableManager.Instance.Interact(survivor.id, _zombieBrain.id);
             Disable();

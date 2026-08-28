@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Animations.Rigging;
 
-public struct CharacterStateContext
+public class CharacterStateContext : Blackboard
 {
     public Animator animator;
     public NavMeshAgent agent;

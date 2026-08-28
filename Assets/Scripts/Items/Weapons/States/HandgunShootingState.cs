@@ -4,14 +4,13 @@ using UnityEngine;
 
 public class HandgunShootingState : State<HandgunState, HandgunContext>
 {
-    // Initial rechambering delay before the state can complete.
+    // Rechambering delay before the state can complete. Reset on every Enter
+    // so the cadence is identical for each shot.
     private const float RechamberingStartTime = 0.05f;
-    // Rechambering delay reset when leaving the state (overrides the initial value).
-    private const float RechamberingResetTime = 0.2f;
     private const string ShootAnimationName = "fakeGun_shoot";
     private const string IdleAnimationName = "Idle";
 
-    private float _rechamberingTime = RechamberingStartTime;
+    private float _rechamberingTime;
 
     public void CheckTransitions(StateMachine<HandgunState, HandgunContext> character)
     {
@@ -20,6 +19,7 @@ public class HandgunShootingState : State<HandgunState, HandgunContext>
 
     public void EnterState(StateMachine<HandgunState, HandgunContext> character)
     {
+        _rechamberingTime = RechamberingStartTime;
         Handgun fireArm = (Handgun)character;
         character._context.animator.CrossFade(ShootAnimationName, 0f);
         fireArm.ExecuteActualShoot();
@@ -35,7 +35,6 @@ public class HandgunShootingState : State<HandgunState, HandgunContext>
     {
         character._context.isTriggerPressed = false;
         character._context.animator.CrossFade(IdleAnimationName, 0f);
-        _rechamberingTime = RechamberingResetTime;
     }
 
     public void UpdateState(StateMachine<HandgunState, HandgunContext> character)

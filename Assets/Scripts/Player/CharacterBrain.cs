@@ -63,7 +63,7 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
                 _locomotion.HandleShoot();
                 break;
             case InputHandlerActions.Reload:
-                _locomotion.HandleShoot();
+                _locomotion.HandleReload();
                 break;
             case InputHandlerActions.ManualEnableRagdoll:
                 RagdollUtils.EnableRagdoll(transform, OnEnableRagdoll);

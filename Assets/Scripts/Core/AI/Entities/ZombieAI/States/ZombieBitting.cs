@@ -24,14 +24,15 @@ public class ZombieBitting : State<ZombieStates, ZombieContext>
         _initialRotation = character.transform.rotation;
         ZombieContext context = character._context;
         context.agent.radius = BittingAgentRadius;
-        character._context.isPreparing = true;
+        context.agent.ResetPath();
+        context.isPreparing = true;
     }
 
     public void ExitState(StateMachine<ZombieStates, ZombieContext> character)
     {
         ZombieContext context = character._context;
         context.agent.radius = DefaultAgentRadius;
-        character.gameObject.SetActive(true);
+        context.isPreparing = false;
         context.interactable = null;
     }
 
@@ -43,10 +44,6 @@ public class ZombieBitting : State<ZombieStates, ZombieContext>
             character.transform.position = _initialPosition;
             character.transform.rotation = _initialRotation;
             Debug.LogWarning($"{character.gameObject.name} is preparing...");
-        }
-        else if (character._context.isPreparing)
-        {
-            character._context.isPreparing = false;
         }
     }
 }

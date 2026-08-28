@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-public struct ZombieContext
+public class ZombieContext : Blackboard
 {
     public Transform visionHook;
     public LayerMask detectionLayerMask;

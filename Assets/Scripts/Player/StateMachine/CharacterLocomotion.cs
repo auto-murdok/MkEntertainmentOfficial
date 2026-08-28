@@ -49,6 +49,7 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         _bodyAimRecoil = new RigRecoil(characterBodyAim);
         EquipWeapon(EquippedWeaponPrefabName);
         RegisterCommonUpdateEffects();
+        OnStateChanged += state => Debug.Log($"[{gameObject.name}] -> {state}");
     }
 
     private void PopulateStates()
@@ -152,6 +153,11 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     public void HandleShoot()
     {
         _equippedWeapon.TriggerShoot(_aimTarget.position);
+    }
+
+    public void HandleReload()
+    {
+        _equippedWeapon.TriggerReload();
     }
 
     public void HandleTakeDamage(IInteractable attacker)

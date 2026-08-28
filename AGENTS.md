@@ -122,3 +122,36 @@ unity pipeline upgrade
   - Follow standard C# naming conventions (PascalCase for public methods/properties, camelCase / `_camelCase` for private fields).
   - Always maintain corresponding `.meta` files when creating, moving, or deleting C# scripts and assets.
   - Test state machine changes incrementally.
+
+---
+
+## ⚡ Performance Best Practices & Anti-pattern Guidelines
+
+1. **Pre-hash Animator Parameters**:
+   - Never call `animator.SetFloat("Name", ...)` or `animator.SetTrigger("Name")` in hot loops or update ticks.
+   - Use `Animator.StringToHash("Name")` cached in static constants (e.g. `AnimatorUtils.HorizontalHash`).
+2. **Avoid Heap Allocation in Scene / Physics Queries**:
+   - Avoid `Physics.OverlapSphere` in per-tick AI vision or combat checks. Use `Physics.OverlapSphereNonAlloc` with pre-allocated buffer arrays.
+3. **Cache Camera.main and Components**:
+   - Never use `Camera.main` or `GetComponent<T>()` inside `Update()` or `CheckTransitions()`. Cache references in `Awake()`, `Start()`, or context blackboards.
+4. **Observer Notification & List Iterations**:
+   - Avoid `List<T>.ForEach(action => ...)` or LINQ allocations in frequent callbacks. Use indexed reverse loops (`for (int i = list.Count - 1; i >= 0; i--)`) to eliminate closures and handle mutations safely.
+
+---
+
+## 🎨 Unity 6 Rendering Scalability & URP Standards
+
+When configuring Universal Render Pipeline in Unity 6:
+
+1. **GPU-Resident Drawer (GRD) & Forward+ Rendering Path**:
+   - GRD requires **Forward+** (`RenderingMode.ForwardPlus` = 2) or **Deferred+** (`RenderingMode.DeferredPlus` = 3) on all Universal Renderer Data assets (`URP-*-Renderer.asset`).
+   - In `UniversalRenderPipelineAsset`, set `gpuResidentDrawerMode = GPUResidentDrawerMode.InstancedDrawing` and `gpuResidentDrawerEnableOcclusionCullingInCameras = true`.
+2. **BatchRendererGroup (BRG) Variants**:
+   - When GRD is active, set `m_BrgStripping: 2` (**Keep All**) in `ProjectSettings/GraphicsSettings.asset` to prevent stripping DOTS instancing shaders during player builds.
+3. **Native Render Graph Framework**:
+   - Unity 6 deprecates Compatibility Mode. Enable Render Graph natively (`m_EnableRenderGraph: 1` in `UniversalRenderPipelineGlobalSettings.asset`) and remove `URP_COMPATIBILITY_MODE` define symbols from `PlayerSettings.SetScriptingDefineSymbols`.
+4. **Spatial-Temporal Post-Processing (STP)**:
+   - Configure `upscalingFilter = UpscalingFilterSelection.STP` on quality tier assets for temporal spatial upscaling.
+5. **Unity CLI `eval` Quoting in PowerShell**:
+   - When passing C# code to `unity command eval` via PowerShell, avoid unescaped double quotes inside strings as the CLI argument parser may split arguments. Use char arrays (e.g., `new string(new char[]{'p','a','t','h'})`), string formatting, or single quotes carefully.
+

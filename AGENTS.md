@@ -11,6 +11,21 @@ This guide provides instructions and standards for AI agents working in this rep
 
 ---
 
+## 🔬 Research Standard (MANDATORY for audits, refactors & new systems)
+
+Before auditing, simplifying, or refactoring gameplay / character / rendering code, you MUST research
+the current best practices and the "gold standard" for the specific pattern using BOTH tools:
+
+- **context7** — resolve the relevant library (e.g. `/websites/unity3d_manual`) and query the
+  specific pattern (state machines, damage/health, input, animation, URP, etc.).
+- **firecrawl** — web-search developer sources (Unity discussions, gamedev.tv, official docs,
+  Unity best-practice guides) for the same pattern to validate and cross-check the guidance.
+
+Synthesize the findings into your plan and explicitly state the gold-standard pattern you are
+targeting. Do not refactor from intuition alone — anchor every change to researched best practice.
+
+---
+
 ## 🛠️ Unity CLI Quick Reference
 
 The `unity-cli` interacts directly with the live Editor instance via the `com.unity.pipeline` package (running locally over IPC/WebSocket).

@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Assertions;
 
-public class ZombieBrain : ActorBrainBase, IZombie, IDamageable
+public class ZombieBrain : ActorBrainBase, IZombie
 {
     private ZombieBehavior _behavior;
     private Animator _animator;
@@ -56,15 +56,12 @@ public class ZombieBrain : ActorBrainBase, IZombie, IDamageable
         _behavior.SetIsBitting(true);
         _animator.SetTrigger(AnimatorUtils.BiteHash);
         transform.LookAt(target.position);
-    }
 
-    public void TakeDamage()
-    {
-        ApplyDamage(biteDamage);
-
-        if (_debug)
+        // Gold-standard, attacker-driven damage: the zombie applies its own bite
+        // damage to the victim. The isBitting guard prevents re-firing per bite.
+        if (target is IDamageable damageable)
         {
-            Debug.Log($"[{gameObject.name}] Remaining health = {_hitPoints}");
+            damageable.TakeDamage(biteDamage);
         }
     }
 

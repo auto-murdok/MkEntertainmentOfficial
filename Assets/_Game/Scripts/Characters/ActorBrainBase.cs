@@ -7,7 +7,7 @@ using UnityEngine.AI;
 // hook, and the HP-reduction -> isAlive death signal. Entity-specific concerns
 // (victimHook, bite interaction, health source, corpse teardown) stay in the
 // derived class via the abstract/virtual hooks below.
-public abstract class ActorBrainBase : MonoBehaviour, IInteractable
+public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
 {
     protected ActorBlackboard Context;
 
@@ -28,6 +28,9 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable
         _hitPoints = Mathf.Max(0f, _hitPoints - amount);
         if (_hitPoints <= 0f) Context.isAlive = false;
     }
+
+    // IDamageable: attacker-supplied damage, centralized through ApplyDamage.
+    public void TakeDamage(float amount) => ApplyDamage(amount);
 
     // --- Ragdoll / death lifecycle ---
     protected void SetupDeathHook() => Context.onDeath = HandleDeath;

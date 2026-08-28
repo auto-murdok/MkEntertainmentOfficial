@@ -7,6 +7,8 @@ public class BulletProjectile : MonoBehaviour
     private const float ProjectileSpeed = 50f;
     private const float DebugLineDuration = 10f;
 
+    [SerializeField] private float _damage = 25f;
+
     private Rigidbody _bulletRigidbody;
     private Vector3 _initialPosition;
 
@@ -36,7 +38,7 @@ public class BulletProjectile : MonoBehaviour
         IDamageable damageable = other.gameObject.GetComponentInParent<IDamageable>();
         if (damageable != null)
         {
-            damageable.TakeDamage();
+            damageable.TakeDamage(_damage);
         }
 
         Destroy(gameObject);

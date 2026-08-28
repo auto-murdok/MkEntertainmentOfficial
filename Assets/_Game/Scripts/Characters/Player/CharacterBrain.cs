@@ -13,7 +13,6 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerA
 
     [Header("Stats")]
     [SerializeField] private float _maxHitPoints = 100f;
-    [SerializeField] private float _biteDamage = 25f;
 
     Vector3 ISurvivor.TargetPosition => transform.position;
     public override Transform victimHook => transform;
@@ -118,8 +117,4 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerA
         transform.rotation = attacker.victimHook.rotation;
     }
 
-    public void TakeDamage()
-    {
-        ApplyDamage(_biteDamage);
-    }
 }

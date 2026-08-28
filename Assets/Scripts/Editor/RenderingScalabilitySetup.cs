@@ -9,11 +9,66 @@ public static class RenderingScalabilitySetup
     [MenuItem("Tools/Rendering/Apply Scalability Settings")]
     public static void ApplyScalabilitySettings()
     {
+        ConfigureRendererData();
         ConfigureUrpAssets();
         ConfigureGlobalSettings();
+        RemoveCompatibilityModeDefine();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("[RenderingScalabilitySetup] Unity 6 Rendering Scalability features applied successfully.");
+        Debug.Log("[RenderingScalabilitySetup] Unity 6 Rendering Scalability features (Forward+, GRD, GPU Occlusion, STP, Render Graph) applied successfully.");
+    }
+
+    private static void ConfigureRendererData()
+    {
+        string[] rendererPaths = new[]
+        {
+            "Assets/Settings/URP-HighFidelity-Renderer.asset",
+            "Assets/Settings/URP-Balanced-Renderer.asset",
+            "Assets/Settings/URP-Performant-Renderer.asset"
+        };
+
+        foreach (string path in rendererPaths)
+        {
+            var rendererData = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(path);
+            if (rendererData == null)
+            {
+                Debug.LogWarning($"[RenderingScalabilitySetup] Could not load renderer data at: {path}");
+                continue;
+            }
+
+            SerializedObject so = new SerializedObject(rendererData);
+            SerializedProperty renderingModeProp = so.FindProperty("m_RenderingMode");
+            if (renderingModeProp != null)
+            {
+                renderingModeProp.intValue = (int)RenderingMode.ForwardPlus;
+            }
+
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(rendererData);
+            Debug.Log($"[RenderingScalabilitySetup] Configured {path} to RenderingMode.ForwardPlus.");
+        }
+    }
+
+    private static void RemoveCompatibilityModeDefine()
+    {
+        UnityEditor.Build.NamedBuildTarget[] targets = new[]
+        {
+            UnityEditor.Build.NamedBuildTarget.Standalone,
+            UnityEditor.Build.NamedBuildTarget.Server
+        };
+
+        foreach (var target in targets)
+        {
+            string defines = PlayerSettings.GetScriptingDefineSymbols(target);
+            if (defines.Contains("URP_COMPATIBILITY_MODE"))
+            {
+                var list = new System.Collections.Generic.List<string>(defines.Split(';'));
+                list.RemoveAll(d => d == "URP_COMPATIBILITY_MODE");
+                string newDefines = string.Join(";", list);
+                PlayerSettings.SetScriptingDefineSymbols(target, newDefines);
+                Debug.Log($"[RenderingScalabilitySetup] Removed URP_COMPATIBILITY_MODE define from {target.TargetName}.");
+            }
+        }
     }
 
     private static void ConfigureUrpAssets()

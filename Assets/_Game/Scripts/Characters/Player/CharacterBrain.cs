@@ -33,11 +33,7 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
         }
 
         Assert.IsNotNull(_locomotion, "Please attach a component of type CharacterLocomotion");
-        if (_playerInput == null)
-        {
-            // Spawned players receive their subject afterwards via SetInputSubject.
-            Debug.LogWarning($"[{name}] No input subject wired yet. Call SetInputSubject after spawning.");
-        }
+        Assert.IsNotNull(_playerInput, "Ensure a subject is properly hooked up");
 
         _hitPoints = _maxHitPoints;
 
@@ -53,24 +49,6 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
         }
         LayerUtils.SetLayer(transform, LayerUtils.LocalPlayerLayerName);
         RagdollUtils.DisableRagdoll(transform);
-    }
-
-    /// <summary>
-    /// Late wiring entry point used by spawners: assigns the input subject after
-    /// instantiation and subscribes this brain as an observer.
-    /// </summary>
-    public void SetInputSubject(Subject<InputHandlerActions, InputValue> subject)
-    {
-        _subject = subject;
-        _playerInput = _subject != null ? _subject.GetComponent<PlayerInput>() : null;
-
-        if (_subject != null)
-        {
-            // OnEnable may already have run before wiring (spawn path), so subscribe here
-            // and keep OnEnable/OnDisable idempotent for scene-placed players.
-            _subject.RemoveObserver(this);
-            _subject.AddObserver(this);
-        }
     }
 
     private void OnDestroy()

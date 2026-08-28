@@ -99,32 +99,8 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     private void InitializeAnimatorAndAgent()
     {
-        _context.animator = GetComponentInChildren<Animator>();
+        _context.animator = GetComponent<Animator>();
         _context.agent = GetComponent<NavMeshAgent>();
-
-        PlayerSockets sockets = GetComponent<PlayerSockets>();
-        if (sockets != null)
-        {
-            sockets.InitializeSockets();
-            if (_cinemachineTarget == null)
-            {
-                _cinemachineTarget = sockets.cameraHook;
-            }
-            if (_rightHandWeaponHolder == null)
-            {
-                _rightHandWeaponHolder = sockets.weaponHolder;
-            }
-            if (_aimTarget == null)
-            {
-                _aimTarget = sockets.aimTarget;
-            }
-        }
-
-        if (_characterRig == null)
-        {
-            _characterRig = GetComponentInChildren<Rig>();
-        }
-
         _context.rig = _characterRig;
         _context.mainCameraTarget = _cinemachineTarget;
         _context.UIController = GetComponent<CharacterUIController>();
@@ -236,63 +212,6 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     public void HandleRecoverControl()
     {
         _context.isBeingAttacked = false;
-    }
-
-    /// <summary>Data-driven config assignment for spawned players (applied immediately).</summary>
-    public void SetPlayerData(PlayerData data)
-    {
-        if (data == null)
-        {
-            Debug.LogError($"[{name}] SetPlayerData was called with a null PlayerData asset. " +
-                           "Assign a valid PlayerData asset instead.");
-            return;
-        }
-
-        _playerData = data;
-        _context.data = data;
-        if (_context.agent != null)
-        {
-            _context.agent.speed = data.moveSpeed;
-        }
-    }
-
-    /// <summary>Lifts the equipped weapon out of a model skeleton about to be destroyed.</summary>
-    public void DetachEquippedWeaponToRoot()
-    {
-        if (_equippedWeapon != null)
-        {
-            _equippedWeapon.transform.SetParent(transform, false);
-        }
-    }
-
-    /// <summary>Called by PlayerModelSlot after a visual model swap: refreshes animator and hooks.</summary>
-    public void OnModelSwapped(Animator newModelAnimator)
-    {
-        _context.animator = newModelAnimator != null ? newModelAnimator : GetComponentInChildren<Animator>();
-
-        PlayerSockets sockets = GetComponent<PlayerSockets>();
-        if (sockets != null)
-        {
-            if (_cinemachineTarget == null)
-            {
-                _cinemachineTarget = sockets.cameraHook;
-            }
-            if (_rightHandWeaponHolder == null)
-            {
-                _rightHandWeaponHolder = sockets.weaponHolder;
-            }
-            if (_aimTarget == null)
-            {
-                _aimTarget = sockets.aimTarget;
-            }
-        }
-
-        _context.mainCameraTarget = _cinemachineTarget;
-
-        if (_equippedWeapon != null && _rightHandWeaponHolder != null)
-        {
-            _equippedWeapon.transform.SetParent(_rightHandWeaponHolder, false);
-        }
     }
 
     private void onWeaponShoot()

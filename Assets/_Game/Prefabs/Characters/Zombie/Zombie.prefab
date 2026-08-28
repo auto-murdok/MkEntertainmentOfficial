@@ -93,7 +93,7 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: af9e72a1e4931314bb67a3da58f7ee69,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -3.83
+      value: -1.75
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: af9e72a1e4931314bb67a3da58f7ee69,
         type: 3}
@@ -2266,7 +2266,7 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: af9e72a1e4931314bb67a3da58f7ee69,
         type: 3}
       insertIndex: -1
-      addedObject: {fileID: -3002030688925305985}
+      addedObject: {fileID: 2478054529971633035}
     - targetCorrespondingSourceObject: {fileID: 1082271958561512970, guid: af9e72a1e4931314bb67a3da58f7ee69,
         type: 3}
       insertIndex: -1
@@ -3136,7 +3136,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb79202395613994986d2b1e93d834e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &-3002030688925305985
+  _debug: 0
+--- !u!114 &2478054529971633035
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

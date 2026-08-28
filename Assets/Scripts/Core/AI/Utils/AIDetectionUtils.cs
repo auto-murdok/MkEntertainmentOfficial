@@ -2,18 +2,17 @@ using UnityEngine;
 
 public class AIDetectionUtils
 {
-    private const float DefaultProximityRadius = 2.5f;
+    private const float DefaultMaxFovAngle = 60f; // 60 degrees half-angle = 120 degree vision cone
 
     // Casts a detection sphere and returns the first matching component that is
-    // within the field-of-view cone or proximity radius and not blocked by an obstacle.
+    // inside the forward field-of-view cone and not blocked by an obstacle.
     public static TComponent DetectViaLineOfSight<TComponent>(
         Transform originTransform,
         float detectionRadius,
         LayerMask detectionLayer,
         LayerMask obstacleLayer,
         int minDetectionAngle,
-        int maxDetectionAngle,
-        float proximityRadius = DefaultProximityRadius)
+        int maxDetectionAngle)
     {
         if (originTransform == null) return default;
 
@@ -26,12 +25,9 @@ public class AIDetectionUtils
             if (possibleMatch != null)
             {
                 Vector3 targetPosition = collider.bounds.center;
-                float distance = Vector3.Distance(originTransform.position, targetPosition);
 
-                // Target is detected if within proximity hearing range OR inside the forward vision cone
-                bool inDetectionZone = distance <= proximityRadius || IsInLineOfSight(originTransform, targetPosition, minDetectionAngle, maxDetectionAngle);
-
-                if (inDetectionZone)
+                // Player must be strictly inside the forward vision cone of the zombie
+                if (IsInLineOfSight(originTransform, targetPosition, minDetectionAngle, maxDetectionAngle))
                 {
                     if (IsNotBlockedByObstacles(originTransform.position, targetPosition, obstacleLayer))
                     {
@@ -51,12 +47,15 @@ public class AIDetectionUtils
         return !Physics.Linecast(origin, destination, obstacleLayer);
     }
 
-    // Checks whether the destination is inside the view cone defined by the
-    // minimum and maximum angles relative to the origin's forward vector.
+    // Checks whether the destination is inside the forward view cone of the zombie.
     public static bool IsInLineOfSight(Transform origin, Vector3 destination, int minDetectionAngle, int maxDetectionAngle)
     {
-        Vector3 directionToDestination = (origin.position - destination).normalized;
-        float viewableAngle = Vector3.Angle(origin.forward, directionToDestination);
-        return viewableAngle > minDetectionAngle && viewableAngle < maxDetectionAngle;
+        Vector3 directionToTarget = (destination - origin.position).normalized;
+        float angleToTarget = Vector3.Angle(origin.forward, directionToTarget);
+
+        float maxHalfAngle = (minDetectionAngle > 0 && maxDetectionAngle == 180) ? (180f - minDetectionAngle) : DefaultMaxFovAngle;
+        if (maxHalfAngle <= 0f || maxHalfAngle > 180f) maxHalfAngle = DefaultMaxFovAngle;
+
+        return angleToTarget <= maxHalfAngle;
     }
 }

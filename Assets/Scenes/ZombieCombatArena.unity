@@ -576,7 +576,7 @@ PrefabInstance:
     - target: {fileID: 5565756078819724676, guid: 2de5b3cca75a76548b19f276ed728288,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -3.83
+      value: -1.75
       objectReference: {fileID: 0}
     - target: {fileID: 5565756078819724676, guid: 2de5b3cca75a76548b19f276ed728288,
         type: 3}
@@ -1013,12 +1013,14 @@ MonoBehaviour:
     prefab: {fileID: 5077343515872401214, guid: 2de5b3cca75a76548b19f276ed728288,
       type: 3}
     data: {fileID: 11400000, guid: db5412dd30b14fa4c8c375948826ce4f, type: 2}
-    spawnKey: 462
+    spawnKey: 100
+    alternateSpawnKey: 437
   - label: Fast Runner
     prefab: {fileID: 5077343515872401214, guid: 2de5b3cca75a76548b19f276ed728288,
       type: 3}
     data: {fileID: 11400000, guid: 7ac7cf41cd191c44db788ba4484a47d6, type: 2}
-    spawnKey: 463
+    spawnKey: 101
+    alternateSpawnKey: 438
   _spawnPoints:
   - {fileID: 206693836}
   - {fileID: 1516346887}
@@ -1026,8 +1028,8 @@ MonoBehaviour:
   - {fileID: 558869799}
   _spawnRadius: 15
   _maxZombies: 20
-  _autoSpawnEnabled: 0
-  _spawnInterval: 5
+  _autoSpawnEnabled: 1
+  _spawnInterval: 10
   _showDebugUI: 1
 --- !u!4 &1662434825
 Transform:

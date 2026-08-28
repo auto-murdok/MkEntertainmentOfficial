@@ -4,9 +4,8 @@ using UnityEngine;
 using UnityEngine.AI;
 
 /// <summary>
-/// Manages spawning of different zombie archetypes and models into the scene,
-/// supporting automated waves, random placement on NavMesh, and on-screen testing controls.
-/// Uses Function keys (F1, F2, F9) to avoid conflicting with player controls (WASD, R, K, Shift, etc.).
+/// Manages spawning of different zombie archetypes and models into the scene.
+/// Supports automated interval spawning as well as programmatic spawning.
 /// </summary>
 public class ZombieSpawner : MonoBehaviour
 {
@@ -16,8 +15,6 @@ public class ZombieSpawner : MonoBehaviour
         public string label = "Walker";
         public GameObject prefab;
         public ZombieData data;
-        [Tooltip("Use Function keys (F1, F2, etc.) to prevent gameplay key conflicts.")]
-        public KeyCode spawnKey = KeyCode.F1;
     }
 
     [Header("Spawn Configuration")]
@@ -26,13 +23,10 @@ public class ZombieSpawner : MonoBehaviour
     [SerializeField] private float _spawnRadius = 15f;
     [SerializeField] private int _maxZombies = 20;
 
-    [Header("Automated Spawning (Optional)")]
-    [SerializeField] private bool _autoSpawnEnabled = false;
-    [SerializeField] private float _spawnInterval = 5f;
+    [Header("Automated Spawning")]
+    [SerializeField] private bool _autoSpawnEnabled = true;
+    [SerializeField] private float _spawnInterval = 10f;
     private float _timer;
-
-    [Header("Testing & Debug GUI")]
-    [SerializeField] private bool _showDebugUI = true;
 
     private readonly List<ZombieBrain> _activeZombies = new List<ZombieBrain>();
 
@@ -43,21 +37,8 @@ public class ZombieSpawner : MonoBehaviour
         // Clean up dead/destroyed zombies
         _activeZombies.RemoveAll(z => z == null);
 
-        // Key shortcuts for spawning (F1, F2, etc.)
-        foreach (ZombieSpawnEntry entry in _zombieTypes)
-        {
-            if (entry.spawnKey != KeyCode.None && Input.GetKeyDown(entry.spawnKey))
-            {
-                SpawnZombie(entry);
-            }
-        }
 
-        if (Input.GetKeyDown(KeyCode.Delete) || Input.GetKeyDown(KeyCode.F9))
-        {
-            ClearAllZombies();
-        }
-
-        // Automated timer
+        // Automated timer (spawns one zombie every 10 seconds)
         if (_autoSpawnEnabled && _zombieTypes.Count > 0 && _activeZombies.Count < _maxZombies)
         {
             _timer += Time.deltaTime;
@@ -84,19 +65,10 @@ public class ZombieSpawner : MonoBehaviour
             return null;
         }
 
-        Vector3 spawnPosition = GetSpawnPosition();
+        GetSpawnPlacement(out Vector3 spawnPosition, out Quaternion spawnRotation);
 
-        GameObject instance = Instantiate(entry.prefab, spawnPosition, Quaternion.identity);
+        GameObject instance = Instantiate(entry.prefab, spawnPosition, spawnRotation);
         instance.name = $"{entry.label}_{instance.GetInstanceID()}";
-
-        // Orient newly spawned zombie towards the player
-        CharacterBrain player = FindFirstObjectByType<CharacterBrain>();
-        if (player != null)
-        {
-            Vector3 lookTarget = player.transform.position;
-            lookTarget.y = instance.transform.position.y;
-            instance.transform.LookAt(lookTarget);
-        }
 
         ZombieBehavior behavior = instance.GetComponent<ZombieBehavior>();
         if (behavior != null && entry.data != null)
@@ -127,9 +99,10 @@ public class ZombieSpawner : MonoBehaviour
         Debug.Log($"[{name}] Cleared all spawned zombies.");
     }
 
-    private Vector3 GetSpawnPosition()
+    private void GetSpawnPlacement(out Vector3 spawnPosition, out Quaternion spawnRotation)
     {
         Vector3 basePosition = transform.position;
+        spawnRotation = Quaternion.identity;
 
         if (_spawnPoints != null && _spawnPoints.Length > 0)
         {
@@ -137,51 +110,24 @@ public class ZombieSpawner : MonoBehaviour
             if (_spawnPoints[index] != null)
             {
                 basePosition = _spawnPoints[index].position;
+                spawnRotation = _spawnPoints[index].rotation;
             }
         }
         else
         {
             Vector2 randomCircle = UnityEngine.Random.insideUnitCircle * _spawnRadius;
             basePosition += new Vector3(randomCircle.x, 0, randomCircle.y);
+            spawnRotation = Quaternion.Euler(0, UnityEngine.Random.Range(0f, 360f), 0);
         }
 
         // Sample on NavMesh
         if (NavMesh.SamplePosition(basePosition, out NavMeshHit hit, 5f, NavMesh.AllAreas))
         {
-            return hit.position;
+            spawnPosition = hit.position;
         }
-
-        return basePosition;
-    }
-
-    private void OnGUI()
-    {
-        if (!_showDebugUI) return;
-
-        GUILayout.BeginArea(new Rect(10, 40, 280, 300), "Zombie Testing Controls", GUI.skin.window);
-
-        GUILayout.Label($"Active Zombies: {_activeZombies.Count} / {_maxZombies}");
-
-        GUILayout.Space(5);
-        GUILayout.Label("<b>Spawn Shortcuts (Function Keys):</b>");
-
-        for (int i = 0; i < _zombieTypes.Count; i++)
+        else
         {
-            ZombieSpawnEntry entry = _zombieTypes[i];
-            if (GUILayout.Button($"Spawn {entry.label} [{entry.spawnKey}]"))
-            {
-                SpawnZombie(entry);
-            }
+            spawnPosition = basePosition;
         }
-
-        GUILayout.Space(5);
-        _autoSpawnEnabled = GUILayout.Toggle(_autoSpawnEnabled, "Auto-Spawn Waves");
-
-        if (GUILayout.Button("Clear All Zombies [F9 / Del]"))
-        {
-            ClearAllZombies();
-        }
-
-        GUILayout.EndArea();
     }
 }

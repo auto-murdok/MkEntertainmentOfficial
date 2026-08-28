@@ -13,6 +13,7 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
     private Quaternion _initialRotation;
     private State<ZombieStates, ZombieContext> _subState;
     private BitePhase _phase;
+    private float _biteTimer;
 
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
@@ -33,6 +34,10 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
             context.agent.radius = bittingRadius;
             context.agent.ResetPath();
         }
+
+        // The C# FSM now owns the full bite lifecycle: the bite ends after its
+        // configured duration rather than relying on the Animator's state-exit event.
+        _biteTimer = context.biteDuration > 0f ? context.biteDuration : DefaultAttackCooldown;
 
         _phase = BitePhase.Prepare;
         _subState = new BitePrepareState();
@@ -81,6 +86,13 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         }
 
         _subState.UpdateState(character);
+
+        // End the bite from the C# side once the duration elapses.
+        _biteTimer -= Time.deltaTime;
+        if (_biteTimer <= 0f && character._context.isBitting)
+        {
+            character._context.isBitting = false;
+        }
     }
 }
 

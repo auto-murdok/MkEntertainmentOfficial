@@ -1,39 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+// DEPRECATED: The bite lifecycle is now owned entirely by the C# FSM
+// (ZombieBitingState ends the bite via its biteDuration timer). This
+// StateMachineBehaviour is kept only so the animator controller reference stays
+// valid; it no longer drives state. Use the Editor menu
+// "Cleanup > Remove Bite Bridges" to detach and delete it.
 public class ZombieBiteBehaviour : StateMachineBehaviour
 {
-    // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state
-    //override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    //{
-    //    
-    //}
-
-    // OnStateUpdate is called on each Update frame between OnStateEnter and OnStateExit callbacks
-    //override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    //{
-    //    
-    //}
-
-    // OnStateExit is called when a transition ends and the state machine finishes evaluating this state
-    override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    {
-        if (animator == null) return;
-        IZombie zombieBehavior = animator.GetComponent<IZombie>();
-        zombieBehavior?.StopBitting();
-        Debug.Log("BITE ENDED");
-    }
-
-    // OnStateMove is called right after Animator.OnAnimatorMove()
-    //override public void OnStateMove(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    //{
-    //    // Implement code that processes and affects root motion
-    //}
-
-    // OnStateIK is called right after Animator.OnAnimatorIK()
-    //override public void OnStateIK(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    //{
-    //    // Implement code that sets up animation IK (inverse kinematics)
-    //}
 }

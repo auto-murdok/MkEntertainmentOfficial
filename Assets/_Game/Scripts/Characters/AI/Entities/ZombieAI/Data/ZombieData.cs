@@ -21,6 +21,7 @@ public class ZombieData : ScriptableObject
 
     [Header("Combat & Sizing")]
     [SerializeField] private float _biteRange = 1.2f;
+    [SerializeField] private float _biteDuration = 1.5f;
     [SerializeField] private float _defaultAgentRadius = 0.3f;
     [SerializeField] private float _bittingAgentRadius = 0.1f;
 
@@ -40,6 +41,7 @@ public class ZombieData : ScriptableObject
     public LayerMask detectionLayerMask => _detectionLayerMask;
     public LayerMask ignoreLayerMask => _ignoreLayerMask;
     public float biteRange => _biteRange;
+    public float biteDuration => _biteDuration;
     public float defaultAgentRadius => _defaultAgentRadius;
     public float bittingAgentRadius => _bittingAgentRadius;
     public float walkSpeed => _walkSpeed;

@@ -13,9 +13,11 @@ public class PlayerData : ScriptableObject
     [Header("Combat")]
     [SerializeField] private float _aimTurnSpeed = 1f;
     [SerializeField] private float _reloadDuration = 2f;
+    [SerializeField] private float _takeBiteDuration = 1.5f;
 
     public float moveSpeed => _moveSpeed;
     public float sprintSpeed => _sprintSpeed;
     public float aimTurnSpeed => _aimTurnSpeed;
     public float reloadDuration => _reloadDuration;
+    public float takeBiteDuration => _takeBiteDuration;
 }

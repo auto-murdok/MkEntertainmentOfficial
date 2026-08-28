@@ -12,6 +12,7 @@ public class ZombieContext : ActorBlackboard
     public IInteractable interactable;
     public ZombieBrain brain;
     public ZombieHand[] hands;
+    public float biteDuration;
     public bool isBitting;
     public bool isPreparing;
     public float attackCooldownTimer;

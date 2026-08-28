@@ -36,7 +36,10 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFireArm
     {
         if (!_context.isReloading && !_context.isTriggerPressed)
         {
-            _context.aimDirection = (mouseWorldPosition - _shootPoint.position).normalized;
+            Vector3 shootPos = _shootPoint != null ? _shootPoint.position : transform.position;
+            Vector3 diff = mouseWorldPosition - shootPos;
+            Vector3 forward = _shootPoint != null ? _shootPoint.forward : transform.forward;
+            _context.aimDirection = diff.sqrMagnitude > 0.001f ? diff.normalized : forward;
             _context.isTriggerPressed = true;
         }
     }
@@ -51,7 +54,13 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFireArm
 
     public void ExecuteActualShoot()
     {
-        Instantiate(_bulletPrefab, _shootPoint.position, Quaternion.LookRotation(_context.aimDirection, Vector3.up));
+        if (_bulletPrefab == null) return;
+
+        Vector3 spawnPos = _shootPoint != null ? _shootPoint.position : transform.position;
+        Vector3 forward = _shootPoint != null ? _shootPoint.forward : transform.forward;
+        Vector3 direction = _context.aimDirection.sqrMagnitude > 0.001f ? _context.aimDirection : forward;
+
+        Instantiate(_bulletPrefab, spawnPos, Quaternion.LookRotation(direction, Vector3.up));
     }
 
     public void RegisterEvents(FireArmEvents fireArmEvents)

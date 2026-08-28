@@ -20,16 +20,22 @@ public class CharacterAimState : State<CharacterState, CharacterStateContext>
 
     public void EnterState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        CharacterUIContext characterUIContext = new CharacterUIContext()
+        if (stateMachine._context.UIController != null)
         {
-            displayCrossair = stateMachine._context.isAiming
-        };
-        // character._context.UIController.NotifyObservers(CharacterUIElement.AimUI, characterUIContext);
+            stateMachine._context.UIController.NotifyObservers(
+                CharacterUIElement.AimUI,
+                CharacterUIContext.CreateAimUI(true));
+        }
     }
 
     public void ExitState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        // do nothing
+        if (stateMachine._context.UIController != null)
+        {
+            stateMachine._context.UIController.NotifyObservers(
+                CharacterUIElement.AimUI,
+                CharacterUIContext.CreateAimUI(false));
+        }
     }
 
     public void UpdateState(StateMachine<CharacterState, CharacterStateContext> stateMachine)

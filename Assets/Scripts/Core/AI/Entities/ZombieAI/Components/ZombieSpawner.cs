@@ -32,6 +32,22 @@ public class ZombieSpawner : MonoBehaviour
 
     public IReadOnlyList<ZombieBrain> activeZombies => _activeZombies;
 
+    private void Awake()
+    {
+        if (_spawnPoints == null || _spawnPoints.Length == 0)
+        {
+            var childList = new List<Transform>();
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                childList.Add(transform.GetChild(i));
+            }
+            if (childList.Count > 0)
+            {
+                _spawnPoints = childList.ToArray();
+            }
+        }
+    }
+
     private void Update()
     {
         // Clean up dead/destroyed zombies

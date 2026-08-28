@@ -17,23 +17,29 @@ public class PlayerCoreUI : MonoBehaviour, IObserver<CharacterUIElement, Charact
         {
             case CharacterUIElement.AimUI:
                 // The crosshair, aim camera and aim target are toggled together.
-                _aimUi.SetActive(context.displayCrossair);
-                _aimCamera.SetActive(context.displayCrossair);
-                _aimTarget.SetActive(context.displayCrossair);
+                if (_aimUi != null) _aimUi.SetActive(context.displayCrosshair);
+                if (_aimCamera != null) _aimCamera.SetActive(context.displayCrosshair);
+                if (_aimTarget != null) _aimTarget.SetActive(context.displayCrosshair);
                 break;
             case CharacterUIElement.ShootUI:
-                _clipInfo.text = $"{context.clipSize}/{context.maxClipSize}";
+                if (_clipInfo != null) _clipInfo.text = $"{context.clipSize}/{context.maxClipSize}";
                 break;
         }
     }
 
     private void OnEnable()
     {
-        _subject.AddObserver(this);
+        if (_subject != null)
+        {
+            _subject.AddObserver(this);
+        }
     }
 
     private void OnDisable()
     {
-        _subject.AddObserver(this);
+        if (_subject != null)
+        {
+            _subject.RemoveObserver(this);
+        }
     }
 }

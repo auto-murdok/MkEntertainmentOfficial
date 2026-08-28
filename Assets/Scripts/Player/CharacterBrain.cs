@@ -13,25 +13,29 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
     private CharacterLocomotion _locomotion;
     private PlayerInput _playerInput;
 
+    [Header("Stats")]
+    [SerializeField] private float _maxHitPoints = 100f;
+    private float _hitPoints;
+
     Vector3 ISurvivor.TargetPosition => transform.position;
-    public int id => 1;
+    public int id => gameObject.GetInstanceID();
     public Vector3 position => transform.position;
     public Transform victimHook => transform;
 
     public bool isPreparing => false;
 
-    private void OnValidate()
-    {
-        // Reserved for inspecting child colliders (capsule/box) during editor validation.
-    }
-
     private void Awake()
     {
         _locomotion = GetComponent<CharacterLocomotion>();
-        _playerInput = _subject.GetComponent<PlayerInput>();
+        if (_subject != null)
+        {
+            _playerInput = _subject.GetComponent<PlayerInput>();
+        }
 
-        Assert.IsNotNull(_locomotion, "PLease attach a component of type CharacterLocomotion");
+        Assert.IsNotNull(_locomotion, "Please attach a component of type CharacterLocomotion");
         Assert.IsNotNull(_playerInput, "Ensure a subject is properly hooked up");
+
+        _hitPoints = _maxHitPoints;
     }
 
     public void Start()
@@ -44,6 +48,14 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
         RagdollUtils.DisableRagdoll(transform);
     }
 
+    private void OnDestroy()
+    {
+        if (InteractableManager.Instance != null)
+        {
+            InteractableManager.Instance.RemoveInteractable(this);
+        }
+    }
+
     public void OnNotify(InputHandlerActions action, InputValue inputValue)
     {
         switch (action)
@@ -52,7 +64,8 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
                 _locomotion.setMovementInput(inputValue.Get<Vector2>());
                 break;
             case InputHandlerActions.Look:
-                _locomotion.setLookInput(inputValue.Get<Vector2>(), _playerInput.currentControlScheme);
+                string controlScheme = _playerInput != null ? _playerInput.currentControlScheme : string.Empty;
+                _locomotion.setLookInput(inputValue.Get<Vector2>(), controlScheme);
                 break;
             case InputHandlerActions.ToogleRun:
                 _locomotion.setIsRunning(inputValue.isPressed);
@@ -74,7 +87,10 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
 
     private void OnEnableRagdoll()
     {
-        Debug.LogWarning("RAGDOLL!");
+        if (InteractableManager.Instance != null)
+        {
+            InteractableManager.Instance.RemoveInteractable(this);
+        }
 
         Destroy(GetComponent<RigBuilder>());
         Destroy(GetComponent<BoneRenderer>());
@@ -86,12 +102,18 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
 
     private void OnEnable()
     {
-        _subject.AddObserver(this);
+        if (_subject != null)
+        {
+            _subject.AddObserver(this);
+        }
     }
 
     private void OnDisable()
     {
-        _subject.RemoveObserver(this);
+        if (_subject != null)
+        {
+            _subject.RemoveObserver(this);
+        }
     }
 
     public void RecoverControl()
@@ -106,13 +128,14 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
         transform.position = attacker.victimHook.position;
         transform.rotation = attacker.victimHook.rotation;
         _locomotion._context.animator.SetTrigger(AnimatorUtils.TakeBiteHash);
-
-        float distance = Vector3.Distance(transform.position, attacker.position);
-        Debug.LogWarning($"{name} distance to target is {distance}");
     }
 
     public void TakeDamage()
     {
-        throw new System.NotImplementedException();
+        _hitPoints = Mathf.Max(0f, _hitPoints - 25f);
+        if (_hitPoints <= 0f)
+        {
+            RagdollUtils.EnableRagdoll(transform, OnEnableRagdoll);
+        }
     }
 }

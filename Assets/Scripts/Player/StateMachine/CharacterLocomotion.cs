@@ -74,6 +74,7 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         _context.agent = GetComponent<NavMeshAgent>();
         _context.rig = _characterRig;
         _context.mainCameraTarget = _cinemachineTarget;
+        _context.UIController = GetComponent<CharacterUIController>();
     }
 
     private void InitializeCameraUtils()
@@ -113,7 +114,11 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     private void EquipWeapon(string weaponName)
     {
+        if (PrefabManager.Instance == null) return;
+
         Item prefab = PrefabManager.Instance.GetItemPrefab(weaponName);
+        if (prefab == null || _rightHandWeaponHolder == null) return;
+
         _equippedWeapon = (Weapon)Instantiate(prefab, _rightHandWeaponHolder);
 
         FireArmEvents fireArmEvents = new FireArmEvents
@@ -145,7 +150,8 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     public void setIsRunning(bool isRunning)
     {
-        _context.isRunning = isRunning;
+        // Disallow enabling sprint while reloading
+        _context.isRunning = isRunning && !_context.isReloading;
     }
 
     public void setIsAiming(bool isAiming)
@@ -155,12 +161,18 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     public void HandleShoot()
     {
-        _equippedWeapon.TriggerShoot(_aimTarget.position);
+        if (_equippedWeapon != null && _aimTarget != null)
+        {
+            _equippedWeapon.TriggerShoot(_aimTarget.position);
+        }
     }
 
     public void HandleReload()
     {
-        _equippedWeapon.TriggerReload();
+        if (_equippedWeapon != null)
+        {
+            _equippedWeapon.TriggerReload();
+        }
     }
 
     public void HandleTakeDamage(IInteractable attacker)
@@ -176,11 +188,15 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     private void onWeaponShoot()
     {
-        _bodyAimRecoil.ApplyRecoil(_equippedWeapon.recoilForce);
+        if (_equippedWeapon != null)
+        {
+            _bodyAimRecoil.ApplyRecoil(_equippedWeapon.recoilForce);
+        }
     }
 
     private void onWeaponReloadStarted()
     {
+        _context.isRunning = false;
         _context.animator.SetBool(AnimatorUtils.IsReloadingHash, true);
         _context.isReloading = true;
     }

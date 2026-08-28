@@ -1,5 +1,5 @@
 public struct CharacterUIContext {
-    public bool displayCrossair;
+    public bool displayCrosshair;
     public int maxClipSize;
     public int clipSize;
 
@@ -7,7 +7,7 @@ public struct CharacterUIContext {
     {
         return new CharacterUIContext
         {
-            displayCrossair = displayCrosshair
+            displayCrosshair = displayCrosshair
         };
     }
 

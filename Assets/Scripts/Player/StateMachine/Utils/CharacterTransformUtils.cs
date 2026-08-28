@@ -16,11 +16,11 @@ public class CharacterTransformUtils
     public static void HandleCharacterMovement(CharacterStateContext context)
     {
         Vector2 movementInput = context.movementInput;
-        bool shouldRun = context.isRunning && !context.isAiming;
+        bool shouldRun = context.isRunning && !context.isAiming && !context.isReloading;
 
         if (movementInput != Vector2.zero)
         {
-            // Running (while not aiming) doubles the movement input fed to the animator.
+            // Running (while not aiming and not reloading) doubles the movement input fed to the animator.
             movementInput = shouldRun ? movementInput * RunInputMultiplier : movementInput;
 
             AnimatorUtils.SetMovementRootMotion(context.animator, movementInput, MovementSmoothSpeed);

@@ -18,6 +18,7 @@ public class CharacterStateContext : Blackboard
     public bool isBeingAttacked;
     public IInteractable attacker;
     public Transform mainCameraTarget;
+    public CharacterUIController UIController;
 }
 
 public struct CinemachineContext

@@ -18,8 +18,8 @@ public class AICharacterController : MonoBehaviour, IObserver<AICharacterActions
         _animator = GetComponent<Animator>();
 
         Assert.IsNotNull(_agent, "NavMeshAgent missing in " + gameObject.name);
-        Assert.IsNotNull(_animator, "Animator missing in" + gameObject.name);
-        Assert.IsNotNull(_visionHook, "Vision Hook missing in" + gameObject.name);
+        Assert.IsNotNull(_animator, "Animator missing in " + gameObject.name);
+        Assert.IsNotNull(_visionHook, "Vision Hook missing in " + gameObject.name);
     }
 
     private void Update()

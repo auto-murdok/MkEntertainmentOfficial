@@ -71,13 +71,19 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     {
         CheckGlobalTransition = (current) => _context.isAlive ? current : CharacterState.Dead;
 
-        if (_playerData != null)
+        // The ScriptableObject is the only source of truth for player config:
+        // fail loudly instead of silently skipping when it is missing.
+        if (_playerData == null)
         {
-            _context.data = _playerData;
-            if (_context.agent != null)
-            {
-                _context.agent.speed = _playerData.moveSpeed;
-            }
+            Debug.LogError($"[{name}] PlayerData is not assigned on CharacterLocomotion. " +
+                           "Assign a PlayerData asset (e.g. Assets/_Game/Data/Players/PlayerData_Default.asset).");
+            return;
+        }
+
+        _context.data = _playerData;
+        if (_context.agent != null)
+        {
+            _context.agent.speed = _playerData.moveSpeed;
         }
     }
 
@@ -235,9 +241,16 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     /// <summary>Data-driven config assignment for spawned players (applied immediately).</summary>
     public void SetPlayerData(PlayerData data)
     {
+        if (data == null)
+        {
+            Debug.LogError($"[{name}] SetPlayerData was called with a null PlayerData asset. " +
+                           "Assign a valid PlayerData asset instead.");
+            return;
+        }
+
         _playerData = data;
         _context.data = data;
-        if (data != null && _context.agent != null)
+        if (_context.agent != null)
         {
             _context.agent.speed = data.moveSpeed;
         }

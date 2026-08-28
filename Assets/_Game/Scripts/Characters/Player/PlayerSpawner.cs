@@ -97,9 +97,27 @@ public class PlayerSpawner : MonoBehaviour
         }
 
         CharacterLocomotion locomotion = instance.GetComponent<CharacterLocomotion>();
-        if (locomotion != null && entry.data != null)
+        if (locomotion == null)
+        {
+            Debug.LogError($"[{name}] Player prefab '{entry.playerPrefab.name}' has no CharacterLocomotion component. " +
+                           "Destroying the spawned instance.");
+            Destroy(instance);
+            return null;
+        }
+
+        // Optional per-entry override; the prefab's own PlayerData is required either way.
+        if (entry.data != null)
         {
             locomotion.SetPlayerData(entry.data);
+        }
+
+        if (locomotion._context.data == null)
+        {
+            Debug.LogError($"[{name}] Player prefab '{entry.playerPrefab.name}' has no PlayerData assigned on its " +
+                           "CharacterLocomotion. Assign a PlayerData asset (e.g. PlayerData_Default) on the prefab; " +
+                           "ScriptableObjects are the only source of truth for player config. Destroying the spawned instance.");
+            Destroy(instance);
+            return null;
         }
 
         if (entry.modelPrefab != null)

@@ -5,7 +5,6 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
 {
     private const float AttackedAgentRadius = 0.1f;
     private const float DefaultAgentRadius = 0.3f;
-    private const float DefaultTakeBiteDuration = 3f;
 
     // TUNING: distance (metres) the victim is pulled from the victimHook socket toward
     // the zombie's body. The socket sits ~0.5m in front of the zombie; this closes that
@@ -33,13 +32,16 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
             context.agent.ResetPath();
         }
 
-        // The C# FSM now owns the take-bite lifecycle: it ends after its configured
-        // duration instead of waiting for the Animator's state-exit event.
-        _biteTimer = context.data != null && context.data.takeBiteDuration > 0f
-            ? context.data.takeBiteDuration
-            : DefaultTakeBiteDuration;
+        // The ScriptableObject is the only source of truth for the bite duration:
+        // fail loudly instead of falling back to a script-side default.
+        if (context.data == null)
+        {
+            Debug.LogError($"[{stateMachine.name}] PlayerData is not assigned on CharacterLocomotion. " +
+                           "Assign a PlayerData asset so the take-bite duration can be resolved.");
+            return;
+        }
 
-        Debug.Log("BITE TIMEEEEER > " + _biteTimer);
+        _biteTimer = context.data.takeBiteDuration;
     }
 
     public void ExitState(StateMachine<CharacterState, CharacterStateContext> stateMachine)

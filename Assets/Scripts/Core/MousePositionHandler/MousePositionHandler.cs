@@ -10,11 +10,24 @@ public class MousePositionHandler : Subject<AICharacterActions, Vector3>
         Debug.Log("Changes made, Validating...");
     }
 
+    private Camera _mainCamera;
+
+    private void Awake()
+    {
+        _mainCamera = Camera.main;
+    }
+
     void Update()
     {
         if (Input.GetMouseButtonDown(LeftMouseButton))
         {
-            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (_mainCamera == null)
+            {
+                _mainCamera = Camera.main;
+                if (_mainCamera == null) return;
+            }
+
+            Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
             bool isHit = Physics.Raycast(ray, out RaycastHit hit, RaycastMaxDistance);
             if (isHit)
             {

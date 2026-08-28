@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class ZombieBitting : State<ZombieStates, ZombieContext>
 {
-    private const string VerticalParameter = "Vertical";
     private const float VerticalMovementPrepareThreshold = 0.15f;
     private const float DefaultBittingRadius = 0.1f;
     private const float DefaultRadius = 0.3f;
@@ -48,7 +47,7 @@ public class ZombieBitting : State<ZombieStates, ZombieContext>
 
     public void UpdateState(StateMachine<ZombieStates, ZombieContext> character)
     {
-        float verticalMovement = character._context.animator.GetFloat(VerticalParameter);
+        float verticalMovement = character._context.animator != null ? character._context.animator.GetFloat(AnimatorUtils.VerticalHash) : 0f;
         if (verticalMovement > VerticalMovementPrepareThreshold)
         {
             character.transform.position = _initialPosition;

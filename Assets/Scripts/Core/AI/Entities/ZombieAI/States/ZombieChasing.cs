@@ -14,10 +14,13 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
 
     public void EnterState(StateMachine<ZombieStates, ZombieContext> character)
     {
-        _zombieHands = character.GetComponentsInChildren<ZombieHand>(true);
-        foreach (ZombieHand hand in _zombieHands)
+        _zombieHands = character._context.hands != null ? character._context.hands : character.GetComponentsInChildren<ZombieHand>(true);
+        for (int i = 0; i < _zombieHands.Length; i++)
         {
-            hand.Enable();
+            if (_zombieHands[i] != null)
+            {
+                _zombieHands[i].Enable();
+            }
         }
     }
 
@@ -25,11 +28,11 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
     {
         if (_zombieHands != null)
         {
-            foreach (ZombieHand hand in _zombieHands)
+            for (int i = 0; i < _zombieHands.Length; i++)
             {
-                if (hand != null)
+                if (_zombieHands[i] != null)
                 {
-                    hand.Disable();
+                    _zombieHands[i].Disable();
                 }
             }
         }
@@ -52,11 +55,8 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
 
             if (distance <= biteRange && !context.isBitting)
             {
-                IInteractable interactableTarget = context.target as IInteractable ?? context.interactable;
-                ZombieBrain brain = character.GetComponent<ZombieBrain>();
-                if (interactableTarget != null && brain != null && InteractableManager.Instance != null)
+                if (character is ZombieBehavior behavior && behavior.TryTriggerAttack())
                 {
-                    InteractableManager.Instance.Interact(interactableTarget.id, brain.id);
                     return;
                 }
             }

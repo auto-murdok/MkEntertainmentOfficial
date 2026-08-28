@@ -6,8 +6,6 @@ using UnityEngine.InputSystem;
 
 public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver<InputHandlerActions, InputValue>
 {
-    private const string LocalPlayerLayerName = "LocalPlayer";
-    private const string TakeBiteTriggerName = "TakeBite";
 
     [Header("Connection Settings")]
     [SerializeField] private Subject<InputHandlerActions, InputValue> _subject;
@@ -38,8 +36,11 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
 
     public void Start()
     {
-        InteractableManager.Instance.AddInteractable(this);
-        LayerUtils.SetLayer(transform, LocalPlayerLayerName);
+        if (InteractableManager.Instance != null)
+        {
+            InteractableManager.Instance.AddInteractable(this);
+        }
+        LayerUtils.SetLayer(transform, LayerUtils.LocalPlayerLayerName);
         RagdollUtils.DisableRagdoll(transform);
     }
 
@@ -104,7 +105,7 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
 
         transform.position = attacker.victimHook.position;
         transform.rotation = attacker.victimHook.rotation;
-        _locomotion._context.animator.SetTrigger(TakeBiteTriggerName);
+        _locomotion._context.animator.SetTrigger(AnimatorUtils.TakeBiteHash);
 
         float distance = Vector3.Distance(transform.position, attacker.position);
         Debug.LogWarning($"{name} distance to target is {distance}");

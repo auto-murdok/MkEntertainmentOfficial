@@ -4,6 +4,9 @@ public class AIDetectionUtils
 {
     private const float DefaultMaxFovAngle = 60f; // 60 degrees half-angle = 120 degree vision cone
 
+    private const int MaxDetectionColliders = 32;
+    private static readonly Collider[] DetectionColliderBuffer = new Collider[MaxDetectionColliders];
+
     // Casts a detection sphere and returns the first matching component that is
     // inside the forward field-of-view cone and not blocked by an obstacle.
     public static TComponent DetectViaLineOfSight<TComponent>(
@@ -16,11 +19,14 @@ public class AIDetectionUtils
     {
         if (originTransform == null) return default;
 
-        Collider[] colliders = Physics.OverlapSphere(originTransform.position, detectionRadius, detectionLayer);
+        int colliderCount = Physics.OverlapSphereNonAlloc(originTransform.position, detectionRadius, DetectionColliderBuffer, detectionLayer);
         TComponent detectedTarget = default;
 
-        foreach (Collider collider in colliders)
+        for (int i = 0; i < colliderCount; i++)
         {
+            Collider collider = DetectionColliderBuffer[i];
+            if (collider == null) continue;
+
             TComponent possibleMatch = collider.GetComponentInParent<TComponent>();
             if (possibleMatch != null)
             {

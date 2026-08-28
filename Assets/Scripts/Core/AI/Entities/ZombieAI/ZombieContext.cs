@@ -12,6 +12,8 @@ public class ZombieContext : Blackboard
     public Animator animator;
     public ISurvivor target;
     public IInteractable interactable;
+    public ZombieBrain brain;
+    public ZombieHand[] hands;
     public bool isBitting;
     public bool isPreparing;
     public float attackCooldownTimer;

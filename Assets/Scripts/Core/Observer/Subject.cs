@@ -20,9 +20,12 @@ public class Subject<TAction, TValue> : MonoBehaviour
     // notify each observer that an event has occurred
     public void NotifyObservers(TAction action, TValue value)
     {
-        _observers.ForEach((observer) =>
+        for (int i = _observers.Count - 1; i >= 0; i--)
         {
-            observer.OnNotify(action, value);
-        });
+            if (i < _observers.Count && _observers[i] != null)
+            {
+                _observers[i].OnNotify(action, value);
+            }
+        }
     }
 }

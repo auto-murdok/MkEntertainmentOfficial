@@ -3,23 +3,24 @@ using UnityEngine;
 
 public class RagdollUtils
 {
-    public static void EnableRagdoll(Transform root, Action onEnableRagdoll)
+    public static void SetRagdollState(Transform root, bool isRagdoll, Action onStateApplied = null)
     {
         Rigidbody[] rigidbodies = root.GetComponentsInChildren<Rigidbody>();
-        foreach (Rigidbody rigidBody in rigidbodies)
+        for (int i = 0; i < rigidbodies.Length; i++)
         {
-            rigidBody.isKinematic = false;
+            rigidbodies[i].isKinematic = !isRagdoll;
         }
 
-        onEnableRagdoll?.Invoke();
+        onStateApplied?.Invoke();
+    }
+
+    public static void EnableRagdoll(Transform root, Action onEnableRagdoll = null)
+    {
+        SetRagdollState(root, true, onEnableRagdoll);
     }
 
     public static void DisableRagdoll(Transform root)
     {
-        Rigidbody[] rigidbodies = root.GetComponentsInChildren<Rigidbody>();
-        foreach (Rigidbody rigidBody in rigidbodies)
-        {
-            rigidBody.isKinematic = true;
-        }
+        SetRagdollState(root, false);
     }
 }

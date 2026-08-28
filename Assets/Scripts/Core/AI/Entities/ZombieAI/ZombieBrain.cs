@@ -65,7 +65,7 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
     {
         _behavior.SetInteractable(target);
         _behavior.SetIsBitting(true);
-        _animator.SetTrigger("Bite");
+        _animator.SetTrigger(AnimatorUtils.BiteHash);
         transform.LookAt(target.position);
     }
 

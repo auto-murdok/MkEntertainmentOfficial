@@ -12,7 +12,10 @@ public class HandgunReloadingState : State<HandgunState, HandgunContext>
 
     public void CheckTransitions(StateMachine<HandgunState, HandgunContext> character)
     {
-        // do nothing
+        if (_reloadingTime < 0f)
+        {
+            character.ChangeState(HandgunState.Ready);
+        }
     }
 
     public void EnterState(StateMachine<HandgunState, HandgunContext> character)
@@ -29,9 +32,12 @@ public class HandgunReloadingState : State<HandgunState, HandgunContext>
         character._context.isReloading = false;
         _reloadingTime = ReloadDuration;
 
-        character._context.UIController.NotifyObservers(
-            CharacterUIElement.ShootUI,
-            CreateShootUIContext(character._context));
+        if (character._context.UIController != null)
+        {
+            character._context.UIController.NotifyObservers(
+                CharacterUIElement.ShootUI,
+                CharacterUIContext.CreateShootUI(character._context.clipSize, character._context.maxClipSize));
+        }
 
         Handgun handgun = (Handgun)character;
         handgun.fireArmEvents.onReloadFinished?.Invoke();
@@ -40,22 +46,5 @@ public class HandgunReloadingState : State<HandgunState, HandgunContext>
     public void UpdateState(StateMachine<HandgunState, HandgunContext> character)
     {
         _reloadingTime -= Time.deltaTime;
-
-        if (_reloadingTime < 0f)
-        {
-            character.ChangeState(HandgunState.Ready);
-        }
-    }
-
-    /// <summary>
-    /// Builds the UI context reflecting the current clip state.
-    /// </summary>
-    private static CharacterUIContext CreateShootUIContext(HandgunContext context)
-    {
-        return new CharacterUIContext()
-        {
-            clipSize = context.clipSize,
-            maxClipSize = context.maxClipSize,
-        };
     }
 }

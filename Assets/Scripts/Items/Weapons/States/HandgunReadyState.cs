@@ -6,21 +6,6 @@ public class HandgunReadyState : State<HandgunState, HandgunContext>
 {
     public void CheckTransitions(StateMachine<HandgunState, HandgunContext> character)
     {
-        // do nothing
-    }
-
-    public void EnterState(StateMachine<HandgunState, HandgunContext> character)
-    {
-        // do nothing
-    }
-
-    public void ExitState(StateMachine<HandgunState, HandgunContext> character)
-    {
-        // do nothing
-    }
-
-    public void UpdateState(StateMachine<HandgunState, HandgunContext> character)
-    {
         if (character._context.isTriggerPressed)
         {
             if (character._context.clipSize > 0)
@@ -36,5 +21,17 @@ public class HandgunReadyState : State<HandgunState, HandgunContext>
         {
             character.ChangeState(HandgunState.Reloading);
         }
+    }
+
+    public void EnterState(StateMachine<HandgunState, HandgunContext> character)
+    {
+    }
+
+    public void ExitState(StateMachine<HandgunState, HandgunContext> character)
+    {
+    }
+
+    public void UpdateState(StateMachine<HandgunState, HandgunContext> character)
+    {
     }
 }

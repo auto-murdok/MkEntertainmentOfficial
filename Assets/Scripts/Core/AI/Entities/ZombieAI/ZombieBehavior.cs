@@ -35,6 +35,8 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
         // Components & Sockets
         _context.agent = GetComponent<NavMeshAgent>();
         _context.animator = GetComponent<Animator>();
+        _context.brain = GetComponent<ZombieBrain>();
+        _context.hands = GetComponentsInChildren<ZombieHand>(true);
         _sockets = GetComponentInChildren<ZombieSockets>();
 
         if (_sockets == null)
@@ -89,7 +91,7 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
         // Ensure default detection mask points to LocalPlayer if not explicitly assigned
         if (_context.detectionLayerMask.value == 0)
         {
-            int playerLayer = LayerMask.NameToLayer("LocalPlayer");
+            int playerLayer = LayerMask.NameToLayer(LayerUtils.LocalPlayerLayerName);
             if (playerLayer >= 0)
             {
                 _context.detectionLayerMask = 1 << playerLayer;
@@ -139,5 +141,21 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
     public void SetInteractable(IInteractable interactable)
     {
         _context.interactable = interactable;
+    }
+
+    public bool TryTriggerAttack()
+    {
+        if (_context.target == null) return false;
+
+        IInteractable interactableTarget = _context.target as IInteractable ?? _context.interactable;
+        ZombieBrain brain = _context.brain != null ? _context.brain : GetComponent<ZombieBrain>();
+
+        if (interactableTarget != null && brain != null && InteractableManager.Instance != null)
+        {
+            InteractableManager.Instance.Interact(interactableTarget.id, brain.id);
+            return true;
+        }
+
+        return false;
     }
 }

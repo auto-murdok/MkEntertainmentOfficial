@@ -35,7 +35,13 @@ public class ZombieSpawner : MonoBehaviour
     private void Update()
     {
         // Clean up dead/destroyed zombies
-        _activeZombies.RemoveAll(z => z == null);
+        for (int i = _activeZombies.Count - 1; i >= 0; i--)
+        {
+            if (_activeZombies[i] == null)
+            {
+                _activeZombies.RemoveAt(i);
+            }
+        }
 
 
         // Automated timer (spawns one zombie every 10 seconds)

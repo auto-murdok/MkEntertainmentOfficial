@@ -7,7 +7,6 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 {
     private const string EquippedWeaponPrefabName = "FakeGun";
     private const string KeyboardAndMouseScheme = "Keyboard&Mouse";
-    private const string ReloadingAnimatorParameter = "isReloading";
     private const int AimAnimatorLayerIndex = 1;
 
     [Header("Inverse Kinematics")]
@@ -178,13 +177,13 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     private void onWeaponReloadStarted()
     {
-        _context.animator.SetBool(ReloadingAnimatorParameter, true);
+        _context.animator.SetBool(AnimatorUtils.IsReloadingHash, true);
         _context.isReloading = true;
     }
 
     private void onWeaponReloadFinished()
     {
-        _context.animator.SetBool(ReloadingAnimatorParameter, false);
+        _context.animator.SetBool(AnimatorUtils.IsReloadingHash, false);
         _context.isReloading = false;
     }
 }

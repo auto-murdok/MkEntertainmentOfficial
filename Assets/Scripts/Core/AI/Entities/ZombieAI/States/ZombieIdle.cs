@@ -20,11 +20,9 @@ public class ZombieIdle : State<ZombieStates, ZombieContext>
             else if (character._context.attackCooldownTimer <= 0f && !character._context.isBitting)
             {
                 // Target is within bite range and attack cooldown has elapsed: re-engage bite!
-                IInteractable interactableTarget = character._context.target as IInteractable ?? character._context.interactable;
-                ZombieBrain brain = character.GetComponent<ZombieBrain>();
-                if (interactableTarget != null && brain != null && InteractableManager.Instance != null)
+                if (character is ZombieBehavior behavior)
                 {
-                    InteractableManager.Instance.Interact(interactableTarget.id, brain.id);
+                    behavior.TryTriggerAttack();
                 }
             }
         }

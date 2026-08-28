@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class ZombieHand : MonoBehaviour
@@ -10,26 +8,43 @@ public class ZombieHand : MonoBehaviour
     private void Awake()
     {
         _zombieBrain = GetComponentInParent<ZombieBrain>();
-        _handCollider = GetComponentInParent<Collider>();
+        _handCollider = GetComponent<Collider>();
+        if (_handCollider == null)
+        {
+            _handCollider = GetComponentInParent<Collider>();
+        }
     }
 
     private void OnTriggerStay(Collider other)
     {
+        if (_zombieBrain == null || _zombieBrain.isBitting) return;
+
         IInteractable survivor = other.GetComponentInParent<IInteractable>();
-        if (survivor != null && !_zombieBrain.isBitting)
+        if (survivor != null && InteractableManager.Instance != null)
         {
             InteractableManager.Instance.Interact(survivor.id, _zombieBrain.id);
             Disable();
         }
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        OnTriggerStay(other);
+    }
+
     public void Enable()
     {
-        _handCollider.enabled = true;
+        if (_handCollider != null)
+        {
+            _handCollider.enabled = true;
+        }
     }
 
     public void Disable()
     {
-        _handCollider.enabled = false;
+        if (_handCollider != null)
+        {
+            _handCollider.enabled = false;
+        }
     }
 }

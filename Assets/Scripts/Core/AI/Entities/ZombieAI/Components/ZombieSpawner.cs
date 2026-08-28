@@ -90,7 +90,7 @@ public class ZombieSpawner : MonoBehaviour
         instance.name = $"{entry.label}_{instance.GetInstanceID()}";
 
         // Orient newly spawned zombie towards the player
-        CharacterBrain player = FindObjectOfType<CharacterBrain>();
+        CharacterBrain player = FindFirstObjectByType<CharacterBrain>();
         if (player != null)
         {
             Vector3 lookTarget = player.transform.position;

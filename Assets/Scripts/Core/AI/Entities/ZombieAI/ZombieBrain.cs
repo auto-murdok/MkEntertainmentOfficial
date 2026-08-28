@@ -11,8 +11,8 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
     public int id => gameObject.GetInstanceID();
     public Vector3 position => transform.position;
     public Transform victimHook => _behavior.victimHook;
-    public bool isPreparing => _behavior._context.isPreparing;
-    public bool isBitting => _behavior._context.isBitting;
+    public bool isPreparing => _behavior != null && _behavior._context != null && _behavior._context.isPreparing;
+    public bool isBitting => _behavior != null && _behavior._context != null && _behavior._context.isBitting;
 
     // Default Fallback Stats (used if ZombieData is not assigned on ZombieBehavior)
     private const float DefaultMaxHitPoints = 100f;

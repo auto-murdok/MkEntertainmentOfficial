@@ -14,4 +14,5 @@ public class ZombieContext : Blackboard
     public IInteractable interactable;
     public bool isBitting;
     public bool isPreparing;
+    public float attackCooldownTimer;
 }

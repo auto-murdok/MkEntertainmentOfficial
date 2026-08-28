@@ -23,9 +23,15 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
 
     public void ExitState(StateMachine<ZombieStates, ZombieContext> character)
     {
-        foreach (ZombieHand hand in _zombieHands)
+        if (_zombieHands != null)
         {
-            hand.Disable();
+            foreach (ZombieHand hand in _zombieHands)
+            {
+                if (hand != null)
+                {
+                    hand.Disable();
+                }
+            }
         }
     }
 
@@ -41,7 +47,24 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
 
         if (context.target != null)
         {
-            context.agent.SetDestination(context.target.TargetPosition);
+            float distance = Vector3.Distance(character.transform.position, context.target.TargetPosition);
+            float biteRange = context.data != null ? context.data.biteRange : ZombieBehavior.DefaultBiteRange;
+
+            if (distance <= biteRange && !context.isBitting)
+            {
+                IInteractable interactableTarget = context.target as IInteractable ?? context.interactable;
+                ZombieBrain brain = character.GetComponent<ZombieBrain>();
+                if (interactableTarget != null && brain != null && InteractableManager.Instance != null)
+                {
+                    InteractableManager.Instance.Interact(interactableTarget.id, brain.id);
+                    return;
+                }
+            }
+
+            if (context.agent != null && context.agent.isActiveAndEnabled && context.agent.isOnNavMesh)
+            {
+                context.agent.SetDestination(context.target.TargetPosition);
+            }
         }
     }
 }

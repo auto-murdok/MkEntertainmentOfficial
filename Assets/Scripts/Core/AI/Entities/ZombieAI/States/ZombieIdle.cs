@@ -8,14 +8,24 @@ public class ZombieIdle : State<ZombieStates, ZombieContext>
         {
             character.ChangeState(ZombieStates.Bitting);
         }
-        // Hysteresis: only chase again once the target is outside bite range,
-        // so the zombie settles at the survivor instead of oscillating.
         else if (character._context.target != null)
         {
             float biteRange = character._context.data != null ? character._context.data.biteRange : ZombieBehavior.DefaultBiteRange;
-            if (Vector3.Distance(character.transform.position, character._context.target.TargetPosition) > biteRange)
+            float distance = Vector3.Distance(character.transform.position, character._context.target.TargetPosition);
+
+            if (distance > biteRange)
             {
                 character.ChangeState(ZombieStates.Chasing);
+            }
+            else if (character._context.attackCooldownTimer <= 0f && !character._context.isBitting)
+            {
+                // Target is within bite range and attack cooldown has elapsed: re-engage bite!
+                IInteractable interactableTarget = character._context.target as IInteractable ?? character._context.interactable;
+                ZombieBrain brain = character.GetComponent<ZombieBrain>();
+                if (interactableTarget != null && brain != null && InteractableManager.Instance != null)
+                {
+                    InteractableManager.Instance.Interact(interactableTarget.id, brain.id);
+                }
             }
         }
     }
@@ -26,10 +36,13 @@ public class ZombieIdle : State<ZombieStates, ZombieContext>
 
     public void ExitState(StateMachine<ZombieStates, ZombieContext> character)
     {
-        // do nothing
     }
 
     public void UpdateState(StateMachine<ZombieStates, ZombieContext> character)
     {
+        if (character._context.attackCooldownTimer > 0f)
+        {
+            character._context.attackCooldownTimer -= Time.deltaTime;
+        }
     }
 }

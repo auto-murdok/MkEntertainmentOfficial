@@ -6,6 +6,7 @@ public class ZombieBitting : State<ZombieStates, ZombieContext>
     private const float VerticalMovementPrepareThreshold = 0.15f;
     private const float DefaultBittingRadius = 0.1f;
     private const float DefaultRadius = 0.3f;
+    private const float DefaultAttackCooldown = 1.2f;
 
     private Vector3 _initialPosition;
     private Quaternion _initialRotation;
@@ -41,6 +42,7 @@ public class ZombieBitting : State<ZombieStates, ZombieContext>
             context.agent.radius = defaultRadius;
         }
         context.isPreparing = false;
+        context.attackCooldownTimer = DefaultAttackCooldown;
         context.interactable = null;
     }
 
@@ -51,7 +53,12 @@ public class ZombieBitting : State<ZombieStates, ZombieContext>
         {
             character.transform.position = _initialPosition;
             character.transform.rotation = _initialRotation;
+            character._context.isPreparing = true;
             Debug.LogWarning($"{character.gameObject.name} is preparing...");
+        }
+        else if (character._context.isPreparing)
+        {
+            character._context.isPreparing = false;
         }
     }
 }

@@ -17,7 +17,7 @@ public class BulletProjectile : MonoBehaviour
     void Start()
     {
         _bulletRigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-        _bulletRigidbody.velocity = transform.forward * ProjectileSpeed;
+        _bulletRigidbody.linearVelocity = transform.forward * ProjectileSpeed;
         _initialPosition = transform.position;
         Debug.DrawLine(transform.position, transform.forward, Color.yellow, DebugLineDuration);
     }

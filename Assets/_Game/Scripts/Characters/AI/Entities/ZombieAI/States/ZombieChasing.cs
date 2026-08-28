@@ -66,7 +66,7 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
             float sqrDistance = (character.transform.position - targetPosition).sqrMagnitude;
             float biteRange = context.data != null ? context.data.biteRange : ZombieBehavior.DefaultBiteRange;
 
-            if (sqrDistance <= (biteRange * biteRange) && !context.isBitting)
+            if (sqrDistance <= (biteRange * biteRange) && !context.isBitting && !context.recentlyBitten)
             {
                 if (character is ZombieBehavior behavior && behavior.TryTriggerAttack())
                 {

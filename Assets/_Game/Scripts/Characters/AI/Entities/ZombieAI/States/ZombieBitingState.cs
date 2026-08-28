@@ -2,10 +2,10 @@ using UnityEngine;
 
 public class ZombieBitingState : State<ZombieStates, ZombieContext>
 {
-    private const float VerticalMovementPrepareThreshold = 0.15f;
     private const float DefaultBittingRadius = 0.1f;
     private const float DefaultRadius = 0.3f;
     private const float DefaultAttackCooldown = 1.2f;
+    private const float ReleaseFraction = 0.35f; // last 35% of the bite is the push-off
 
     private enum BitePhase { Prepare, Release }
 
@@ -14,6 +14,7 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
     private State<ZombieStates, ZombieContext> _subState;
     private BitePhase _phase;
     private float _biteTimer;
+    private float _releaseThreshold;
 
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
@@ -35,10 +36,14 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
             context.agent.ResetPath();
         }
 
-        // The C# FSM now owns the full bite lifecycle: the bite ends after its
-        // configured duration rather than relying on the Animator's state-exit event.
+        // The C# FSM owns the full bite lifecycle: the bite ends after its configured
+        // duration rather than relying on the Animator's state-exit event. The prepare /
+        // release phases are derived from this timer exactly once, so isPreparing is
+        // stable (no per-frame flicker that used to thrash the victim's lock).
         _biteTimer = context.biteDuration > 0f ? context.biteDuration : DefaultAttackCooldown;
+        _releaseThreshold = _biteTimer * ReleaseFraction;
 
+        context.recentlyBitten = true;
         _phase = BitePhase.Prepare;
         _subState = new BitePrepareState();
         _subState.EnterState(character);
@@ -63,11 +68,9 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
 
     public void UpdateState(StateMachine<ZombieStates, ZombieContext> character)
     {
-        float verticalMovement = character._context.animator != null
-            ? character._context.animator.GetFloat(AnimatorUtils.VerticalHash)
-            : 0f;
-
-        BitePhase desired = verticalMovement > VerticalMovementPrepareThreshold ? BitePhase.Prepare : BitePhase.Release;
+        // Derive the phase from the timer with a single transition (no animator
+        // vertical-threshold flicker).
+        BitePhase desired = _biteTimer > _releaseThreshold ? BitePhase.Prepare : BitePhase.Release;
         if (desired != _phase)
         {
             _subState.ExitState(character);
@@ -78,7 +81,8 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
             _subState.EnterState(character);
         }
 
-        // Pin the zombie to its initial grab pose while rearing up.
+        // Pin the zombie to its initial grab pose during the prepare (grab) phase only;
+        // the release phase is the push-off, driven by the animation root motion.
         if (_phase == BitePhase.Prepare)
         {
             character.transform.position = _initialPosition;

@@ -126,6 +126,13 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
 
     public void OnExternalInteraction(IInteractable attacker)
     {
+        // Ignore duplicate interactions while a take-bite is already in progress so
+        // the TakeBite trigger is not re-fired (which would replay the animation).
+        if (_locomotion != null && _locomotion._context.isBeingAttacked)
+        {
+            return;
+        }
+
         _locomotion.HandleTakeDamage(attacker);
 
         transform.position = attacker.victimHook.position;

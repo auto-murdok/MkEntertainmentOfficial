@@ -68,6 +68,13 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
 
     public void OnExternalInteraction(IInteractable target)
     {
+        // Ignore duplicate interactions while a bite is already in progress so the
+        // Bite trigger is not re-fired (which would replay the bite animation).
+        if (_behavior != null && _behavior._context.isBitting)
+        {
+            return;
+        }
+
         _behavior.SetInteractable(target);
         _behavior.SetIsBitting(true);
         _animator.SetTrigger(AnimatorUtils.BiteHash);

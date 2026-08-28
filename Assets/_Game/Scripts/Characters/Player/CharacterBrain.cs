@@ -97,11 +97,6 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerA
         }
     }
 
-    public void RecoverControl()
-    {
-        _locomotion.HandleRecoverControl();
-    }
-
     public override void OnExternalInteraction(IInteractable attacker)
     {
         // Ignore duplicate interactions while a take-bite is already in progress so

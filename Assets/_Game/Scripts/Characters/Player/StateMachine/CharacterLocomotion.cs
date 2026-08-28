@@ -81,10 +81,6 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         }
 
         _context.data = _playerData;
-        if (_context.agent != null)
-        {
-            _context.agent.speed = _playerData.moveSpeed;
-        }
     }
 
     private void InitializeCinemachineContext()
@@ -100,6 +96,10 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     private void InitializeAnimatorAndAgent()
     {
         _context.animator = GetComponent<Animator>();
+        // The NavMeshAgent is intentionally NOT used for player locomotion (movement is
+        // root-motion driven, which is the gold standard for a directly-controlled,
+        // animated character). It exists only to pin the actor's radius during the
+        // bite (CharacterTakeBiteState sets agent.radius + ResetPath); agent.speed is unused.
         _context.agent = GetComponent<NavMeshAgent>();
         _context.rig = _characterRig;
         _context.mainCameraTarget = _cinemachineTarget;
@@ -211,11 +211,6 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     }
 
     public bool isBeingAttacked => _context.isBeingAttacked;
-
-    public void HandleRecoverControl()
-    {
-        _context.isBeingAttacked = false;
-    }
 
     private void onWeaponShoot()
     {

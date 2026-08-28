@@ -15,6 +15,11 @@ public class StateMachine<TStateKey, TContext> : MonoBehaviour
     public Dictionary<TStateKey, State<TStateKey, TContext>> states = new Dictionary<TStateKey, State<TStateKey, TContext>>();
     public TContext _context = new TContext();
 
+    // Evaluated every frame after the current state's own CheckTransitions.
+    // Return a state key different from the current one to force a transition
+    // (e.g. a global "death" guard). Return the current key to do nothing.
+    public Func<TStateKey, TStateKey> CheckGlobalTransition;
+
     // Deferred transition: at most one state change is applied per Update, after
     // CheckTransitions has run. This prevents re-entrancy and multiple transitions
     // in a single evaluation.
@@ -34,6 +39,16 @@ public class StateMachine<TStateKey, TContext> : MonoBehaviour
         OnCommonUpdate?.Invoke(currentStateEnum);
         _currentState.UpdateState(this);
         _currentState.CheckTransitions(this);
+
+        // global transition guard (e.g. death) evaluated after the state's own checks
+        if (CheckGlobalTransition != null)
+        {
+            TStateKey forced = CheckGlobalTransition(currentStateEnum);
+            if (!EqualityComparer<TStateKey>.Default.Equals(forced, currentStateEnum))
+            {
+                ChangeState(forced);
+            }
+        }
 
         if (_hasPendingTransition)
         {

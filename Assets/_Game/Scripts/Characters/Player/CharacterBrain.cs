@@ -36,6 +36,9 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
         Assert.IsNotNull(_playerInput, "Ensure a subject is properly hooked up");
 
         _hitPoints = _maxHitPoints;
+
+        // Hand the entity-specific death routine to the shared Dead state.
+        _locomotion._context.onDeath = () => RagdollUtils.EnableRagdoll(transform, OnEnableRagdoll);
     }
 
     public void Start()
@@ -135,7 +138,9 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
         _hitPoints = Mathf.Max(0f, _hitPoints - 25f);
         if (_hitPoints <= 0f)
         {
-            RagdollUtils.EnableRagdoll(transform, OnEnableRagdoll);
+            // Let the shared Dead state (driven by the locomotion FSM) handle the
+            // ragdoll + teardown via context.onDeath.
+            _locomotion._context.isAlive = false;
         }
     }
 }

@@ -11,4 +11,5 @@ public enum CharacterState
     Aiming,
     Reloading,
     TakingBite,
+    Dead,
 }

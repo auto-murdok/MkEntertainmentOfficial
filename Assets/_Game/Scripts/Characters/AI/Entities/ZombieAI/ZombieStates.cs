@@ -4,4 +4,6 @@ public enum ZombieStates
     Chasing,
     Biting,
     Bitting = Biting,
+    CommandedMove,
+    Dead,
 }

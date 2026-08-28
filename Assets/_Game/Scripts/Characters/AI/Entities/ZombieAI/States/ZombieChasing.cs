@@ -15,6 +15,10 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
         {
             character.ChangeState(ZombieStates.Bitting);
         }
+        else if (character._context.moveDestination != null)
+        {
+            character.ChangeState(ZombieStates.CommandedMove);
+        }
     }
 
     public void EnterState(StateMachine<ZombieStates, ZombieContext> character)

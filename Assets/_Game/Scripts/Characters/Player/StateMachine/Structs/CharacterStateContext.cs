@@ -4,10 +4,8 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Animations.Rigging;
 
-public class CharacterStateContext : Blackboard
+public class CharacterStateContext : ActorBlackboard
 {
-    public Animator animator;
-    public NavMeshAgent agent;
     public Rig rig;
     public Vector2 lookInput;
     public Vector2 movementInput;
@@ -19,6 +17,7 @@ public class CharacterStateContext : Blackboard
     public IInteractable attacker;
     public Transform mainCameraTarget;
     public CharacterUIController UIController;
+    public PlayerData data;
 }
 
 public struct CinemachineContext

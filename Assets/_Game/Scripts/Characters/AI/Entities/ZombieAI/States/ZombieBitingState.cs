@@ -7,8 +7,12 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
     private const float DefaultRadius = 0.3f;
     private const float DefaultAttackCooldown = 1.2f;
 
+    private enum BitePhase { Prepare, Release }
+
     private Vector3 _initialPosition;
     private Quaternion _initialRotation;
+    private State<ZombieStates, ZombieContext> _subState;
+    private BitePhase _phase;
 
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
@@ -29,7 +33,10 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
             context.agent.radius = bittingRadius;
             context.agent.ResetPath();
         }
-        context.isPreparing = true;
+
+        _phase = BitePhase.Prepare;
+        _subState = new BitePrepareState();
+        _subState.EnterState(character);
     }
 
     public void ExitState(StateMachine<ZombieStates, ZombieContext> character)
@@ -40,6 +47,10 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         {
             context.agent.radius = defaultRadius;
         }
+
+        _subState?.ExitState(character);
+        _subState = null;
+
         context.isPreparing = false;
         context.attackCooldownTimer = DefaultAttackCooldown;
         context.interactable = null;
@@ -47,18 +58,29 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
 
     public void UpdateState(StateMachine<ZombieStates, ZombieContext> character)
     {
-        float verticalMovement = character._context.animator != null ? character._context.animator.GetFloat(AnimatorUtils.VerticalHash) : 0f;
-        if (verticalMovement > VerticalMovementPrepareThreshold)
+        float verticalMovement = character._context.animator != null
+            ? character._context.animator.GetFloat(AnimatorUtils.VerticalHash)
+            : 0f;
+
+        BitePhase desired = verticalMovement > VerticalMovementPrepareThreshold ? BitePhase.Prepare : BitePhase.Release;
+        if (desired != _phase)
+        {
+            _subState.ExitState(character);
+            _phase = desired;
+            _subState = desired == BitePhase.Prepare
+                ? (State<ZombieStates, ZombieContext>)new BitePrepareState()
+                : new BiteReleaseState();
+            _subState.EnterState(character);
+        }
+
+        // Pin the zombie to its initial grab pose while rearing up.
+        if (_phase == BitePhase.Prepare)
         {
             character.transform.position = _initialPosition;
             character.transform.rotation = _initialRotation;
-            character._context.isPreparing = true;
-            Debug.LogWarning($"{character.gameObject.name} is preparing...");
         }
-        else if (character._context.isPreparing)
-        {
-            character._context.isPreparing = false;
-        }
+
+        _subState.UpdateState(character);
     }
 }
 

@@ -39,6 +39,9 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
         Assert.IsNotNull(_agent, $"{gameObject.name} needs a NavMeshAgent attached to it");
 
         _hitPoints = maxHitPoints;
+
+        // Hand the entity-specific death routine to the shared Dead state.
+        _behavior._context.onDeath = () => RagdollUtils.EnableRagdoll(transform, OnEnableRagdoll);
     }
 
     private void Start()
@@ -82,7 +85,9 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
 
         if (_hitPoints <= 0f)
         {
-            RagdollUtils.EnableRagdoll(transform, OnEnableRagdoll);
+            // Let the shared Dead state (driven by the ZombieBehavior FSM) handle
+            // the ragdoll + teardown via context.onDeath.
+            _behavior._context.isAlive = false;
         }
     }
 

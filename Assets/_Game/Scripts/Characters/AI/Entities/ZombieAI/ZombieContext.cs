@@ -1,15 +1,13 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-public class ZombieContext : Blackboard
+public class ZombieContext : ActorBlackboard
 {
     public ZombieData data;
     public ZombieSockets sockets;
     public Transform visionHook;
     public LayerMask detectionLayerMask;
     public LayerMask ignoreLayerMask;
-    public NavMeshAgent agent;
-    public Animator animator;
     public ISurvivor target;
     public IInteractable interactable;
     public ZombieBrain brain;

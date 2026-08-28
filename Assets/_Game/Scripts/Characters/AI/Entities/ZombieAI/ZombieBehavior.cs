@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Assertions;
 
-public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
+public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, ICommandable
 {
     [Header("Configuration")]
     [SerializeField] private ZombieData _zombieData;
@@ -36,6 +36,8 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
         states[ZombieStates.Idle] = new ZombieIdle();
         states[ZombieStates.Chasing] = new ZombieChasing();
         states[ZombieStates.Bitting] = new ZombieBitting();
+        states[ZombieStates.CommandedMove] = new ZombieCommandedMoveState();
+        states[ZombieStates.Dead] = new ActorDeadState<ZombieStates, ZombieContext>();
 
         // Components & Sockets
         _context.agent = GetComponent<NavMeshAgent>();
@@ -59,6 +61,9 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
 
         OnCommonUpdate += RelieveMovement;
         OnCommonUpdate += SearchForSurvivors;
+
+        // Global guard: force transition to the reusable Dead state on death.
+        CheckGlobalTransition = (current) => _context.isAlive ? current : ZombieStates.Dead;
     }
 
     public void SetZombieData(ZombieData data)
@@ -149,6 +154,19 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
     public void SetInteractable(IInteractable interactable)
     {
         _context.interactable = interactable;
+    }
+
+    // ICommandable: lets any locomotion controller (e.g. click-to-move) drive
+    // this entity through the shared move-to-target state instead of poking the
+    // NavMeshAgent directly.
+    public void SetMoveDestination(Vector3 destination)
+    {
+        _context.moveDestination = destination;
+    }
+
+    public void ClearMoveDestination()
+    {
+        _context.moveDestination = null;
     }
 
     public bool TryTriggerAttack()

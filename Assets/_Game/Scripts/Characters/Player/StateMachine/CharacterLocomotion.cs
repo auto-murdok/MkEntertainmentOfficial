@@ -35,6 +35,9 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     [Header("Combat hooks")]
     [SerializeField] private Transform _aimTarget;
 
+    [Header("Data")]
+    [SerializeField] private PlayerData _playerData;
+
     private CinemachineContext _cinemachineProps;
 
     private void Awake()
@@ -48,6 +51,7 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         _bodyAimRecoil = new RigRecoil(characterBodyAim);
         EquipWeapon(EquippedWeaponPrefabName);
         RegisterCommonUpdateEffects();
+        RegisterGlobalTransitions();
     }
 
     private void PopulateStates()
@@ -58,6 +62,23 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         states[CharacterState.Aiming] = new CharacterAimState();
         states[CharacterState.Reloading] = new CharacterReloadingState();
         states[CharacterState.TakingBite] = new CharacterTakeBiteState();
+        states[CharacterState.Dead] = new ActorDeadState<CharacterState, CharacterStateContext>();
+    }
+
+    // Global guard: the moment the shared blackboard reports death, force a
+    // transition to the reusable Dead state regardless of the active state.
+    private void RegisterGlobalTransitions()
+    {
+        CheckGlobalTransition = (current) => _context.isAlive ? current : CharacterState.Dead;
+
+        if (_playerData != null)
+        {
+            _context.data = _playerData;
+            if (_context.agent != null)
+            {
+                _context.agent.speed = _playerData.moveSpeed;
+            }
+        }
     }
 
     private void InitializeCinemachineContext()

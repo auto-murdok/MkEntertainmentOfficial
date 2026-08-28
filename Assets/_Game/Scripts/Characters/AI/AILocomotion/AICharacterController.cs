@@ -27,10 +27,20 @@ public class AICharacterController : MonoBehaviour, IObserver<AICharacterActions
         // AITransformUtils.HandleAIMovement(transform, _agent, _animator);
     }
 
-    // Move the agent toward the requested world-space destination.
+    // Move the agent toward the requested world-space destination. Prefer driving
+    // a state-machine entity (via ICommandable) so click-to-move reuses the same
+    // FSM movement as every other AI; fall back to the raw agent otherwise.
     private void MoveToDestination(Vector3 destination)
     {
-        _agent.SetDestination(destination);
+        ICommandable commandable = GetComponent<ICommandable>();
+        if (commandable != null)
+        {
+            commandable.SetMoveDestination(destination);
+        }
+        else if (_agent != null)
+        {
+            _agent.SetDestination(destination);
+        }
     }
 
     // observer logic

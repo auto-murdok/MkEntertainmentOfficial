@@ -8,6 +8,10 @@ public class ZombieIdle : State<ZombieStates, ZombieContext>
         {
             character.ChangeState(ZombieStates.Bitting);
         }
+        else if (character._context.moveDestination != null)
+        {
+            character.ChangeState(ZombieStates.CommandedMove);
+        }
         else if (character._context.target != null)
         {
             float biteRange = character._context.data != null ? character._context.data.biteRange : ZombieBehavior.DefaultBiteRange;

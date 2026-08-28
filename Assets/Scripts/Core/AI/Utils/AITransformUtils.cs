@@ -19,9 +19,12 @@ public class AITransformUtils
             Vector3 localDirection = transform.InverseTransformDirection(globalDirection);
             bool isFacingMoveDirection = Vector3.Dot(globalDirection, transform.forward) > FacingDotThreshold;
 
-            Quaternion targetRotation = Quaternion.LookRotation(globalDirection);
-            float maxDegreesDelta = MaxRotationDegreesPerSecond * Time.deltaTime;
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, maxDegreesDelta);
+            if (globalDirection.sqrMagnitude > 0.0001f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(globalDirection);
+                float maxDegreesDelta = MaxRotationDegreesPerSecond * Time.deltaTime;
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, maxDegreesDelta);
+            }
 
             float horizontalValue = isFacingMoveDirection ? localDirection.x : 0f;
             float verticalValue = isFacingMoveDirection ? localDirection.z : 0f;
@@ -40,6 +43,7 @@ public class AITransformUtils
 
     public static bool HasReachedTarget(Transform transform, NavMeshAgent agent)
     {
-        return Vector3.Distance(transform.position, agent.destination) < agent.radius;
+        float sqrDistance = (transform.position - agent.destination).sqrMagnitude;
+        return sqrDistance < (agent.radius * agent.radius);
     }
 }

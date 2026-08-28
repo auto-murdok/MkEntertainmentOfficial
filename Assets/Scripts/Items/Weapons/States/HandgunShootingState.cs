@@ -7,8 +7,8 @@ public class HandgunShootingState : State<HandgunState, HandgunContext>
     // Rechambering delay before the state can complete. Reset on every Enter
     // so the cadence is identical for each shot.
     private const float RechamberingStartTime = 0.05f;
-    private const string ShootAnimationName = "fakeGun_shoot";
-    private const string IdleAnimationName = "Idle";
+    private static readonly int ShootAnimationHash = Animator.StringToHash("fakeGun_shoot");
+    private static readonly int IdleAnimationHash = Animator.StringToHash("Idle");
 
     private float _rechamberingTime;
 
@@ -24,7 +24,7 @@ public class HandgunShootingState : State<HandgunState, HandgunContext>
     {
         _rechamberingTime = RechamberingStartTime;
         Handgun fireArm = (Handgun)character;
-        character._context.animator.CrossFade(ShootAnimationName, 0f);
+        character._context.animator.CrossFade(ShootAnimationHash, 0f);
         fireArm.ExecuteActualShoot();
         fireArm.fireArmEvents.onShoot?.Invoke();
         character._context.clipSize--;
@@ -40,7 +40,7 @@ public class HandgunShootingState : State<HandgunState, HandgunContext>
     public void ExitState(StateMachine<HandgunState, HandgunContext> character)
     {
         character._context.isTriggerPressed = false;
-        character._context.animator.CrossFade(IdleAnimationName, 0f);
+        character._context.animator.CrossFade(IdleAnimationHash, 0f);
     }
 
     public void UpdateState(StateMachine<HandgunState, HandgunContext> character)

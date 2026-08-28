@@ -2,7 +2,12 @@ using UnityEngine;
 
 public class ZombieChasing : State<ZombieStates, ZombieContext>
 {
+    private const float DestinationUpdateInterval = 0.15f;
+    private const float DestinationMoveThresholdSqr = 0.25f; // 0.5m squared
+
     private ZombieHand[] _zombieHands;
+    private float _destinationUpdateTimer;
+    private Vector3 _lastDestination = Vector3.positiveInfinity;
 
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
@@ -14,6 +19,9 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
 
     public void EnterState(StateMachine<ZombieStates, ZombieContext> character)
     {
+        _destinationUpdateTimer = 0f;
+        _lastDestination = Vector3.positiveInfinity;
+
         _zombieHands = character._context.hands != null ? character._context.hands : character.GetComponentsInChildren<ZombieHand>(true);
         for (int i = 0; i < _zombieHands.Length; i++)
         {
@@ -50,10 +58,11 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
 
         if (context.target != null)
         {
-            float distance = Vector3.Distance(character.transform.position, context.target.TargetPosition);
+            Vector3 targetPosition = context.target.TargetPosition;
+            float sqrDistance = (character.transform.position - targetPosition).sqrMagnitude;
             float biteRange = context.data != null ? context.data.biteRange : ZombieBehavior.DefaultBiteRange;
 
-            if (distance <= biteRange && !context.isBitting)
+            if (sqrDistance <= (biteRange * biteRange) && !context.isBitting)
             {
                 if (character is ZombieBehavior behavior && behavior.TryTriggerAttack())
                 {
@@ -61,9 +70,14 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
                 }
             }
 
-            if (context.agent != null && context.agent.isActiveAndEnabled && context.agent.isOnNavMesh)
+            _destinationUpdateTimer -= Time.deltaTime;
+            bool shouldUpdateDestination = _destinationUpdateTimer <= 0f || (targetPosition - _lastDestination).sqrMagnitude > DestinationMoveThresholdSqr;
+
+            if (shouldUpdateDestination && context.agent != null && context.agent.isActiveAndEnabled && context.agent.isOnNavMesh)
             {
-                context.agent.SetDestination(context.target.TargetPosition);
+                _destinationUpdateTimer = DestinationUpdateInterval;
+                _lastDestination = targetPosition;
+                context.agent.SetDestination(targetPosition);
             }
         }
     }

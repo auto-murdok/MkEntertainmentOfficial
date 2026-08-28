@@ -26,8 +26,13 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
     public Transform victimHook => _sockets != null ? _sockets.victimHook : (_victimHook != null ? _victimHook : transform);
     public float biteRange => _zombieData != null ? _zombieData.biteRange : DefaultBiteRange;
 
+    private const float VisionScanInterval = 0.15f;
+    private float _visionScanTimer;
+
     private void Awake()
     {
+        _visionScanTimer = UnityEngine.Random.Range(0f, VisionScanInterval);
+
         states[ZombieStates.Idle] = new ZombieIdle();
         states[ZombieStates.Chasing] = new ZombieChasing();
         states[ZombieStates.Bitting] = new ZombieBitting();
@@ -54,7 +59,6 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
 
         OnCommonUpdate += RelieveMovement;
         OnCommonUpdate += SearchForSurvivors;
-        OnStateChanged += state => Debug.Log($"[{gameObject.name}] -> {state}");
     }
 
     public void SetZombieData(ZombieData data)
@@ -102,6 +106,10 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
     // Scans for a survivor inside the vision cone and updates the shared target.
     private void SearchForSurvivors(ZombieStates currentState)
     {
+        _visionScanTimer -= Time.deltaTime;
+        if (_visionScanTimer > 0f) return;
+        _visionScanTimer = VisionScanInterval;
+
         float maxDist = _zombieData != null ? _zombieData.detectionMaxDistance : _detectionMaxDistance;
         int minAngle = _zombieData != null ? _zombieData.minDetectionAngle : DefaultMinDetectionAngle;
         int maxAngle = _zombieData != null ? _zombieData.maxDetectionAngle : DefaultMaxDetectionAngle;

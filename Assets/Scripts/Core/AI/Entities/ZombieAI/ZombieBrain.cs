@@ -26,6 +26,8 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
     public float biteDamage => _behavior != null && _behavior.zombieData != null ? _behavior.zombieData.biteDamage : DefaultBiteDamage;
     public float corpseDestroyDelay => _behavior != null && _behavior.zombieData != null ? _behavior.zombieData.corpseDestroyDelay : DefaultCorpseDestroyDelay;
 
+    [SerializeField] private bool _debug = false;
+
     private void Awake()
     {
         _behavior = GetComponent<ZombieBehavior>();
@@ -73,7 +75,10 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
     {
         _hitPoints = biteDamage > _hitPoints ? 0f : _hitPoints - biteDamage;
 
-        Debug.LogWarning($"[{gameObject.name}] Remaining health = {_hitPoints}");
+        if (_debug)
+        {
+            Debug.Log($"[{gameObject.name}] Remaining health = {_hitPoints}");
+        }
 
         if (_hitPoints <= 0f)
         {
@@ -83,7 +88,10 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
 
     private void OnEnableRagdoll()
     {
-        Debug.LogWarning($"[{gameObject.name}] RAGDOLL activated!");
+        if (_debug)
+        {
+            Debug.Log($"[{gameObject.name}] RAGDOLL activated!");
+        }
 
         if (InteractableManager.Instance != null)
         {

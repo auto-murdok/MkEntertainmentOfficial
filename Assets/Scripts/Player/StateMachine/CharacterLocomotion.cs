@@ -48,7 +48,6 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         _bodyAimRecoil = new RigRecoil(characterBodyAim);
         EquipWeapon(EquippedWeaponPrefabName);
         RegisterCommonUpdateEffects();
-        OnStateChanged += state => Debug.Log($"[{gameObject.name}] -> {state}");
     }
 
     private void PopulateStates()
@@ -86,7 +85,12 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     {
         OnCommonUpdate += RelieveAimEffect;
         OnCommonUpdate += RelieveMovementEffect;
-        OnCommonUpdate += (CharacterState currentStateEnum) => _bodyAimRecoil.RelieveRecoil();
+        OnCommonUpdate += RelieveRecoilEffect;
+    }
+
+    private void RelieveRecoilEffect(CharacterState currentStateEnum)
+    {
+        _bodyAimRecoil.RelieveRecoil();
     }
 
     private void RelieveAimEffect(CharacterState currentStateEnum)

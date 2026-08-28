@@ -3,6 +3,7 @@ using UnityEngine;
 public class BulletProjectile : MonoBehaviour
 {
     private const float MaxTravelDistance = 30f;
+    private const float MaxTravelDistanceSqr = MaxTravelDistance * MaxTravelDistance;
     private const float ProjectileSpeed = 50f;
     private const float DebugLineDuration = 10f;
 
@@ -24,7 +25,7 @@ public class BulletProjectile : MonoBehaviour
 
     void Update()
     {
-        if (Vector3.Distance(transform.position, _initialPosition) > MaxTravelDistance)
+        if ((transform.position - _initialPosition).sqrMagnitude > MaxTravelDistanceSqr)
         {
             Destroy(gameObject);
         }
@@ -36,11 +37,6 @@ public class BulletProjectile : MonoBehaviour
         if (damageable != null)
         {
             damageable.TakeDamage();
-            Debug.LogWarning("HIT DAMAGEABLE" + other.gameObject.name);
-        }
-        else
-        {
-            Debug.LogWarning("HIT NON DAMAGEABLE" + other.gameObject.name);
         }
 
         Destroy(gameObject);

@@ -7,7 +7,7 @@ public class StateMachine<TStateKey, TContext> : MonoBehaviour
     where TContext : Blackboard, new()
 {
     [SerializeField] private TStateKey currentStateEnum;
-    [SerializeField] private bool debugStateMachine;
+    [SerializeField] protected bool debugStateMachine;
 
     private State<TStateKey, TContext> _currentState; // Reference to the current state
     public Action<TStateKey> OnCommonUpdate;
@@ -44,6 +44,11 @@ public class StateMachine<TStateKey, TContext> : MonoBehaviour
             currentStateEnum = next;
             _currentState = states[next];
             _currentState.EnterState(this);
+
+            if (debugStateMachine)
+            {
+                Debug.Log($"[{gameObject.name}] -> {currentStateEnum}");
+            }
 
             OnStateChanged?.Invoke(currentStateEnum);
         }

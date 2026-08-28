@@ -5,7 +5,7 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
 {
     private const float AttackedAgentRadius = 0.1f;
     private const float DefaultAgentRadius = 0.3f;
-    private const float DefaultTakeBiteDuration = 1.5f;
+    private const float DefaultTakeBiteDuration = 3f;
 
     // TUNING: distance (metres) the victim is pulled from the victimHook socket toward
     // the zombie's body. The socket sits ~0.5m in front of the zombie; this closes that
@@ -38,6 +38,8 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
         _biteTimer = context.data != null && context.data.takeBiteDuration > 0f
             ? context.data.takeBiteDuration
             : DefaultTakeBiteDuration;
+
+        Debug.Log("BITE TIMEEEEER > " + _biteTimer);
     }
 
     public void ExitState(StateMachine<CharacterState, CharacterStateContext> stateMachine)

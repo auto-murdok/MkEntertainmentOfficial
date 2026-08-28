@@ -7,6 +7,13 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
     private const float DefaultAgentRadius = 0.3f;
     private const float DefaultTakeBiteDuration = 1.5f;
 
+    // TUNING: distance (metres) the victim is pulled from the victimHook socket toward
+    // the zombie's body. The socket sits ~0.5m in front of the zombie; this closes that
+    // gap so the victim reads as "in contact" during the bite (previously closed by the
+    // zombie's root-motion lunge, now suppressed by pinning). Raise for a tighter hug,
+    // lower for more space. ~0.35 leaves the victim ~0.15m off the body.
+    private const float PlayerBitePullInDistance = 0.35f;
+
     private float _biteTimer;
 
     public void CheckTransitions(StateMachine<CharacterState, CharacterStateContext> stateMachine)
@@ -56,7 +63,11 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
         // pushback animation/root motion execute naturally.
         if (stateMachine._context.attacker.isPreparing)
         {
-            stateMachine.transform.position = stateMachine._context.attacker.victimHook.position;
+            // Snap to the victimHook, then pull the victim toward the zombie body to remove the
+            // ~0.5m socket gap (see PlayerBitePullInDistance).
+            Vector3 lockedPos = stateMachine._context.attacker.victimHook.position;
+            lockedPos = Vector3.MoveTowards(lockedPos, stateMachine._context.attacker.position, PlayerBitePullInDistance);
+            stateMachine.transform.position = lockedPos;
             stateMachine.transform.rotation = stateMachine._context.attacker.victimHook.rotation;
         }
 

@@ -5,6 +5,9 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
     private const float DefaultBittingRadius = 0.1f;
     private const float DefaultRadius = 0.3f;
     private const float DefaultAttackCooldown = 1.2f;
+    // TUNING: fraction of the total bite (ZombieData.biteDuration) spent in the push-off /
+    // release phase. The remaining (1 - ReleaseFraction) is the grab (victim locked). Lower
+    // = longer grab / shorter push-off. Drives isPreparing with a single transition (no flicker).
     private const float ReleaseFraction = 0.35f; // last 35% of the bite is the push-off
 
     private enum BitePhase { Prepare, Release }
@@ -62,6 +65,8 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         _subState = null;
 
         context.isPreparing = false;
+        // TUNING: delay before the zombie may bite again after a push-off. See also
+        // ZombieData.biteRange (separation distance that clears recentlyBitten).
         context.attackCooldownTimer = DefaultAttackCooldown;
         context.interactable = null;
     }

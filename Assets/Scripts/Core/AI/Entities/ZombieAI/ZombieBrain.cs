@@ -14,7 +14,11 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
     public bool isPreparing => _behavior._context.isPreparing;
 
     // IDamageable
-    private float _hitPoints = 100f;
+    private const float MaxHitPoints = 100f;
+    private const float BiteDamage = 30f;
+    private const float CorpseDestroyDelay = 5f;
+
+    private float _hitPoints = MaxHitPoints;
     public float remainingHitPoints => _hitPoints;
 
     private void Awake()
@@ -49,12 +53,12 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
 
     public void TakeDamage()
     {
-        float damage = 30f;
-        _hitPoints = damage > _hitPoints ? 0f : _hitPoints - damage;
+        _hitPoints = BiteDamage > _hitPoints ? 0f : _hitPoints - BiteDamage;
 
         Debug.LogWarning($"Remaining health = {_hitPoints}");
 
-        if (_hitPoints == 0f) {
+        if (_hitPoints == 0f)
+        {
             RagdollUtils.EnableRagdoll(transform, OnEnableRagdoll);
         }
     }
@@ -69,7 +73,7 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
         Destroy(GetComponent<Animator>());
         Destroy(GetComponent<ZombieBehavior>());
         Destroy(GetComponentInChildren<ZombieHand>());
-        Destroy(gameObject, 5f);
+        Destroy(gameObject, CorpseDestroyDelay);
     }
 }
 

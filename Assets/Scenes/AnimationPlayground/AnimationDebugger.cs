@@ -4,20 +4,21 @@ using UnityEngine;
 
 public class AnimationDebugger : MonoBehaviour
 {
-    private Animator animator;
+    private Animator _animator;
 
     private void Awake()
     {
-        animator = GetComponent<Animator>();
+        _animator = GetComponent<Animator>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        float animationTime = animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
-        if (animationTime > 0)
+        // Log the current normalized playback position so animation timing can be inspected at runtime.
+        float normalizedTime = _animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
+        if (normalizedTime > 0)
         {
-            Debug.LogWarning($"{gameObject.name} Time: {animationTime}");
+            Debug.LogWarning($"{gameObject.name} Time: {normalizedTime}");
             Debug.LogWarning($"{gameObject.name} Position: {transform.position}");
         }
     }

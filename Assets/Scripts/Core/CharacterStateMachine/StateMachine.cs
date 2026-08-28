@@ -1,42 +1,42 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-public class StateMachine<EGenericEnum, EGenericStruct> : MonoBehaviour
-    where EGenericStruct : struct
+public class StateMachine<TStateKey, TContext> : MonoBehaviour
+    where TContext : struct
 {
-    [SerializeField] private EGenericEnum currentStateEnum;
-    private State<EGenericEnum, EGenericStruct> currentState; // Reference to the current state
-    public Action<EGenericEnum> OnCommonUpdate;
-    public Dictionary<EGenericEnum, State<EGenericEnum, EGenericStruct>> states = new Dictionary<EGenericEnum, State<EGenericEnum, EGenericStruct>>();
-    public EGenericStruct _context = new EGenericStruct();
+    [SerializeField] private TStateKey currentStateEnum;
+    private State<TStateKey, TContext> _currentState; // Reference to the current state
+    public Action<TStateKey> OnCommonUpdate;
+    public Dictionary<TStateKey, State<TStateKey, TContext>> states = new Dictionary<TStateKey, State<TStateKey, TContext>>();
+    public TContext _context = new TContext();
+
+    private const string StateTransitionLogPrefix = "ENTERING -> ";
 
     void Start()
     {
         Assert.IsTrue(states.Count > 0, "Please set at least one state.");
-        currentState = states[currentStateEnum];
-        currentState.EnterState(this);
+        _currentState = states[currentStateEnum];
+        _currentState.EnterState(this);
     }
 
     void Update()
     {
         // common update
         OnCommonUpdate?.Invoke(currentStateEnum);
-        currentState.UpdateState(this);
-        currentState.CheckTransitions(this);
+        _currentState.UpdateState(this);
+        _currentState.CheckTransitions(this);
     }
 
     // Function to change state
-    public void ChangeState(EGenericEnum newState)
+    public void ChangeState(TStateKey newState)
     {
         // state machine behaviour
-        currentState.ExitState(this);
+        _currentState.ExitState(this);
         currentStateEnum = newState;
-        currentState = states[newState];
-        currentState.EnterState(this);
-        Debug.LogWarning("ENTERING -> " + newState);
+        _currentState = states[newState];
+        _currentState.EnterState(this);
+        Debug.LogWarning(StateTransitionLogPrefix + newState);
     }
 }

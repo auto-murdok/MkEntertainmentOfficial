@@ -6,11 +6,13 @@ public class TestWeapon : ContextConection, IConnectionClient
 {
     [SerializeField] private Transform bulletPoint;
 
-    private void Start() {
+    private void Start()
+    {
         BaseStore.Instance.Connect(this);
     }
 
-    public void OnDispatch(IConnectionClient from) {
+    public void OnDispatch(IConnectionClient executioner)
+    {
         Debug.LogWarning("BANG!");
     }
 

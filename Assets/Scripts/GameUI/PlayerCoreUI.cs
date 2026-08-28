@@ -16,6 +16,7 @@ public class PlayerCoreUI : MonoBehaviour, IObserver<CharacterUIElement, Charact
         switch (element)
         {
             case CharacterUIElement.AimUI:
+                // The crosshair, aim camera and aim target are toggled together.
                 _aimUi.SetActive(context.displayCrossair);
                 _aimCamera.SetActive(context.displayCrossair);
                 _aimTarget.SetActive(context.displayCrossair);

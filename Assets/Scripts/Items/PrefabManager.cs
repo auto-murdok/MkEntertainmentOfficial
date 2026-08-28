@@ -22,14 +22,19 @@ public class PrefabManager : MonoBehaviour
 
     public Item GetItemPrefab(string id)
     {
-        if (items != null)
+        return items != null ? FindItemById(id) : null;
+    }
+
+    /// <summary>
+    /// Searches the registered items for one matching the given id.
+    /// </summary>
+    private Item FindItemById(string id)
+    {
+        for (int index = 0; index < items.Length; index++)
         {
-            for (int i = 0; i < items.Length; i++)
+            if (items[index] != null && items[index].id == id)
             {
-                if (items[i] != null && items[i].id == id)
-                {
-                    return items[i];
-                }
+                return items[index];
             }
         }
         return null;

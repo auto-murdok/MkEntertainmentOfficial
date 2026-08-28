@@ -2,42 +2,39 @@ using UnityEngine;
 
 public class CharacterIdleState : State<CharacterState, CharacterStateContext>
 {
-    public void CheckTransitions(StateMachine<CharacterState, CharacterStateContext> character)
+    public void CheckTransitions(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        CharacterStateContext context = character._context;
+        CharacterStateContext context = stateMachine._context;
 
-        if (character._context.isBeingAttacked)
+        if (context.isBeingAttacked)
         {
-            character.ChangeState(CharacterState.TakingBite);
+            stateMachine.ChangeState(CharacterState.TakingBite);
         }
 
-        if (character._context.isAiming || character._context.isReloading)
+        if (context.isAiming || context.isReloading)
         {
-            character.ChangeState(CharacterState.Aiming);
+            stateMachine.ChangeState(CharacterState.Aiming);
         }
 
         if (context.isAiming)
         {
-            character.ChangeState(CharacterState.Aiming);
+            stateMachine.ChangeState(CharacterState.Aiming);
         }
         else if (context.movementInput != Vector2.zero)
         {
-            character.ChangeState(CharacterState.Moving);
+            stateMachine.ChangeState(CharacterState.Moving);
         }
     }
 
-    public void EnterState(StateMachine<CharacterState, CharacterStateContext> character)
+    public void EnterState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-
     }
 
-    public void ExitState(StateMachine<CharacterState, CharacterStateContext> character)
+    public void ExitState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-
     }
 
-    public void UpdateState(StateMachine<CharacterState, CharacterStateContext> character)
+    public void UpdateState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-
     }
 }

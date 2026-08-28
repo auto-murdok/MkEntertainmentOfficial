@@ -13,6 +13,9 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
     [SerializeField] private float _detectionMaxDistance = 5f;
     public Transform victimHook => _victimHook;
 
+    private const int MinDetectionAngle = 100;
+    private const int MaxDetectionAngle = 180;
+
     private void Awake()
     {
         states[ZombieStates.Idle] = new ZombieIdle();
@@ -32,6 +35,7 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
         OnCommonUpdate += SearchForSurvivors;
     }
 
+    // Scans for a survivor inside the vision cone and updates the shared target.
     private void SearchForSurvivors(ZombieStates currentState)
     {
         ISurvivor survivor = AIDetectionUtils.DetectViaLineOfSight<ISurvivor>(
@@ -39,12 +43,13 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
             _detectionMaxDistance,
             _detectionLayerMask,
             _ignoreLayerMask,
-            100,
-            180
+            MinDetectionAngle,
+            MaxDetectionAngle
         );
         SetTarget(survivor);
     }
 
+    // While not chasing, ease the animator's root motion back to zero.
     private void RelieveMovement(ZombieStates currentState)
     {
         if (currentState != ZombieStates.Chasing)

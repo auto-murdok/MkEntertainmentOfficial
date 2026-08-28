@@ -4,6 +4,11 @@ using UnityEngine.AI;
 
 public class AITransformUtils
 {
+    private const float FacingDotThreshold = 0.5f;
+    private const float MaxRotationDegreesPerSecond = 180f;
+
+    // Computes the local-space horizontal/vertical movement to feed the animator
+    // so the zombie turns toward and walks along its steering target.
     public static Vector2 GetAIMovementThreshold(Transform transform, NavMeshAgent agent, Animator animator)
     {
         Vector2 movementThreshold = Vector2.zero;
@@ -11,15 +16,15 @@ public class AITransformUtils
         if (agent.hasPath)
         {
             Vector3 globalDirection = (agent.steeringTarget - transform.position).normalized;
-            Vector3 localPosition = transform.InverseTransformDirection(globalDirection);
-            bool isFacingMoveDirection = Vector3.Dot(globalDirection, transform.forward) > 0.5f;
+            Vector3 localDirection = transform.InverseTransformDirection(globalDirection);
+            bool isFacingMoveDirection = Vector3.Dot(globalDirection, transform.forward) > FacingDotThreshold;
 
-            Quaternion globalRotation = Quaternion.LookRotation(globalDirection);
-            float maxDegreesDelta = 180 * Time.deltaTime;
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, globalRotation, maxDegreesDelta);
+            Quaternion targetRotation = Quaternion.LookRotation(globalDirection);
+            float maxDegreesDelta = MaxRotationDegreesPerSecond * Time.deltaTime;
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, maxDegreesDelta);
 
-            float horizontalValue = isFacingMoveDirection ? localPosition.x : 0f;
-            float verticalValue = isFacingMoveDirection ? localPosition.z : 0f;
+            float horizontalValue = isFacingMoveDirection ? localDirection.x : 0f;
+            float verticalValue = isFacingMoveDirection ? localDirection.z : 0f;
 
             movementThreshold.x = horizontalValue;
             movementThreshold.y = verticalValue;
@@ -33,7 +38,8 @@ public class AITransformUtils
         return movementThreshold;
     }
 
-    public static bool HasReachedTarget(Transform transform, NavMeshAgent agent) {
+    public static bool HasReachedTarget(Transform transform, NavMeshAgent agent)
+    {
         return Vector3.Distance(transform.position, agent.destination) < agent.radius;
     }
 }

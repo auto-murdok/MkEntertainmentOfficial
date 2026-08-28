@@ -6,9 +6,9 @@ public class RagdollUtils
     public static void EnableRagdoll(Transform root, Action onEnableRagdoll)
     {
         Rigidbody[] rigidbodies = root.GetComponentsInChildren<Rigidbody>();
-        foreach (Rigidbody rigidbody in rigidbodies)
+        foreach (Rigidbody rigidBody in rigidbodies)
         {
-            rigidbody.isKinematic = false;
+            rigidBody.isKinematic = false;
         }
 
         onEnableRagdoll?.Invoke();
@@ -17,9 +17,9 @@ public class RagdollUtils
     public static void DisableRagdoll(Transform root)
     {
         Rigidbody[] rigidbodies = root.GetComponentsInChildren<Rigidbody>();
-        foreach (Rigidbody rigidbody in rigidbodies)
+        foreach (Rigidbody rigidBody in rigidbodies)
         {
-            rigidbody.isKinematic = true;
+            rigidBody.isKinematic = true;
         }
     }
 }

@@ -6,7 +6,8 @@ public class ObjectsStore : BaseStore
 {
     [SerializeField] private int _currentConnections;
 
-    private void Update() {
+    private void Update()
+    {
         _currentConnections = GetConnections().Count;
     }
 }

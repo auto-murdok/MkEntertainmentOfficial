@@ -27,14 +27,10 @@ public class AICharacterController : MonoBehaviour, IObserver<AICharacterActions
         // AITransformUtils.HandleAIMovement(transform, _agent, _animator);
     }
 
-    // fuctionality
+    // Move the agent toward the requested world-space destination.
     private void MoveToDestination(Vector3 destination)
     {
-        // Vector3 newDestination = destination;
-        // newDestination.y = 0;
         _agent.SetDestination(destination);
-        // test
-
     }
 
     // observer logic

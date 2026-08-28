@@ -2,9 +2,9 @@ using UnityEngine;
 
 public class LayerUtils
 {
-    public static void SetLayer(Transform root, string layerName)
+    public static void SetLayer(Transform rootTransform, string layerName)
     {
-        Transform[] children = root.GetComponentsInChildren<Transform>(true);
+        Transform[] children = rootTransform.GetComponentsInChildren<Transform>(true);
         foreach (Transform child in children)
         {
             child.gameObject.layer = LayerMask.NameToLayer(layerName);

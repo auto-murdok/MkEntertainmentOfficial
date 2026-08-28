@@ -9,16 +9,8 @@ public class Ammo : Item
 
     public int GetNextClip(int clipSize)
     {
-        int clip;
-        if (clipSize < _quantity)
-        {
-            clip = clipSize;
-        }
-        else
-        {
-            clip = _quantity;
-        }
-        _quantity -= clip;
-        return clip;
+        int clipAmount = Mathf.Min(clipSize, _quantity);
+        _quantity -= clipAmount;
+        return clipAmount;
     }
 }

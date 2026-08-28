@@ -23,6 +23,7 @@ public class ConnectedSphere : ContextConection, IConnectionClient
 
     private void Update()
     {
+        // Left mouse button triggers a dispatch to the primary weapon.
         if (Input.GetMouseButtonDown(0))
         {
             Dispatch(ConnectedClientId.PrimaryWeapon);

@@ -1,32 +1,30 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class BulletProjectile : MonoBehaviour
 {
-    private Rigidbody bulletRigidbody;
+    private const float MaxTravelDistance = 30f;
+    private const float ProjectileSpeed = 50f;
+    private const float DebugLineDuration = 10f;
+
+    private Rigidbody _bulletRigidbody;
     private Vector3 _initialPosition;
-    private float _maxDistance = 30f;
 
     void Awake()
     {
-        bulletRigidbody = GetComponent<Rigidbody>();
+        _bulletRigidbody = GetComponent<Rigidbody>();
     }
 
     void Start()
     {
-        float speed = 50f;
-        bulletRigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-        bulletRigidbody.velocity = transform.forward * speed;
+        _bulletRigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        _bulletRigidbody.velocity = transform.forward * ProjectileSpeed;
         _initialPosition = transform.position;
-        //Debug.Break();
-        Debug.DrawLine(transform.position, transform.forward, Color.yellow, 10f);
+        Debug.DrawLine(transform.position, transform.forward, Color.yellow, DebugLineDuration);
     }
 
     void Update()
     {
-        if (Vector3.Distance(transform.position, _initialPosition) > _maxDistance)
+        if (Vector3.Distance(transform.position, _initialPosition) > MaxTravelDistance)
         {
             Destroy(gameObject);
         }
@@ -35,13 +33,16 @@ public class BulletProjectile : MonoBehaviour
     private void OnCollisionEnter(Collision other)
     {
         IDamageable damageable = other.gameObject.GetComponentInParent<IDamageable>();
-        if (damageable != null) {
+        if (damageable != null)
+        {
             damageable.TakeDamage();
             Debug.LogWarning("HIT DAMAGEABLE" + other.gameObject.name);
-        } else {
+        }
+        else
+        {
             Debug.LogWarning("HIT NON DAMAGEABLE" + other.gameObject.name);
         }
-        
+
         Destroy(gameObject);
     }
 }

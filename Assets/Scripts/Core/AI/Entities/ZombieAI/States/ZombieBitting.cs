@@ -2,8 +2,13 @@ using UnityEngine;
 
 public class ZombieBitting : State<ZombieStates, ZombieContext>
 {
-    private Vector3 initialPosition;
-    private Quaternion initialRotation;
+    private const string VerticalParameter = "Vertical";
+    private const float VerticalMovementPrepareThreshold = 0.15f;
+    private const float BittingAgentRadius = 0.1f;
+    private const float DefaultAgentRadius = 0.3f;
+
+    private Vector3 _initialPosition;
+    private Quaternion _initialRotation;
 
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
@@ -15,28 +20,28 @@ public class ZombieBitting : State<ZombieStates, ZombieContext>
 
     public void EnterState(StateMachine<ZombieStates, ZombieContext> character)
     {
-        initialPosition = character.transform.position;
-        initialRotation = character.transform.rotation;
+        _initialPosition = character.transform.position;
+        _initialRotation = character.transform.rotation;
         ZombieContext context = character._context;
-        context.agent.radius = 0.1f;
+        context.agent.radius = BittingAgentRadius;
         character._context.isPreparing = true;
     }
 
     public void ExitState(StateMachine<ZombieStates, ZombieContext> character)
     {
         ZombieContext context = character._context;
-        context.agent.radius = 0.3f;
+        context.agent.radius = DefaultAgentRadius;
         character.gameObject.SetActive(true);
         context.interactable = null;
     }
 
     public void UpdateState(StateMachine<ZombieStates, ZombieContext> character)
     {
-        float zombieVerticalMovement = character._context.animator.GetFloat("Vertical");
-        if (zombieVerticalMovement > 0.15f)
+        float verticalMovement = character._context.animator.GetFloat(VerticalParameter);
+        if (verticalMovement > VerticalMovementPrepareThreshold)
         {
-            character.transform.position = initialPosition;
-            character.transform.rotation = initialRotation;
+            character.transform.position = _initialPosition;
+            character.transform.rotation = _initialRotation;
             Debug.LogWarning($"{character.gameObject.name} is preparing...");
         }
         else if (character._context.isPreparing)

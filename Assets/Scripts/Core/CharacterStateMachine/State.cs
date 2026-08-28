@@ -1,8 +1,7 @@
-
-public interface State<EGenericEnum, EGenericStruct> where EGenericStruct : struct
+public interface State<TStateKey, TContext> where TContext : struct
 {
-    void EnterState(StateMachine<EGenericEnum, EGenericStruct> character);
-    void UpdateState(StateMachine<EGenericEnum, EGenericStruct> character);
-    void ExitState(StateMachine<EGenericEnum, EGenericStruct> character);
-    void CheckTransitions(StateMachine<EGenericEnum, EGenericStruct> character);
+    void EnterState(StateMachine<TStateKey, TContext> character);
+    void UpdateState(StateMachine<TStateKey, TContext> character);
+    void ExitState(StateMachine<TStateKey, TContext> character);
+    void CheckTransitions(StateMachine<TStateKey, TContext> character);
 }

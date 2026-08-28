@@ -1,14 +1,16 @@
-
-
 using UnityEngine;
 
 public class CharacterTransformUtils
 {
+    private const float MaxRotationDegreesPerSecond = 270f;
+    private const float RunInputMultiplier = 2f;
+    private const float MovementSmoothSpeed = 0.25f;
+
     public static void HandleCharacterRotation(Transform characterTransform, CharacterStateContext context)
     {
-        Transform mainCamera = context.mainCameraTarget;
-        float maxDegreesDelta = 270 * Time.deltaTime;
-        characterTransform.rotation = Quaternion.RotateTowards(characterTransform.rotation, mainCamera.rotation, maxDegreesDelta);
+        Transform mainCameraTarget = context.mainCameraTarget;
+        float maxDegreesDelta = MaxRotationDegreesPerSecond * Time.deltaTime;
+        characterTransform.rotation = Quaternion.RotateTowards(characterTransform.rotation, mainCameraTarget.rotation, maxDegreesDelta);
     }
 
     public static void HandleCharacterMovement(CharacterStateContext context)
@@ -18,11 +20,10 @@ public class CharacterTransformUtils
 
         if (movementInput != Vector2.zero)
         {
-            // duplicate value if running and not aiming
-            movementInput = shouldRun ? movementInput * 2 : movementInput;
+            // Running (while not aiming) doubles the movement input fed to the animator.
+            movementInput = shouldRun ? movementInput * RunInputMultiplier : movementInput;
 
-            // setting animator values
-            AnimatorUtils.SetMovementRootMotion(context.animator, movementInput, 0.25f);
+            AnimatorUtils.SetMovementRootMotion(context.animator, movementInput, MovementSmoothSpeed);
         }
     }
 }

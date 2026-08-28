@@ -2,30 +2,32 @@ using UnityEngine;
 
 public class ZombiePrepareForSyncedAttack : State<ZombieStates, ZombieContext>
 {
-    float startTime;
+    private const string VerticalParameter = "Vertical";
+    private const float VerticalMovementStopThreshold = 0.01f;
+
+    private float _startTime;
 
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
-        float zombieVerticalMovement = character._context.animator.GetFloat("Vertical");
-        if (zombieVerticalMovement < 0.01f)
+        float verticalMovement = character._context.animator.GetFloat(VerticalParameter);
+        if (verticalMovement < VerticalMovementStopThreshold)
         {
-            Debug.LogWarning($"Vertical movement: {zombieVerticalMovement}");
+            Debug.LogWarning($"Vertical movement: {verticalMovement}");
             character.ChangeState(ZombieStates.Bitting);
         }
     }
 
     public void EnterState(StateMachine<ZombieStates, ZombieContext> character)
     {
-        startTime = Time.time;
+        _startTime = Time.time;
     }
 
     public void ExitState(StateMachine<ZombieStates, ZombieContext> character)
     {
-        Debug.LogWarning($"Transition time: {startTime - Time.time}");
+        Debug.LogWarning($"Transition time: {_startTime - Time.time}");
     }
 
     public void UpdateState(StateMachine<ZombieStates, ZombieContext> character)
     {
-
     }
 }

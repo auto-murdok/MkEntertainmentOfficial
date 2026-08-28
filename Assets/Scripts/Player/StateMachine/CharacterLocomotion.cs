@@ -5,6 +5,11 @@ using UnityEngine.InputSystem;
 
 public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateContext>
 {
+    private const string EquippedWeaponPrefabName = "FakeGun";
+    private const string KeyboardAndMouseScheme = "Keyboard&Mouse";
+    private const string ReloadingAnimatorParameter = "isReloading";
+    private const int AimAnimatorLayerIndex = 1;
+
     [Header("Inverse Kinematics")]
     [SerializeField] private Rig _characterRig;
     [SerializeField] private MultiAimConstraint characterBodyAim;
@@ -31,36 +36,54 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     [Header("Combat hooks")]
     [SerializeField] private Transform _aimTarget;
 
-    // Intermediate variables needed
     private CinemachineContext _cinemachineProps;
 
     private void Awake()
     {
         Cursor.lockState = CursorLockMode.Locked;
 
-        // populate states
+        PopulateStates();
+        InitializeCinemachineContext();
+        InitializeAnimatorAndAgent();
+        InitializeCameraUtils();
+        _bodyAimRecoil = new RigRecoil(characterBodyAim);
+        EquipWeapon(EquippedWeaponPrefabName);
+        RegisterCommonUpdateEffects();
+    }
+
+    private void PopulateStates()
+    {
         states[CharacterState.Idle] = new CharacterIdleState();
         states[CharacterState.Moving] = new CharacterWalkingState();
         states[CharacterState.Aiming] = new CharacterAimState();
         states[CharacterState.TakingBite] = new CharacterTakeBiteState();
+    }
 
-        _cinemachineProps = new CinemachineContext {
+    private void InitializeCinemachineContext()
+    {
+        _cinemachineProps = new CinemachineContext
+        {
             targetYaw = _cinemachineTarget.transform.rotation.y,
             topClamp = _topClamp,
             bottomClamp = _bottomClamp,
         };
+    }
 
+    private void InitializeAnimatorAndAgent()
+    {
         _context.animator = GetComponent<Animator>();
         _context.agent = GetComponent<NavMeshAgent>();
         _context.rig = _characterRig;
         _context.mainCameraTarget = _cinemachineTarget;
+    }
+
+    private void InitializeCameraUtils()
+    {
         _cameraUtils = new CameraUtils();
+    }
 
-        // Equip weapon / set up Recoiler
-        _bodyAimRecoil = new RigRecoil(characterBodyAim);
-        EquipWeapon("FakeGun");
-
-        // set up common update effects
+    private void RegisterCommonUpdateEffects()
+    {
         OnCommonUpdate += RelieveAimEffect;
         OnCommonUpdate += RelieveMovementEffect;
         OnCommonUpdate += (CharacterState currentStateEnum) => _bodyAimRecoil.RelieveRecoil();
@@ -70,7 +93,7 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     {
         if (currentStateEnum != CharacterState.Aiming)
         {
-            AnimatorUtils.SetLayerWeight(_context.animator, 1, 0f, 10f);
+            AnimatorUtils.SetLayerWeight(_context.animator, AimAnimatorLayerIndex, 0f, 10f);
             RigUtils.HandleDecreaseRigWeight(_context.rig);
         }
     }
@@ -111,7 +134,7 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     public void setLookInput(Vector2 lookInput, string currentControlScheme)
     {
-        _context.isCurrentDeviceMouse = currentControlScheme == "Keyboard&Mouse";
+        _context.isCurrentDeviceMouse = currentControlScheme == KeyboardAndMouseScheme;
         _cinemachineProps.lookSensivity = _context.isCurrentDeviceMouse ? _mouseLookSensitivity : _gamepadLookSensitivity;
         _context.lookInput = lookInput;
     }
@@ -142,7 +165,6 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         _context.isBeingAttacked = false;
     }
 
-    // Weapon effects
     private void onWeaponShoot()
     {
         _bodyAimRecoil.ApplyRecoil(_equippedWeapon.recoilForce);
@@ -150,13 +172,13 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     private void onWeaponReloadStarted()
     {
-        _context.animator.SetBool("isReloading", true);
+        _context.animator.SetBool(ReloadingAnimatorParameter, true);
         _context.isReloading = true;
     }
 
     private void onWeaponReloadFinished()
     {
-        _context.animator.SetBool("isReloading", false);
+        _context.animator.SetBool(ReloadingAnimatorParameter, false);
         _context.isReloading = false;
     }
 }

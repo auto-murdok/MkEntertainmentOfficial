@@ -2,36 +2,40 @@ using UnityEngine;
 
 public class CharacterAimState : State<CharacterState, CharacterStateContext>
 {
-    public void CheckTransitions(StateMachine<CharacterState, CharacterStateContext> character)
+    private const int AimAnimatorLayerIndex = 1;
+    private const float AimLayerWeightTarget = 1f;
+    private const float AimLayerWeightSpeed = 20f;
+
+    public void CheckTransitions(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        if (character._context.isBeingAttacked)
+        if (stateMachine._context.isBeingAttacked)
         {
-            character.ChangeState(CharacterState.TakingBite);
+            stateMachine.ChangeState(CharacterState.TakingBite);
         }
-        else if (!character._context.isAiming && !character._context.isReloading)
+        else if (!stateMachine._context.isAiming && !stateMachine._context.isReloading)
         {
-            character.ChangeState(CharacterState.Idle);
+            stateMachine.ChangeState(CharacterState.Idle);
         }
     }
 
-    public void EnterState(StateMachine<CharacterState, CharacterStateContext> character)
+    public void EnterState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
         CharacterUIContext characterUIContext = new CharacterUIContext()
         {
-            displayCrossair = character._context.isAiming
+            displayCrossair = stateMachine._context.isAiming
         };
         // character._context.UIController.NotifyObservers(CharacterUIElement.AimUI, characterUIContext);
     }
 
-    public void ExitState(StateMachine<CharacterState, CharacterStateContext> character)
+    public void ExitState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
         // do nothing
     }
 
-    public void UpdateState(StateMachine<CharacterState, CharacterStateContext> character)
+    public void UpdateState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        CharacterTransformUtils.HandleCharacterRotation(character.transform, character._context);
-        AnimatorUtils.SetLayerWeight(character._context.animator, 1, 1f, 20f);
-        RigUtils.HandleIncreaseRigWeight(character._context.rig);
+        CharacterTransformUtils.HandleCharacterRotation(stateMachine.transform, stateMachine._context);
+        AnimatorUtils.SetLayerWeight(stateMachine._context.animator, AimAnimatorLayerIndex, AimLayerWeightTarget, AimLayerWeightSpeed);
+        RigUtils.HandleIncreaseRigWeight(stateMachine._context.rig);
     }
 }

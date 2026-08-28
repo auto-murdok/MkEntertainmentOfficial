@@ -5,7 +5,10 @@ using UnityEngine;
 
 public class HandgunReloadingState : State<HandgunState, HandgunContext>
 {
-    private float _reloadingTime = 2f;
+    // Time spent in the reloading state before returning to ready.
+    private const float ReloadDuration = 2f;
+
+    private float _reloadingTime = ReloadDuration;
 
     public void CheckTransitions(StateMachine<HandgunState, HandgunContext> character)
     {
@@ -14,7 +17,6 @@ public class HandgunReloadingState : State<HandgunState, HandgunContext>
 
     public void EnterState(StateMachine<HandgunState, HandgunContext> character)
     {
-        // do nothing
         character._context.isTriggerPressed = false;
         character._context.isReloading = true;
         Handgun handgun = (Handgun)character;
@@ -23,17 +25,13 @@ public class HandgunReloadingState : State<HandgunState, HandgunContext>
 
     public void ExitState(StateMachine<HandgunState, HandgunContext> character)
     {
-        // do nothing
         character._context.clipSize = character._context.maxClipSize;
         character._context.isReloading = false;
-        _reloadingTime = 2f;
+        _reloadingTime = ReloadDuration;
 
-        CharacterUIContext characterUIContext = new CharacterUIContext()
-        {
-            clipSize = character._context.clipSize,
-            maxClipSize = character._context.maxClipSize,
-        };
-        character._context.UIController.NotifyObservers(CharacterUIElement.ShootUI, characterUIContext);
+        character._context.UIController.NotifyObservers(
+            CharacterUIElement.ShootUI,
+            CreateShootUIContext(character._context));
 
         Handgun handgun = (Handgun)character;
         handgun.fireArmEvents.onReloadFinished?.Invoke();
@@ -47,5 +45,17 @@ public class HandgunReloadingState : State<HandgunState, HandgunContext>
         {
             character.ChangeState(HandgunState.Ready);
         }
+    }
+
+    /// <summary>
+    /// Builds the UI context reflecting the current clip state.
+    /// </summary>
+    private static CharacterUIContext CreateShootUIContext(HandgunContext context)
+    {
+        return new CharacterUIContext()
+        {
+            clipSize = context.clipSize,
+            maxClipSize = context.maxClipSize,
+        };
     }
 }

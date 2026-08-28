@@ -21,7 +21,7 @@ public class ZombieBitBehaviour : StateMachineBehaviour
     {
         IZombie zombieBehavior = animator.GetComponent<IZombie>();
         zombieBehavior.StopBitting();
-       Debug.Log("BITE ENDED");
+        Debug.Log("BITE ENDED");
     }
 
     // OnStateMove is called right after Animator.OnAnimatorMove()

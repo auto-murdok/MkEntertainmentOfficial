@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class ZombieChasing : State<ZombieStates, ZombieContext>
 {
-    private ZombieHand[] zombieHands;
+    private ZombieHand[] _zombieHands;
 
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
@@ -14,8 +14,8 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
 
     public void EnterState(StateMachine<ZombieStates, ZombieContext> character)
     {
-        zombieHands = character.GetComponentsInChildren<ZombieHand>(true);
-        foreach (ZombieHand hand in zombieHands)
+        _zombieHands = character.GetComponentsInChildren<ZombieHand>(true);
+        foreach (ZombieHand hand in _zombieHands)
         {
             hand.Enable();
         }
@@ -23,7 +23,7 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
 
     public void ExitState(StateMachine<ZombieStates, ZombieContext> character)
     {
-        foreach (ZombieHand hand in zombieHands)
+        foreach (ZombieHand hand in _zombieHands)
         {
             hand.Disable();
         }

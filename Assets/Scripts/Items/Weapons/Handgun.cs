@@ -10,6 +10,9 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFireArm
     [SerializeField] private Transform _shootPoint;
     private FireArmEvents _fireArmEvents; public FireArmEvents fireArmEvents { get { return _fireArmEvents; } }
 
+    // Amount of positional kick applied to the weapon when firing.
+    private const int GunKickAmount = 5;
+
     private void Awake()
     {
         states[HandgunState.Ready] = new HandgunReadyState();
@@ -17,7 +20,7 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFireArm
         states[HandgunState.Reloading] = new HandgunReloadingState();
 
         _context.animator = gameObject.GetComponent<Animator>();
-        _context.gunKick = 5;
+        _context.gunKick = GunKickAmount;
         // test only
         _context.UIController = GetComponentInParent<CharacterUIController>();
     }

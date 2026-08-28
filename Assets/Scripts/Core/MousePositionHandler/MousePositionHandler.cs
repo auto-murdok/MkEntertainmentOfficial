@@ -1,19 +1,23 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class MousePositionHandler : Subject<AICharacterActions, Vector3>
 {
-    private void OnValidate() {
+    private const int LeftMouseButton = 0;
+    private const float RaycastMaxDistance = 20f;
+
+    private void OnValidate()
+    {
         Debug.Log("Changes made, Validating...");
     }
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0)) {
+        if (Input.GetMouseButtonDown(LeftMouseButton))
+        {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            bool isHit = Physics.Raycast(ray, out RaycastHit hit, 20);
-            if (isHit) {
+            bool isHit = Physics.Raycast(ray, out RaycastHit hit, RaycastMaxDistance);
+            if (isHit)
+            {
                 NotifyObservers(AICharacterActions.MoveToDestination, hit.point);
             }
         }

@@ -7,7 +7,5 @@ public enum InputHandlerActions
     Shoot,
     Reload,
     ToogleRun,
-
-    // test
     ManualEnableRagdoll
 }

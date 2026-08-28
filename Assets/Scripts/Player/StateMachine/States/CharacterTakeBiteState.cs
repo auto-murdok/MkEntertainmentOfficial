@@ -3,44 +3,37 @@ using UnityEngine;
 
 public class CharacterTakeBiteState : State<CharacterState, CharacterStateContext>
 {
-    public void CheckTransitions(StateMachine<CharacterState, CharacterStateContext> character)
+    private const float AttackedAgentRadius = 0.1f;
+    private const float DefaultAgentRadius = 0.3f;
+
+    public void CheckTransitions(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        if (!character._context.isBeingAttacked)
+        if (!stateMachine._context.isBeingAttacked)
         {
-            character.ChangeState(CharacterState.Idle);
+            stateMachine.ChangeState(CharacterState.Idle);
         }
     }
 
-    public void EnterState(StateMachine<CharacterState, CharacterStateContext> character)
+    public void EnterState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        CharacterStateContext context = character._context;
-        context.agent.radius = 0.1f;
+        CharacterStateContext context = stateMachine._context;
+        context.agent.radius = AttackedAgentRadius;
     }
 
-    public void ExitState(StateMachine<CharacterState, CharacterStateContext> character)
+    public void ExitState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        CharacterStateContext context = character._context;
-        context.agent.radius = 0.3f;
+        CharacterStateContext context = stateMachine._context;
+        context.agent.radius = DefaultAgentRadius;
     }
 
-    public void UpdateState(StateMachine<CharacterState, CharacterStateContext> character)
+    public void UpdateState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        // float horizontalInput = Math.Abs(character._context.animator.GetFloat("Horizontal"));
-        // float verticalInput = Math.Abs(character._context.animator.GetFloat("Vertical"));
-        // if (verticalInput > 0.15f || horizontalInput > 0.15f)
-        // {
-        //     character.transform.rotation = character._context.attacker.victimHook.rotation;
-        //     character.transform.position = character._context.attacker.victimHook.position;
-
-        //     Debug.LogWarning($"{character.gameObject.name} is preparing...");
-        // }
-
-        if (character._context.attacker.isPreparing)
+        if (stateMachine._context.attacker.isPreparing)
         {
-            character.transform.rotation = character._context.attacker.victimHook.rotation;
-            character.transform.position = character._context.attacker.victimHook.position;
+            stateMachine.transform.rotation = stateMachine._context.attacker.victimHook.rotation;
+            stateMachine.transform.position = stateMachine._context.attacker.victimHook.position;
 
-            Debug.LogWarning($"{character.gameObject.name} is preparing...");
+            Debug.LogWarning($"{stateMachine.gameObject.name} is preparing...");
         }
     }
 }

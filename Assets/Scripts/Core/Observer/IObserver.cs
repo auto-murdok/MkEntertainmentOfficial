@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public interface IObserver<EGenericEnum, EGenericValue>
+public interface IObserver<TAction, TValue>
 {
-    public void OnNotify(EGenericEnum eGenericEnum, EGenericValue eGenericValue);
+    public void OnNotify(TAction action, TValue value);
 }

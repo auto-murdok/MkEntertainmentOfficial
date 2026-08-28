@@ -6,11 +6,15 @@ using UnityEngine.InputSystem;
 
 public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver<InputHandlerActions, InputValue>
 {
+    private const string LocalPlayerLayerName = "LocalPlayer";
+    private const string TakeBiteTriggerName = "TakeBite";
+
     [Header("Connection Settings")]
     [SerializeField] private Subject<InputHandlerActions, InputValue> _subject;
 
     private CharacterLocomotion _locomotion;
     private PlayerInput _playerInput;
+
     Vector3 ISurvivor.TargetPosition => transform.position;
     public int id => 1;
     public Vector3 position => transform.position;
@@ -20,33 +24,22 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
 
     private void OnValidate()
     {
-        // Collider[] playerColliders = GetComponentsInChildren<Collider>();
-        // foreach (Collider collider in playerColliders)
-        // {
-        //     if (collider.GetType() == typeof(CapsuleCollider)) {
-        //         Debug.Log(collider.name + " " + typeof(CapsuleCollider));
-        //         //((CapsuleCollider)collider).radius = ((CapsuleCollider)collider).radius / 2;
-        //     } else if (collider.GetType() == typeof(BoxCollider)) {
-        //         Debug.Log(collider.name + " " + typeof(BoxCollider));
-        //     }
-        // }
+        // Reserved for inspecting child colliders (capsule/box) during editor validation.
     }
 
     private void Awake()
     {
         _locomotion = GetComponent<CharacterLocomotion>();
-        // _combat = GetComponent<CharacterCombat>();
         _playerInput = _subject.GetComponent<PlayerInput>();
 
         Assert.IsNotNull(_locomotion, "PLease attach a component of type CharacterLocomotion");
-        // Assert.IsNotNull(_combat, "PLease attach a component of type CharacterCombat");
         Assert.IsNotNull(_playerInput, "Ensure a subject is properly hooked up");
     }
 
     public void Start()
     {
         InteractableManager.Instance.AddInteractable(this);
-        LayerUtils.SetLayer(transform, "LocalPlayer");
+        LayerUtils.SetLayer(transform, LocalPlayerLayerName);
         RagdollUtils.DisableRagdoll(transform);
     }
 
@@ -65,15 +58,12 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
                 break;
             case InputHandlerActions.Aim:
                 _locomotion.setIsAiming(inputValue.isPressed);
-                // _combat.setIsAiming(inputValue.isPressed);
                 break;
             case InputHandlerActions.Shoot:
                 _locomotion.HandleShoot();
-                // _combat.HandleShoot();
                 break;
             case InputHandlerActions.Reload:
                 _locomotion.HandleShoot();
-                // _combat.HandleReload();
                 break;
             case InputHandlerActions.ManualEnableRagdoll:
                 RagdollUtils.EnableRagdoll(transform, OnEnableRagdoll);
@@ -91,14 +81,13 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
         Destroy(GetComponent<Animator>());
         Destroy(GetComponent<CharacterUIController>());
         Destroy(_locomotion);
-        // Destroy(_combat);
-        // Destroy(GetComponent<CharacterBrain>());
     }
 
     private void OnEnable()
     {
         _subject.AddObserver(this);
     }
+
     private void OnDisable()
     {
         _subject.RemoveObserver(this);
@@ -106,7 +95,6 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
 
     public void RecoverControl()
     {
-        //_locomotion.enabled = true;
         _locomotion.HandleRecoverControl();
     }
 
@@ -116,7 +104,7 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
 
         transform.position = attacker.victimHook.position;
         transform.rotation = attacker.victimHook.rotation;
-        _locomotion._context.animator.SetTrigger("TakeBite");
+        _locomotion._context.animator.SetTrigger(TakeBiteTriggerName);
 
         float distance = Vector3.Distance(transform.position, attacker.position);
         Debug.LogWarning($"{name} distance to target is {distance}");

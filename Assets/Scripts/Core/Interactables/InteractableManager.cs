@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,8 +19,7 @@ public class InteractableManager : MonoBehaviour
 
     public void Interact(IInteractable first, IInteractable second)
     {
-        first.OnExternalInteraction(second);
-        second.OnExternalInteraction(first);
+        NotifyExternalInteraction(first, second);
     }
 
     public void Interact(int firstId, int secondId)
@@ -30,8 +28,14 @@ public class InteractableManager : MonoBehaviour
         IInteractable second = _interactables[secondId];
         if (first != null && second != null)
         {
-            first.OnExternalInteraction(second);
-            second.OnExternalInteraction(first);
+            NotifyExternalInteraction(first, second);
         }
+    }
+
+    // Both sides of the interaction are notified so each can react to the other.
+    private void NotifyExternalInteraction(IInteractable first, IInteractable second)
+    {
+        first.OnExternalInteraction(second);
+        second.OnExternalInteraction(first);
     }
 }

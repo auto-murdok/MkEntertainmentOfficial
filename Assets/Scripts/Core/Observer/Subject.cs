@@ -1,27 +1,28 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Subject<EGenericEnum, EGenericValue> : MonoBehaviour
+public class Subject<TAction, TValue> : MonoBehaviour
 {
     // a collection of all observers of this subject
-    private List<IObserver<EGenericEnum, EGenericValue>> _observers = new List<IObserver<EGenericEnum, EGenericValue>>();
+    private List<IObserver<TAction, TValue>> _observers = new List<IObserver<TAction, TValue>>();
 
     // add the observer to the subject's collection
-    public void AddObserver(IObserver<EGenericEnum, EGenericValue> observer)
+    public void AddObserver(IObserver<TAction, TValue> observer)
     {
         _observers.Add(observer);
     }
 
-    public void RemoveObserver(IObserver<EGenericEnum, EGenericValue> observer)
+    public void RemoveObserver(IObserver<TAction, TValue> observer)
     {
         _observers.Remove(observer);
     }
 
-    // notify each observer that an event has ocurred
-    public void NotifyObservers(EGenericEnum action, EGenericValue value)
+    // notify each observer that an event has occurred
+    public void NotifyObservers(TAction action, TValue value)
     {
-        _observers.ForEach((_observer) => {
-            _observer.OnNotify(action, value);
+        _observers.ForEach((observer) =>
+        {
+            observer.OnNotify(action, value);
         });
     }
 }

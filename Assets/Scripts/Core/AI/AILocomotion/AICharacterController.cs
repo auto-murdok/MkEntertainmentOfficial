@@ -1,0 +1,71 @@
+using UnityEngine;
+using UnityEngine.AI;
+using UnityEngine.Assertions;
+
+public class AICharacterController : MonoBehaviour, IObserver<AICharacterActions, Vector3>
+{
+    [SerializeField] Subject<AICharacterActions, Vector3> _actionsSubject;
+    [SerializeField] private Transform _visionHook;
+    [SerializeField] private LayerMask _detectionLayerMask;
+    [SerializeField] private LayerMask _ignoreLayerMask;
+
+    private NavMeshAgent _agent;
+    private Animator _animator;
+
+    private void Awake()
+    {
+        _agent = GetComponent<NavMeshAgent>();
+        _animator = GetComponent<Animator>();
+
+        Assert.IsNotNull(_agent, "NavMeshAgent missing in " + gameObject.name);
+        Assert.IsNotNull(_animator, "Animator missing in" + gameObject.name);
+        Assert.IsNotNull(_visionHook, "Vision Hook missing in" + gameObject.name);
+    }
+
+    private void Update()
+    {
+        // AITransformUtils.HandleAIMovement(transform, _agent, _animator);
+    }
+
+    // fuctionality
+    private void MoveToDestination(Vector3 destination)
+    {
+        // Vector3 newDestination = destination;
+        // newDestination.y = 0;
+        _agent.SetDestination(destination);
+        // test
+
+    }
+
+    // observer logic
+    public void OnNotify(AICharacterActions action, Vector3 value)
+    {
+        switch (action)
+        {
+            case AICharacterActions.MoveToDestination:
+                MoveToDestination(value);
+                break;
+        }
+    }
+
+    private void OnEnable()
+    {
+        _actionsSubject.AddObserver(this);
+    }
+
+    void OnDisable()
+    {
+        _actionsSubject.RemoveObserver(this);
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (_agent && _agent.hasPath)
+        {
+            for (int i = 0; i < _agent.path.corners.Length - 1; i++)
+            {
+                Debug.DrawLine(_agent.path.corners[i], _agent.path.corners[i + 1], Color.red);
+            }
+        }
+    }
+}

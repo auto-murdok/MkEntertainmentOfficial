@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class CharacterWalkingState : State<CharacterState, CharacterStateContext>
+public class CharacterSprintingState : State<CharacterState, CharacterStateContext>
 {
     public void CheckTransitions(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
@@ -18,13 +18,20 @@ public class CharacterWalkingState : State<CharacterState, CharacterStateContext
         {
             stateMachine.ChangeState(CharacterState.Aiming);
         }
+        else if (!context.isRunning)
+        {
+            if (context.movementInput == Vector2.zero)
+            {
+                stateMachine.ChangeState(CharacterState.Idle);
+            }
+            else
+            {
+                stateMachine.ChangeState(CharacterState.Walking);
+            }
+        }
         else if (context.movementInput == Vector2.zero)
         {
             stateMachine.ChangeState(CharacterState.Idle);
-        }
-        else if (context.isRunning)
-        {
-            stateMachine.ChangeState(CharacterState.Sprinting);
         }
     }
 
@@ -38,7 +45,7 @@ public class CharacterWalkingState : State<CharacterState, CharacterStateContext
 
     public void UpdateState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        CharacterTransformUtils.HandleWalkingMovement(stateMachine._context);
+        CharacterTransformUtils.HandleSprintingMovement(stateMachine._context);
         CharacterTransformUtils.HandleCharacterRotation(stateMachine.transform, stateMachine._context);
     }
 }

@@ -13,17 +13,25 @@ public class CharacterTransformUtils
         characterTransform.rotation = Quaternion.RotateTowards(characterTransform.rotation, mainCameraTarget.rotation, maxDegreesDelta);
     }
 
+    public static void HandleWalkingMovement(CharacterStateContext context)
+    {
+        if (context.movementInput != Vector2.zero)
+        {
+            AnimatorUtils.SetMovementRootMotion(context.animator, context.movementInput, MovementSmoothSpeed);
+        }
+    }
+
+    public static void HandleSprintingMovement(CharacterStateContext context)
+    {
+        if (context.movementInput != Vector2.zero)
+        {
+            Vector2 sprintInput = context.movementInput * RunInputMultiplier;
+            AnimatorUtils.SetMovementRootMotion(context.animator, sprintInput, MovementSmoothSpeed);
+        }
+    }
+
     public static void HandleCharacterMovement(CharacterStateContext context)
     {
-        Vector2 movementInput = context.movementInput;
-        bool shouldRun = context.isRunning && !context.isAiming && !context.isReloading;
-
-        if (movementInput != Vector2.zero)
-        {
-            // Running (while not aiming and not reloading) doubles the movement input fed to the animator.
-            movementInput = shouldRun ? movementInput * RunInputMultiplier : movementInput;
-
-            AnimatorUtils.SetMovementRootMotion(context.animator, movementInput, MovementSmoothSpeed);
-        }
+        HandleWalkingMovement(context);
     }
 }

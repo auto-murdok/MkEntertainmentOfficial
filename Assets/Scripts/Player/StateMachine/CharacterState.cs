@@ -5,7 +5,10 @@ using UnityEngine;
 public enum CharacterState
 {
     Idle,
-    Moving,
+    Walking,
+    Moving = Walking,
+    Sprinting,
     Aiming,
+    Reloading,
     TakingBite,
 }

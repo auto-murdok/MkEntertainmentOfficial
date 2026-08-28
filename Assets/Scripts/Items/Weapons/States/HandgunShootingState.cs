@@ -16,7 +16,14 @@ public class HandgunShootingState : State<HandgunState, HandgunContext>
     {
         if (_rechamberingTime < 0f)
         {
-            character.ChangeState(HandgunState.Ready);
+            if (character._context.isReloading)
+            {
+                character.ChangeState(HandgunState.Reloading);
+            }
+            else
+            {
+                character.ChangeState(HandgunState.Ready);
+            }
         }
     }
 

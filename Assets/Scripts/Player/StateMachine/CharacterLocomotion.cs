@@ -53,8 +53,10 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     private void PopulateStates()
     {
         states[CharacterState.Idle] = new CharacterIdleState();
-        states[CharacterState.Moving] = new CharacterWalkingState();
+        states[CharacterState.Walking] = new CharacterWalkingState();
+        states[CharacterState.Sprinting] = new CharacterSprintingState();
         states[CharacterState.Aiming] = new CharacterAimState();
+        states[CharacterState.Reloading] = new CharacterReloadingState();
         states[CharacterState.TakingBite] = new CharacterTakeBiteState();
     }
 
@@ -96,7 +98,7 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     private void RelieveAimEffect(CharacterState currentStateEnum)
     {
-        if (currentStateEnum != CharacterState.Aiming)
+        if (currentStateEnum != CharacterState.Aiming && currentStateEnum != CharacterState.Reloading)
         {
             AnimatorUtils.SetLayerWeight(_context.animator, AimAnimatorLayerIndex, 0f, 10f);
             RigUtils.HandleDecreaseRigWeight(_context.rig);
@@ -105,10 +107,9 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     private void RelieveMovementEffect(CharacterState currentStateEnum)
     {
-        if (currentStateEnum != CharacterState.Moving)
+        if (currentStateEnum != CharacterState.Walking && currentStateEnum != CharacterState.Sprinting)
         {
             AnimatorUtils.SetMovementRootMotion(_context.animator, Vector2.zero, 0.15f);
-            _context.isRunning = false;
         }
     }
 

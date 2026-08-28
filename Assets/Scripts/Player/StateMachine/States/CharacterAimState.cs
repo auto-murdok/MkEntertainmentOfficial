@@ -8,13 +8,30 @@ public class CharacterAimState : State<CharacterState, CharacterStateContext>
 
     public void CheckTransitions(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        if (stateMachine._context.isBeingAttacked)
+        CharacterStateContext context = stateMachine._context;
+
+        if (context.isBeingAttacked)
         {
             stateMachine.ChangeState(CharacterState.TakingBite);
         }
-        else if (!stateMachine._context.isAiming && !stateMachine._context.isReloading)
+        else if (context.isReloading)
         {
-            stateMachine.ChangeState(CharacterState.Idle);
+            stateMachine.ChangeState(CharacterState.Reloading);
+        }
+        else if (!context.isAiming)
+        {
+            if (context.movementInput == Vector2.zero)
+            {
+                stateMachine.ChangeState(CharacterState.Idle);
+            }
+            else if (context.isRunning)
+            {
+                stateMachine.ChangeState(CharacterState.Sprinting);
+            }
+            else
+            {
+                stateMachine.ChangeState(CharacterState.Walking);
+            }
         }
     }
 

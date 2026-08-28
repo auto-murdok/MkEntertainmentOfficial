@@ -13,13 +13,24 @@ public class CharacterIdleState : State<CharacterState, CharacterStateContext>
         {
             stateMachine.ChangeState(CharacterState.TakingBite);
         }
-        else if (context.isAiming || context.isReloading)
+        else if (context.isReloading)
+        {
+            stateMachine.ChangeState(CharacterState.Reloading);
+        }
+        else if (context.isAiming)
         {
             stateMachine.ChangeState(CharacterState.Aiming);
         }
         else if (context.movementInput != Vector2.zero)
         {
-            stateMachine.ChangeState(CharacterState.Moving);
+            if (context.isRunning && !context.isAiming)
+            {
+                stateMachine.ChangeState(CharacterState.Sprinting);
+            }
+            else
+            {
+                stateMachine.ChangeState(CharacterState.Walking);
+            }
         }
     }
 

@@ -5,19 +5,26 @@ using UnityEngine.Assertions;
 
 public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
 {
-    [Header("Detection settings")]
+    [Header("Configuration")]
+    [SerializeField] private ZombieData _zombieData;
+
+    [Header("Detection Fallbacks (used if ZombieData is not assigned)")]
     [SerializeField] private Transform _visionHook;
     [SerializeField] private Transform _victimHook;
     [SerializeField] private LayerMask _detectionLayerMask;
     [SerializeField] private LayerMask _ignoreLayerMask;
-    [SerializeField] private float _detectionMaxDistance = 5f;
-    // Distance at which the zombie is close enough to bite. Used for hysteresis
-    // so the zombie settles at the survivor instead of ping-ponging Chasing<->Idle.
-    public const float BiteRange = 1.2f;
-    public Transform victimHook => _victimHook;
+    [SerializeField] private float _detectionMaxDistance = 12f;
 
-    private const int MinDetectionAngle = 100;
-    private const int MaxDetectionAngle = 180;
+    public const float DefaultBiteRange = 1.2f;
+    private const int DefaultMinDetectionAngle = 60;
+    private const int DefaultMaxDetectionAngle = 180;
+
+    private ZombieSockets _sockets;
+
+    public ZombieData zombieData => _zombieData;
+    public Transform visionHook => _sockets != null ? _sockets.visionHook : (_visionHook != null ? _visionHook : transform);
+    public Transform victimHook => _sockets != null ? _sockets.victimHook : (_victimHook != null ? _victimHook : transform);
+    public float biteRange => _zombieData != null ? _zombieData.biteRange : DefaultBiteRange;
 
     private void Awake()
     {
@@ -25,29 +32,87 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>
         states[ZombieStates.Chasing] = new ZombieChasing();
         states[ZombieStates.Bitting] = new ZombieBitting();
 
-        // context
+        // Components & Sockets
         _context.agent = GetComponent<NavMeshAgent>();
         _context.animator = GetComponent<Animator>();
+        _sockets = GetComponentInChildren<ZombieSockets>();
+
+        if (_sockets == null)
+        {
+            _sockets = gameObject.AddComponent<ZombieSockets>();
+        }
+
+        _context.sockets = _sockets;
+        _context.visionHook = visionHook;
+
+        ApplyZombieData(_zombieData);
 
         Assert.IsNotNull(_context.animator, $"{gameObject.name} needs an Animator attached to it");
         Assert.IsNotNull(_context.agent, $"{gameObject.name} needs a NavMeshAgent attached to it");
-        Assert.IsNotNull(_visionHook, $"{gameObject.name} needs a visionHook attached to it");
 
         OnCommonUpdate += RelieveMovement;
         OnCommonUpdate += SearchForSurvivors;
         OnStateChanged += state => Debug.Log($"[{gameObject.name}] -> {state}");
     }
 
+    public void SetZombieData(ZombieData data)
+    {
+        _zombieData = data;
+        ApplyZombieData(data);
+    }
+
+    private void ApplyZombieData(ZombieData data)
+    {
+        _context.data = data;
+
+        if (data != null)
+        {
+            _context.detectionLayerMask = data.detectionLayerMask.value != 0 ? data.detectionLayerMask : _detectionLayerMask;
+            _context.ignoreLayerMask = data.ignoreLayerMask;
+
+            if (_context.agent != null)
+            {
+                _context.agent.radius = data.defaultAgentRadius;
+            }
+
+            if (data.animatorOverride != null && _context.animator != null)
+            {
+                _context.animator.runtimeAnimatorController = data.animatorOverride;
+            }
+        }
+        else
+        {
+            _context.detectionLayerMask = _detectionLayerMask;
+            _context.ignoreLayerMask = _ignoreLayerMask;
+        }
+
+        // Ensure default detection mask points to LocalPlayer if not explicitly assigned
+        if (_context.detectionLayerMask.value == 0)
+        {
+            int playerLayer = LayerMask.NameToLayer("LocalPlayer");
+            if (playerLayer >= 0)
+            {
+                _context.detectionLayerMask = 1 << playerLayer;
+            }
+        }
+    }
+
     // Scans for a survivor inside the vision cone and updates the shared target.
     private void SearchForSurvivors(ZombieStates currentState)
     {
+        float maxDist = _zombieData != null ? _zombieData.detectionMaxDistance : _detectionMaxDistance;
+        int minAngle = _zombieData != null ? _zombieData.minDetectionAngle : DefaultMinDetectionAngle;
+        int maxAngle = _zombieData != null ? _zombieData.maxDetectionAngle : DefaultMaxDetectionAngle;
+        LayerMask detectMask = _context.detectionLayerMask;
+        LayerMask ignoreMask = _context.ignoreLayerMask;
+
         ISurvivor survivor = AIDetectionUtils.DetectViaLineOfSight<ISurvivor>(
-            _visionHook,
-            _detectionMaxDistance,
-            _detectionLayerMask,
-            _ignoreLayerMask,
-            MinDetectionAngle,
-            MaxDetectionAngle
+            visionHook,
+            maxDist,
+            detectMask,
+            ignoreMask,
+            minAngle,
+            maxAngle
         );
         SetTarget(survivor);
     }

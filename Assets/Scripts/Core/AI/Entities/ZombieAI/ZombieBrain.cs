@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Assertions;
@@ -8,19 +7,24 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
     private ZombieBehavior _behavior;
     private NavMeshAgent _agent;
     private Animator _animator;
-    public int id => 2;
+
+    public int id => gameObject.GetInstanceID();
     public Vector3 position => transform.position;
     public Transform victimHook => _behavior.victimHook;
     public bool isPreparing => _behavior._context.isPreparing;
     public bool isBitting => _behavior._context.isBitting;
 
-    // IDamageable
-    private const float MaxHitPoints = 100f;
-    private const float BiteDamage = 30f;
-    private const float CorpseDestroyDelay = 5f;
+    // Default Fallback Stats (used if ZombieData is not assigned on ZombieBehavior)
+    private const float DefaultMaxHitPoints = 100f;
+    private const float DefaultBiteDamage = 30f;
+    private const float DefaultCorpseDestroyDelay = 5f;
 
-    private float _hitPoints = MaxHitPoints;
+    private float _hitPoints;
     public float remainingHitPoints => _hitPoints;
+
+    public float maxHitPoints => _behavior != null && _behavior.zombieData != null ? _behavior.zombieData.maxHitPoints : DefaultMaxHitPoints;
+    public float biteDamage => _behavior != null && _behavior.zombieData != null ? _behavior.zombieData.biteDamage : DefaultBiteDamage;
+    public float corpseDestroyDelay => _behavior != null && _behavior.zombieData != null ? _behavior.zombieData.corpseDestroyDelay : DefaultCorpseDestroyDelay;
 
     private void Awake()
     {
@@ -28,15 +32,28 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
         _agent = GetComponent<NavMeshAgent>();
         _animator = GetComponent<Animator>();
 
-        Assert.IsNotNull(_behavior, $"{gameObject.name} needs an ZombieBehavior attached to it");
+        Assert.IsNotNull(_behavior, $"{gameObject.name} needs a ZombieBehavior attached to it");
         Assert.IsNotNull(_animator, $"{gameObject.name} needs an Animator attached to it");
         Assert.IsNotNull(_agent, $"{gameObject.name} needs a NavMeshAgent attached to it");
+
+        _hitPoints = maxHitPoints;
     }
 
     private void Start()
     {
         RagdollUtils.DisableRagdoll(transform);
-        InteractableManager.Instance.AddInteractable(this);
+        if (InteractableManager.Instance != null)
+        {
+            InteractableManager.Instance.AddInteractable(this);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (InteractableManager.Instance != null)
+        {
+            InteractableManager.Instance.RemoveInteractable(this);
+        }
     }
 
     public void StopBitting()
@@ -54,11 +71,11 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
 
     public void TakeDamage()
     {
-        _hitPoints = BiteDamage > _hitPoints ? 0f : _hitPoints - BiteDamage;
+        _hitPoints = biteDamage > _hitPoints ? 0f : _hitPoints - biteDamage;
 
-        Debug.LogWarning($"Remaining health = {_hitPoints}");
+        Debug.LogWarning($"[{gameObject.name}] Remaining health = {_hitPoints}");
 
-        if (_hitPoints == 0f)
+        if (_hitPoints <= 0f)
         {
             RagdollUtils.EnableRagdoll(transform, OnEnableRagdoll);
         }
@@ -66,15 +83,22 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
 
     private void OnEnableRagdoll()
     {
-        Debug.LogWarning("RAGDOLL!");
+        Debug.LogWarning($"[{gameObject.name}] RAGDOLL activated!");
 
-        //Destroy(GetComponent<RigBuilder>());
-        //Destroy(GetComponent<BoneRenderer>());
+        if (InteractableManager.Instance != null)
+        {
+            InteractableManager.Instance.RemoveInteractable(this);
+        }
+
         Destroy(GetComponent<NavMeshAgent>());
         Destroy(GetComponent<Animator>());
         Destroy(GetComponent<ZombieBehavior>());
-        Destroy(GetComponentInChildren<ZombieHand>());
-        Destroy(gameObject, CorpseDestroyDelay);
+        foreach (ZombieHand hand in GetComponentsInChildren<ZombieHand>())
+        {
+            Destroy(hand);
+        }
+
+        Destroy(gameObject, corpseDestroyDelay);
     }
 }
 

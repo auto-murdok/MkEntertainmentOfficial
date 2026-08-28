@@ -4,8 +4,8 @@ public class ZombieBitting : State<ZombieStates, ZombieContext>
 {
     private const string VerticalParameter = "Vertical";
     private const float VerticalMovementPrepareThreshold = 0.15f;
-    private const float BittingAgentRadius = 0.1f;
-    private const float DefaultAgentRadius = 0.3f;
+    private const float DefaultBittingRadius = 0.1f;
+    private const float DefaultRadius = 0.3f;
 
     private Vector3 _initialPosition;
     private Quaternion _initialRotation;
@@ -23,15 +23,23 @@ public class ZombieBitting : State<ZombieStates, ZombieContext>
         _initialPosition = character.transform.position;
         _initialRotation = character.transform.rotation;
         ZombieContext context = character._context;
-        context.agent.radius = BittingAgentRadius;
-        context.agent.ResetPath();
+        float bittingRadius = context.data != null ? context.data.bittingAgentRadius : DefaultBittingRadius;
+        if (context.agent != null)
+        {
+            context.agent.radius = bittingRadius;
+            context.agent.ResetPath();
+        }
         context.isPreparing = true;
     }
 
     public void ExitState(StateMachine<ZombieStates, ZombieContext> character)
     {
         ZombieContext context = character._context;
-        context.agent.radius = DefaultAgentRadius;
+        float defaultRadius = context.data != null ? context.data.defaultAgentRadius : DefaultRadius;
+        if (context.agent != null)
+        {
+            context.agent.radius = defaultRadius;
+        }
         context.isPreparing = false;
         context.interactable = null;
     }

@@ -15,9 +15,14 @@ This guide provides instructions and standards for AI agents working in this rep
 
 The `unity-cli` interacts directly with the live Editor instance via the `com.unity.pipeline` package (running locally over IPC/WebSocket).
 
-### 1. Verification & Status
-Check whether a Unity Editor instance is connected and ready:
+### 1. Launching & Verification
+When opening or starting the Unity Editor for automated CLI workflows:
 ```bash
+# Open Editor with automated flag
+unity open --args "-automated"
+unity open . --args "-automated"
+
+# Check whether Editor is connected and ready
 unity status --format json
 ```
 - Look for state `"ready"`.

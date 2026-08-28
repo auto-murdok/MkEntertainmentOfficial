@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2777a1df7bdf14844a8d9241d67eeb77, type: 3}
+  m_Name: ZombieData_Walker
+  m_EditorClassIdentifier: Assembly-CSharp::ZombieData
+  _zombieTypeName: Standard Zombie
+  _animatorOverride: {fileID: 0}
+  _maxHitPoints: 100
+  _biteDamage: 30
+  _corpseDestroyDelay: 5
+  _detectionMaxDistance: 12
+  _minDetectionAngle: 60
+  _maxDetectionAngle: 180
+  _detectionLayerMask:
+    serializedVersion: 2
+    m_Bits: 64
+  _ignoreLayerMask:
+    serializedVersion: 2
+    m_Bits: 132
+  _biteRange: 1.2
+  _defaultAgentRadius: 0.3
+  _bittingAgentRadius: 0.1
+  _walkSpeed: 1.5
+  _chaseSpeed: 3.5

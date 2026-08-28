@@ -2,23 +2,39 @@ using UnityEngine;
 
 public class AIDetectionUtils
 {
+    private const float DefaultProximityRadius = 2.5f;
+
     // Casts a detection sphere and returns the first matching component that is
-    // within the field-of-view cone and not blocked by an obstacle.
-    public static TComponent DetectViaLineOfSight<TComponent>(Transform transform, float detectionRadius, LayerMask detectionLayer, LayerMask obstacleLayer, int minDetectionAngle, int maxDetectionAngle)
+    // within the field-of-view cone or proximity radius and not blocked by an obstacle.
+    public static TComponent DetectViaLineOfSight<TComponent>(
+        Transform originTransform,
+        float detectionRadius,
+        LayerMask detectionLayer,
+        LayerMask obstacleLayer,
+        int minDetectionAngle,
+        int maxDetectionAngle,
+        float proximityRadius = DefaultProximityRadius)
     {
-        Collider[] colliders = Physics.OverlapSphere(transform.position, detectionRadius, detectionLayer);
-        TComponent detectedTarget = default(TComponent);
+        if (originTransform == null) return default;
+
+        Collider[] colliders = Physics.OverlapSphere(originTransform.position, detectionRadius, detectionLayer);
+        TComponent detectedTarget = default;
 
         foreach (Collider collider in colliders)
         {
             TComponent possibleMatch = collider.GetComponentInParent<TComponent>();
             if (possibleMatch != null)
             {
-                if (IsInLineOfSight(transform, collider.transform.position, minDetectionAngle, maxDetectionAngle))
+                Vector3 targetPosition = collider.bounds.center;
+                float distance = Vector3.Distance(originTransform.position, targetPosition);
+
+                // Target is detected if within proximity hearing range OR inside the forward vision cone
+                bool inDetectionZone = distance <= proximityRadius || IsInLineOfSight(originTransform, targetPosition, minDetectionAngle, maxDetectionAngle);
+
+                if (inDetectionZone)
                 {
-                    if (IsNotBlockedByObstacles(transform.position, collider.transform.position, obstacleLayer))
+                    if (IsNotBlockedByObstacles(originTransform.position, targetPosition, obstacleLayer))
                     {
-                        // Debug.DrawLine(transform.position, collider.transform.position, Color.yellow, detectionRadius);
                         detectedTarget = possibleMatch;
                         break;
                     }
@@ -31,11 +47,12 @@ public class AIDetectionUtils
 
     public static bool IsNotBlockedByObstacles(Vector3 origin, Vector3 destination, LayerMask obstacleLayer)
     {
+        if (obstacleLayer.value == 0) return true;
         return !Physics.Linecast(origin, destination, obstacleLayer);
     }
 
     // Checks whether the destination is inside the view cone defined by the
-    // minimum and maximum angles relative to the transform's forward vector.
+    // minimum and maximum angles relative to the origin's forward vector.
     public static bool IsInLineOfSight(Transform origin, Vector3 destination, int minDetectionAngle, int maxDetectionAngle)
     {
         Vector3 directionToDestination = (origin.position - destination).normalized;

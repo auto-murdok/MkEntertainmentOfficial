@@ -3,6 +3,8 @@ using UnityEngine.AI;
 
 public class ZombieContext : Blackboard
 {
+    public ZombieData data;
+    public ZombieSockets sockets;
     public Transform visionHook;
     public LayerMask detectionLayerMask;
     public LayerMask ignoreLayerMask;

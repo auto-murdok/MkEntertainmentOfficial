@@ -14,7 +14,18 @@ public class InteractableManager : MonoBehaviour
 
     public void AddInteractable(IInteractable interactable)
     {
-        _interactables.Add(interactable.id, interactable);
+        if (interactable != null)
+        {
+            _interactables[interactable.id] = interactable;
+        }
+    }
+
+    public void RemoveInteractable(IInteractable interactable)
+    {
+        if (interactable != null)
+        {
+            _interactables.Remove(interactable.id);
+        }
     }
 
     public void Interact(IInteractable first, IInteractable second)
@@ -24,8 +35,9 @@ public class InteractableManager : MonoBehaviour
 
     public void Interact(int firstId, int secondId)
     {
-        IInteractable first = _interactables[firstId];
-        IInteractable second = _interactables[secondId];
+        _interactables.TryGetValue(firstId, out IInteractable first);
+        _interactables.TryGetValue(secondId, out IInteractable second);
+
         if (first != null && second != null)
         {
             NotifyExternalInteraction(first, second);

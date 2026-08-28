@@ -10,16 +10,18 @@ public class ZombieIdle : State<ZombieStates, ZombieContext>
         }
         // Hysteresis: only chase again once the target is outside bite range,
         // so the zombie settles at the survivor instead of oscillating.
-        else if (character._context.target != null
-            && Vector3.Distance(character.transform.position, character._context.target.TargetPosition) > ZombieBehavior.BiteRange)
+        else if (character._context.target != null)
         {
-            character.ChangeState(ZombieStates.Chasing);
+            float biteRange = character._context.data != null ? character._context.data.biteRange : ZombieBehavior.DefaultBiteRange;
+            if (Vector3.Distance(character.transform.position, character._context.target.TargetPosition) > biteRange)
+            {
+                character.ChangeState(ZombieStates.Chasing);
+            }
         }
     }
 
     public void EnterState(StateMachine<ZombieStates, ZombieContext> character)
     {
-
     }
 
     public void ExitState(StateMachine<ZombieStates, ZombieContext> character)
@@ -29,6 +31,5 @@ public class ZombieIdle : State<ZombieStates, ZombieContext>
 
     public void UpdateState(StateMachine<ZombieStates, ZombieContext> character)
     {
-
     }
 }

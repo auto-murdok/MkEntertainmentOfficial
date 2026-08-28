@@ -210,11 +210,6 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         _context.animator.SetTrigger(AnimatorUtils.TakeBiteHash);
     }
 
-    public void MarkDead()
-    {
-        _context.isAlive = false;
-    }
-
     public bool isBeingAttacked => _context.isBeingAttacked;
 
     public void HandleRecoverControl()

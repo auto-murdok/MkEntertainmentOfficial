@@ -2,25 +2,19 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Assertions;
 
-public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
+public class ZombieBrain : ActorBrainBase, IZombie, IDamageable
 {
     private ZombieBehavior _behavior;
-    private NavMeshAgent _agent;
     private Animator _animator;
 
-    public int id => gameObject.GetInstanceID();
-    public Vector3 position => transform.position;
-    public Transform victimHook => _behavior.victimHook;
-    public bool isPreparing => _behavior != null && _behavior._context != null && _behavior._context.isPreparing;
+    public override Transform victimHook => _behavior.victimHook;
+    public override bool isPreparing => _behavior != null && _behavior._context != null && _behavior._context.isPreparing;
     public bool isBitting => _behavior != null && _behavior._context != null && _behavior._context.isBitting;
 
     // Default Fallback Stats (used if ZombieData is not assigned on ZombieBehavior)
     private const float DefaultMaxHitPoints = 100f;
     private const float DefaultBiteDamage = 30f;
     private const float DefaultCorpseDestroyDelay = 5f;
-
-    private float _hitPoints;
-    public float remainingHitPoints => _hitPoints;
 
     public float maxHitPoints => _behavior != null && _behavior.zombieData != null ? _behavior.zombieData.maxHitPoints : DefaultMaxHitPoints;
     public float biteDamage => _behavior != null && _behavior.zombieData != null ? _behavior.zombieData.biteDamage : DefaultBiteDamage;
@@ -31,34 +25,17 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
     private void Awake()
     {
         _behavior = GetComponent<ZombieBehavior>();
-        _agent = GetComponent<NavMeshAgent>();
         _animator = GetComponent<Animator>();
 
         Assert.IsNotNull(_behavior, $"{gameObject.name} needs a ZombieBehavior attached to it");
         Assert.IsNotNull(_animator, $"{gameObject.name} needs an Animator attached to it");
-        Assert.IsNotNull(_agent, $"{gameObject.name} needs a NavMeshAgent attached to it");
 
         _hitPoints = maxHitPoints;
 
-        // Hand the entity-specific death routine to the shared Dead state.
-        _behavior._context.onDeath = () => RagdollUtils.EnableRagdoll(transform, OnEnableRagdoll);
-    }
-
-    private void Start()
-    {
-        RagdollUtils.DisableRagdoll(transform);
-        if (InteractableManager.Instance != null)
-        {
-            InteractableManager.Instance.AddInteractable(this);
-        }
-    }
-
-    private void OnDestroy()
-    {
-        if (InteractableManager.Instance != null)
-        {
-            InteractableManager.Instance.RemoveInteractable(this);
-        }
+        // Hand the entity-specific death routine to the shared Dead state via the
+        // base's onDeath hook.
+        Context = _behavior._context;
+        SetupDeathHook();
     }
 
     public void StopBitting()
@@ -66,7 +43,7 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
         _behavior.SetIsBitting(false);
     }
 
-    public void OnExternalInteraction(IInteractable target)
+    public override void OnExternalInteraction(IInteractable target)
     {
         // Ignore duplicate interactions while a bite is already in progress so the
         // Bite trigger is not re-fired (which would replay the bite animation).
@@ -83,35 +60,23 @@ public class ZombieBrain : MonoBehaviour, IZombie, IInteractable, IDamageable
 
     public void TakeDamage()
     {
-        _hitPoints = biteDamage > _hitPoints ? 0f : _hitPoints - biteDamage;
+        ApplyDamage(biteDamage);
 
         if (_debug)
         {
             Debug.Log($"[{gameObject.name}] Remaining health = {_hitPoints}");
         }
-
-        if (_hitPoints <= 0f)
-        {
-            // Let the shared Dead state (driven by the ZombieBehavior FSM) handle
-            // the ragdoll + teardown via context.onDeath.
-            _behavior._context.isAlive = false;
-        }
     }
 
-    private void OnEnableRagdoll()
+    protected override void OnRagdollEnabled()
     {
+        base.OnRagdollEnabled();
+
         if (_debug)
         {
             Debug.Log($"[{gameObject.name}] RAGDOLL activated!");
         }
 
-        if (InteractableManager.Instance != null)
-        {
-            InteractableManager.Instance.RemoveInteractable(this);
-        }
-
-        Destroy(GetComponent<NavMeshAgent>());
-        Destroy(GetComponent<Animator>());
         Destroy(GetComponent<ZombieBehavior>());
         foreach (ZombieHand hand in GetComponentsInChildren<ZombieHand>())
         {

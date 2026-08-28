@@ -1,12 +1,10 @@
 using UnityEngine;
-using UnityEngine.AI;
 using UnityEngine.Animations.Rigging;
 using UnityEngine.Assertions;
 using UnityEngine.InputSystem;
 
-public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver<InputHandlerActions, InputValue>
+public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerActions, InputValue>
 {
-
     [Header("Connection Settings")]
     [SerializeField] private Subject<InputHandlerActions, InputValue> _subject;
 
@@ -16,14 +14,10 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
     [Header("Stats")]
     [SerializeField] private float _maxHitPoints = 100f;
     [SerializeField] private float _biteDamage = 25f;
-    private float _hitPoints;
 
     Vector3 ISurvivor.TargetPosition => transform.position;
-    public int id => gameObject.GetInstanceID();
-    public Vector3 position => transform.position;
-    public Transform victimHook => transform;
-
-    public bool isPreparing => false;
+    public override Transform victimHook => transform;
+    public override bool isPreparing => false;
 
     private void Awake()
     {
@@ -38,26 +32,15 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
 
         _hitPoints = _maxHitPoints;
 
-        // Hand the entity-specific death routine to the shared Dead state.
-        _locomotion._context.onDeath = () => RagdollUtils.EnableRagdoll(transform, OnEnableRagdoll);
+        // Hand the entity-specific death routine to the shared Dead state via the
+        // base's onDeath hook.
+        Context = _locomotion._context;
+        SetupDeathHook();
     }
 
-    public void Start()
+    protected override void OnActorStart()
     {
-        if (InteractableManager.Instance != null)
-        {
-            InteractableManager.Instance.AddInteractable(this);
-        }
         LayerUtils.SetLayer(transform, LayerUtils.LocalPlayerLayerName);
-        RagdollUtils.DisableRagdoll(transform);
-    }
-
-    private void OnDestroy()
-    {
-        if (InteractableManager.Instance != null)
-        {
-            InteractableManager.Instance.RemoveInteractable(this);
-        }
     }
 
     public void OnNotify(InputHandlerActions action, InputValue inputValue)
@@ -84,22 +67,17 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
                 _locomotion.HandleReload();
                 break;
             case InputHandlerActions.ManualEnableRagdoll:
-                RagdollUtils.EnableRagdoll(transform, OnEnableRagdoll);
+                RagdollUtils.EnableRagdoll(transform, OnRagdollEnabled);
                 break;
         }
     }
 
-    private void OnEnableRagdoll()
+    protected override void OnRagdollEnabled()
     {
-        if (InteractableManager.Instance != null)
-        {
-            InteractableManager.Instance.RemoveInteractable(this);
-        }
+        base.OnRagdollEnabled();
 
         Destroy(GetComponent<RigBuilder>());
         Destroy(GetComponent<BoneRenderer>());
-        Destroy(GetComponent<NavMeshAgent>());
-        Destroy(GetComponent<Animator>());
         Destroy(GetComponent<CharacterUIController>());
         Destroy(_locomotion);
     }
@@ -125,7 +103,7 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
         _locomotion.HandleRecoverControl();
     }
 
-    public void OnExternalInteraction(IInteractable attacker)
+    public override void OnExternalInteraction(IInteractable attacker)
     {
         // Ignore duplicate interactions while a take-bite is already in progress so
         // the TakeBite trigger is not re-fired (which would replay the animation).
@@ -142,12 +120,6 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
 
     public void TakeDamage()
     {
-        _hitPoints = Mathf.Max(0f, _hitPoints - _biteDamage);
-        if (_hitPoints <= 0f)
-        {
-            // Let the shared Dead state (driven by the locomotion FSM) handle the
-            // ragdoll + teardown via context.onDeath.
-            _locomotion.MarkDead();
-        }
+        ApplyDamage(_biteDamage);
     }
 }

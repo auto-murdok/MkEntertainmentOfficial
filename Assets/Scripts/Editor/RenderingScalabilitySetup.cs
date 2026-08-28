@@ -9,13 +9,36 @@ public static class RenderingScalabilitySetup
     [MenuItem("Tools/Rendering/Apply Scalability Settings")]
     public static void ApplyScalabilitySettings()
     {
+        ConfigureGraphicsSettings();
         ConfigureRendererData();
         ConfigureUrpAssets();
         ConfigureGlobalSettings();
         RemoveCompatibilityModeDefine();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("[RenderingScalabilitySetup] Unity 6 Rendering Scalability features (Forward+, GRD, GPU Occlusion, STP, Render Graph) applied successfully.");
+        Debug.Log("[RenderingScalabilitySetup] Unity 6 Rendering Scalability features (BRG Keep All, Forward+, GRD, GPU Occlusion, STP, Render Graph) applied successfully.");
+    }
+
+    private static void ConfigureGraphicsSettings()
+    {
+        string graphicsSettingsPath = "ProjectSettings/GraphicsSettings.asset";
+        var graphicsSettings = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(graphicsSettingsPath);
+        if (graphicsSettings == null)
+        {
+            Debug.LogWarning($"[RenderingScalabilitySetup] Could not load GraphicsSettings at: {graphicsSettingsPath}");
+            return;
+        }
+
+        SerializedObject so = new SerializedObject(graphicsSettings);
+        SerializedProperty brgProp = so.FindProperty("m_BrgStripping");
+        if (brgProp != null)
+        {
+            brgProp.intValue = 2; // 2 = Keep All
+        }
+
+        so.ApplyModifiedProperties();
+        EditorUtility.SetDirty(graphicsSettings);
+        Debug.Log("[RenderingScalabilitySetup] Configured BatchRendererGroup Variants to 'Keep All' (m_BrgStripping = 2).");
     }
 
     private static void ConfigureRendererData()

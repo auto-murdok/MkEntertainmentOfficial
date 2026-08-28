@@ -4,28 +4,8 @@ public class CharacterWalkingState : State<CharacterState, CharacterStateContext
 {
     public void CheckTransitions(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        CharacterStateContext context = stateMachine._context;
-
-        if (context.isBeingAttacked)
-        {
-            stateMachine.ChangeState(CharacterState.TakingBite);
-        }
-        else if (context.isReloading)
-        {
-            stateMachine.ChangeState(CharacterState.Reloading);
-        }
-        else if (context.isAiming)
-        {
-            stateMachine.ChangeState(CharacterState.Aiming);
-        }
-        else if (context.movementInput == Vector2.zero)
-        {
-            stateMachine.ChangeState(CharacterState.Idle);
-        }
-        else if (context.isRunning)
-        {
-            stateMachine.ChangeState(CharacterState.Sprinting);
-        }
+        var next = CharacterStateResolver.Resolve(stateMachine._context);
+        if (next.HasValue) stateMachine.ChangeState(next.Value);
     }
 
     public void EnterState(StateMachine<CharacterState, CharacterStateContext> stateMachine)

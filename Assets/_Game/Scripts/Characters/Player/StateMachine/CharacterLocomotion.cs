@@ -203,11 +203,19 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         }
     }
 
-    public void HandleTakeDamage(IInteractable attacker)
+    public void TriggerTakeBite(IInteractable attacker)
     {
         _context.attacker = attacker;
         _context.isBeingAttacked = true;
+        _context.animator.SetTrigger(AnimatorUtils.TakeBiteHash);
     }
+
+    public void MarkDead()
+    {
+        _context.isAlive = false;
+    }
+
+    public bool isBeingAttacked => _context.isBeingAttacked;
 
     public void HandleRecoverControl()
     {

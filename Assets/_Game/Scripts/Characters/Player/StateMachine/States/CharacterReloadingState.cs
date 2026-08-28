@@ -8,35 +8,8 @@ public class CharacterReloadingState : State<CharacterState, CharacterStateConte
 
     public void CheckTransitions(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        CharacterStateContext context = stateMachine._context;
-
-        if (context.isBeingAttacked)
-        {
-            stateMachine.ChangeState(CharacterState.TakingBite);
-        }
-        else if (!context.isReloading)
-        {
-            // Reload finished! Transition to input-determined state
-            if (context.isAiming)
-            {
-                stateMachine.ChangeState(CharacterState.Aiming);
-            }
-            else if (context.movementInput != Vector2.zero)
-            {
-                if (context.isRunning)
-                {
-                    stateMachine.ChangeState(CharacterState.Sprinting);
-                }
-                else
-                {
-                    stateMachine.ChangeState(CharacterState.Walking);
-                }
-            }
-            else
-            {
-                stateMachine.ChangeState(CharacterState.Idle);
-            }
-        }
+        var next = CharacterStateResolver.Resolve(stateMachine._context);
+        if (next.HasValue) stateMachine.ChangeState(next.Value);
     }
 
     public void EnterState(StateMachine<CharacterState, CharacterStateContext> stateMachine)

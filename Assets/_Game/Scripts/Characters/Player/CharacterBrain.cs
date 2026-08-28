@@ -15,6 +15,7 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
 
     [Header("Stats")]
     [SerializeField] private float _maxHitPoints = 100f;
+    [SerializeField] private float _biteDamage = 25f;
     private float _hitPoints;
 
     Vector3 ISurvivor.TargetPosition => transform.position;
@@ -128,26 +129,25 @@ public class CharacterBrain : MonoBehaviour, ISurvivor, IInteractable, IObserver
     {
         // Ignore duplicate interactions while a take-bite is already in progress so
         // the TakeBite trigger is not re-fired (which would replay the animation).
-        if (_locomotion != null && _locomotion._context.isBeingAttacked)
+        if (_locomotion != null && _locomotion.isBeingAttacked)
         {
             return;
         }
 
-        _locomotion.HandleTakeDamage(attacker);
+        _locomotion.TriggerTakeBite(attacker);
 
         transform.position = attacker.victimHook.position;
         transform.rotation = attacker.victimHook.rotation;
-        _locomotion._context.animator.SetTrigger(AnimatorUtils.TakeBiteHash);
     }
 
     public void TakeDamage()
     {
-        _hitPoints = Mathf.Max(0f, _hitPoints - 25f);
+        _hitPoints = Mathf.Max(0f, _hitPoints - _biteDamage);
         if (_hitPoints <= 0f)
         {
             // Let the shared Dead state (driven by the locomotion FSM) handle the
             // ragdoll + teardown via context.onDeath.
-            _locomotion._context.isAlive = false;
+            _locomotion.MarkDead();
         }
     }
 }

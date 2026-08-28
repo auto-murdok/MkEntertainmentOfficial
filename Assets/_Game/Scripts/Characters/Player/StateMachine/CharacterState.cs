@@ -6,7 +6,6 @@ public enum CharacterState
 {
     Idle,
     Walking,
-    Moving = Walking,
     Sprinting,
     Aiming,
     Reloading,

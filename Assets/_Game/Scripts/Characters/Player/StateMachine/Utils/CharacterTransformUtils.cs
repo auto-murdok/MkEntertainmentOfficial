@@ -29,9 +29,4 @@ public class CharacterTransformUtils
             AnimatorUtils.SetMovementRootMotion(context.animator, sprintInput, MovementSmoothSpeed);
         }
     }
-
-    public static void HandleCharacterMovement(CharacterStateContext context)
-    {
-        HandleWalkingMovement(context);
-    }
 }

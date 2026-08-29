@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerActions, InputValue>
 {
     [Header("Connection Settings")]
-    [SerializeField] private Subject<InputHandlerActions, InputValue> _subject;
+    public Subject<InputHandlerActions, InputValue> _subject;
 
     private CharacterLocomotion _locomotion;
     private PlayerInput _playerInput;

@@ -16,7 +16,7 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     [Header("Cinemachine")]
     [Tooltip("The follow target set in the Cinemachine Virtual Camera that the camera will follow")]
-    [SerializeField] private Transform _cinemachineTarget;
+    public Transform _cinemachineTarget;
 
     [Tooltip("How far in degrees can you move the camera up")]
     [SerializeField] private float _topClamp = 70.0f;
@@ -33,7 +33,7 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     private Weapon _equippedWeapon;
 
     [Header("Combat hooks")]
-    [SerializeField] private Transform _aimTarget;
+    public Transform _aimTarget;
 
     [Header("Data")]
     [SerializeField] private PlayerData _playerData;

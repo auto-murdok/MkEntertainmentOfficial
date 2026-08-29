@@ -8,7 +8,7 @@ public class PlayerCoreUI : MonoBehaviour, IObserver<CharacterUIElement, Charact
     [SerializeField] private Subject<CharacterUIElement, CharacterUIContext> _subject;
     [SerializeField] private GameObject _aimUi;
     [SerializeField] private GameObject _aimCamera;
-    [SerializeField] private GameObject _aimTarget;
+    public GameObject _aimTarget;
     [SerializeField] private TMP_Text _clipInfo;
 
     public void OnNotify(CharacterUIElement element, CharacterUIContext context)

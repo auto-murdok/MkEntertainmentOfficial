@@ -21,16 +21,19 @@ public class ZombieSpawner : MonoBehaviour
     [SerializeField] private List<ZombieSpawnEntry> _zombieTypes = new List<ZombieSpawnEntry>();
     [SerializeField] private Transform[] _spawnPoints;
     [SerializeField] private float _spawnRadius = 15f;
-    [SerializeField] private int _maxZombies = 20;
+    [SerializeField] private int _maxZombies = 50;
 
     [Header("Automated Spawning")]
     [SerializeField] private bool _autoSpawnEnabled = true;
-    [SerializeField] private float _spawnInterval = 10f;
+    [SerializeField] private float _spawnInterval = 30f;
     private float _timer;
 
-    private readonly List<ZombieBrain> _activeZombies = new List<ZombieBrain>();
+    // Tracked as instances (not brains) so the cap holds for any prefab —
+    // including stripped-down ones without a ZombieBrain.
+    private readonly List<GameObject> _activeInstances = new List<GameObject>();
 
-    public IReadOnlyList<ZombieBrain> activeZombies => _activeZombies;
+    public IReadOnlyList<GameObject> activeInstances => _activeInstances;
+    public int activeZombieCount => _activeInstances.Count;
 
     public bool spawningEnabled => _autoSpawnEnabled;
 
@@ -86,20 +89,56 @@ public class ZombieSpawner : MonoBehaviour
         }
     }
 
+    // Opening wave: one zombie per spawn point so the arena starts fully
+    // populated. Runs in Start (not Awake) because the composition root wires
+    // the spawning channel in Awake; respects the cap and the enabled flag.
+    // Returns the number of zombies actually spawned (test seam).
+    public int SpawnInitialWave()
+    {
+        if (!_autoSpawnEnabled || _zombieTypes.Count == 0 || _spawnPoints == null)
+        {
+            return 0;
+        }
+
+        int spawned = 0;
+        for (int i = 0; i < _spawnPoints.Length; i++)
+        {
+            if (_activeInstances.Count >= _maxZombies)
+            {
+                break;
+            }
+            if (_spawnPoints[i] == null)
+            {
+                continue;
+            }
+            int randomIndex = UnityEngine.Random.Range(0, _zombieTypes.Count);
+            if (SpawnZombie(_zombieTypes[randomIndex], _spawnPoints[i]) != null)
+            {
+                spawned++;
+            }
+        }
+        return spawned;
+    }
+
+    private void Start()
+    {
+        SpawnInitialWave();
+    }
+
     private void Update()
     {
         // Clean up dead/destroyed zombies
-        for (int i = _activeZombies.Count - 1; i >= 0; i--)
+        for (int i = _activeInstances.Count - 1; i >= 0; i--)
         {
-            if (_activeZombies[i] == null)
+            if (_activeInstances[i] == null)
             {
-                _activeZombies.RemoveAt(i);
+                _activeInstances.RemoveAt(i);
             }
         }
 
 
-        // Automated timer (spawns one zombie every 10 seconds)
-        if (_autoSpawnEnabled && _zombieTypes.Count > 0 && _activeZombies.Count < _maxZombies)
+        // Automated timer (spawns one zombie every 30 seconds)
+        if (_autoSpawnEnabled && _zombieTypes.Count > 0 && _activeInstances.Count < _maxZombies)
         {
             _timer += Time.deltaTime;
             if (_timer >= _spawnInterval)
@@ -113,19 +152,24 @@ public class ZombieSpawner : MonoBehaviour
 
     public GameObject SpawnZombie(ZombieSpawnEntry entry)
     {
+        return SpawnZombie(entry, null);
+    }
+
+    public GameObject SpawnZombie(ZombieSpawnEntry entry, Transform spawnPoint)
+    {
         if (entry.prefab == null)
         {
             Debug.LogWarning($"[{name}] Cannot spawn: prefab is null for {entry.label}");
             return null;
         }
 
-        if (_activeZombies.Count >= _maxZombies)
+        if (_activeInstances.Count >= _maxZombies)
         {
             Debug.LogWarning($"[{name}] Max zombie limit ({_maxZombies}) reached.");
             return null;
         }
 
-        if (!TryGetSpawnPlacement(out Vector3 spawnPosition, out Quaternion spawnRotation))
+        if (!TryGetSpawnPlacement(spawnPoint, out Vector3 spawnPosition, out Quaternion spawnRotation))
         {
             Debug.LogWarning($"[{name}] Spawn skipped: no NavMesh within 5m of the chosen spawn point.");
             return null;
@@ -140,11 +184,7 @@ public class ZombieSpawner : MonoBehaviour
             behavior.SetZombieData(entry.data);
         }
 
-        ZombieBrain brain = instance.GetComponent<ZombieBrain>();
-        if (brain != null)
-        {
-            _activeZombies.Add(brain);
-        }
+        _activeInstances.Add(instance);
 
         Debug.Log($"[{name}] Spawned {instance.name} at {spawnPosition}");
         return instance;
@@ -152,23 +192,29 @@ public class ZombieSpawner : MonoBehaviour
 
     public void ClearAllZombies()
     {
-        foreach (ZombieBrain zombie in _activeZombies)
+        foreach (GameObject zombie in _activeInstances)
         {
             if (zombie != null)
             {
-                Destroy(zombie.gameObject);
+                Destroy(zombie);
             }
         }
-        _activeZombies.Clear();
+        _activeInstances.Clear();
         Debug.Log($"[{name}] Cleared all spawned zombies.");
     }
 
-    private bool TryGetSpawnPlacement(out Vector3 spawnPosition, out Quaternion spawnRotation)
+    private bool TryGetSpawnPlacement(Transform spawnPoint, out Vector3 spawnPosition, out Quaternion spawnRotation)
     {
         Vector3 basePosition = transform.position;
         spawnRotation = Quaternion.identity;
 
-        if (_spawnPoints != null && _spawnPoints.Length > 0)
+        if (spawnPoint != null)
+        {
+            // Explicit point (opening wave): every zombie gets its own point.
+            basePosition = spawnPoint.position;
+            spawnRotation = spawnPoint.rotation;
+        }
+        else if (_spawnPoints != null && _spawnPoints.Length > 0)
         {
             int index = UnityEngine.Random.Range(0, _spawnPoints.Length);
             if (_spawnPoints[index] != null)

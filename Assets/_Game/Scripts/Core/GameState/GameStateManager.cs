@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -120,7 +121,10 @@ public class GameStateManager : MonoBehaviour
 
         // Unscaled time: the scene is frozen while the overlay is up.
         _gameOverElapsed += Time.unscaledDeltaTime;
-        if (_gameOverElapsed >= RestartLockoutSeconds && Input.GetKeyDown(RestartKey))
+        // Input System API (project standard) — legacy Input.GetKeyDown breaks
+        // when Active Input Handling is set to Input System only.
+        Keyboard keyboard = Keyboard.current;
+        if (_gameOverElapsed >= RestartLockoutSeconds && keyboard != null && keyboard.rKey.wasPressedThisFrame)
         {
             Restart();
         }

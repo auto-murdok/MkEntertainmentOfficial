@@ -37,13 +37,17 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
     frame), exit→enter ordering, `OnCommonUpdate`/`UpdateState`/`CheckTransitions`
     pipeline order, `OnStateChanged`, unregistered-state error, global transition guard
     (death), initial state from non-default enum, empty-state assertion.
-  - `InteractableManager` — registry add/remove/overwrite, by-id and by-reference
-    interaction (both sides notified), singleton `Instance` lifecycle, duplicate
-    component destroyed while its GameObject survives.
+  - `InteractableRegistry` (SO) — register/unregister/overwrite, by-id and by-reference
+    interaction (both sides notified), `TryGet`, null safety, clean-slate reset on unload.
+  - `VoidEventChannel` / `BoolEventChannel` (SO) — Raise/subscriber notification,
+    unsubscribe semantics, no-throw with no subscribers, bool payload fan-out.
+  - `ArchitectureConformanceTests` — reflection fitness function: no game type may
+    expose a public static self-referencing member (singleton/service-locator shape),
+    enforcing the SO-architecture rules by suite.
   - `RagdollUtils` — kinematic toggling, callbacks, empty hierarchies.
 - **Items**
   - `Ammo` — clip draw math (partial/exact/overflow/empty, parameterized).
-  - `Item` / `PrefabManager` — id lookup, null/empty/unknown id handling, `Instance`.
+  - `Item` / `ItemCatalog` (SO) — id lookup, null/empty/unknown id handling.
   - `Handgun` / `Weapon` / handgun states — state registration, `Prepare`, fire-rate
     fallback, aim-direction resolution (muzzle-forward fallback), trigger/reload
     gating, dry-fire vs live-fire `onShoot`, empty-clip → auto-reload transition,
@@ -94,8 +98,9 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
    `currentStateEnum`) are set with `SerializedObject` + `ApplyModifiedProperties`.
 7. **Error paths** use `LogAssert.Expect(LogType.Error, regex)` — unhandled error logs
    fail PlayMode tests.
-8. **Static state** (`CombatLog`, `InteractableManager.Instance`) persists across
-   tests — never assert global emptiness; always search for your unique marker.
+8. **Static state** (`CombatLog`) persists across tests — never assert global
+   emptiness; always search for your unique marker. SO channel/registry fixtures are
+   created per-test via `ScriptableObject.CreateInstance` and destroyed in teardown.
 
 ## Coverage notes
 

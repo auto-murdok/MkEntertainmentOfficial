@@ -28,9 +28,11 @@ public class Subject<TAction, TValue> : MonoBehaviour
     public void NotifyObservers(TAction action, TValue value)
     {
         if (_observers == null) return;
+        // Reverse loop: observers may remove themselves (or be destroyed and
+        // skipped) mid-notification without skipping or reordering the rest.
         for (int i = _observers.Count - 1; i >= 0; i--)
         {
-            if (i < _observers.Count && _observers[i] != null)
+            if (_observers[i] != null)
             {
                 _observers[i].OnNotify(action, value);
             }

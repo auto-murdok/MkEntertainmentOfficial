@@ -24,11 +24,6 @@ public class AICharacterController : MonoBehaviour, IObserver<AICharacterActions
         Assert.IsNotNull(_visionHook, "Vision Hook missing in " + gameObject.name);
     }
 
-    private void Update()
-    {
-        // AITransformUtils.HandleAIMovement(transform, _agent, _animator);
-    }
-
     // Move the agent toward the requested world-space destination. Prefer driving
     // a state-machine entity (via ICommandable) so click-to-move reuses the same
     // FSM movement as every other AI; fall back to the raw agent otherwise.

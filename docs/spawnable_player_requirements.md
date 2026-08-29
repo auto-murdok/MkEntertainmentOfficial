@@ -4,7 +4,7 @@ The player is **never** placed in a scene. `PlayerSpawner` (composition root,
 see `Assets/_Game/Scripts/Composition/PlayerSpawner.cs`) spawns and
 wires every player-related object at runtime:
 
-- `Assets/_Game/Prefabs/Characters/Survivor/SpawnableFemaleCharacter.prefab`
+- `Assets/_Game/Prefabs/Characters/Survivor/FemaleCharacter.prefab` (the spawnable player prefab)
 - `Assets/_Game/Prefabs/InputHandler.prefab`
 - `Assets/_Game/Prefabs/UI/PlayerCoreComponents.prefab` (UI, AimTarget cube, both Cinemachine cameras)
 
@@ -22,7 +22,7 @@ that spawns a player must have a **baked NavMesh Surface** on its terrain
 ## Why the spawner must wire everything (prefab scene-ref stripping)
 
 Unity strips **prefab → scene object** references when a prefab asset is
-saved. The SpawnableFemaleCharacter / PlayerCoreComponents prefabs therefore
+saved. The FemaleCharacter / PlayerCoreComponents prefabs therefore
 ship with these refs null, and `PlayerSpawner.Awake` re-injects them on the
 instances:
 

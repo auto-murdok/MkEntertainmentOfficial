@@ -158,7 +158,7 @@ Every gameplay/runtime type is covered by the suites above. Deliberately not
 unit-tested (they are editor tooling / scene-composition surfaces better validated by
 play sessions and the editor itself):
 
-- `ExpandedArenaGenerator`, `RenderingScalabilitySetup` (Editor menu tooling).
+- `RenderingScalabilitySetup` (Editor menu tooling).
 - `DebugHud` (IMGUI-free but pure rendering), `PlayerHud` (procedural canvas
   rendering — its logic inputs (`CombatLog` kind filtering, `ActorBrainBase.Damaged`,
   regen values) are unit-tested; the pixels are validated by play sessions),

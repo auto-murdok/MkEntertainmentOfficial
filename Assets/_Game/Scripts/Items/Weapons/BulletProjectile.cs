@@ -21,6 +21,10 @@ public class BulletProjectile : MonoBehaviour
     // Single-hit guard: a body crossing several overlapping limb colliders in
     // one physics step must score exactly one damage event per flight.
     private bool _hasHit;
+    // Owner collider cache: the shooter never changes between flights, so the
+    // rig scan runs once instead of on every Launch.
+    private GameObject _cachedOwner;
+    private Collider[] _cachedOwnerColliders;
 
     void Awake()
     {
@@ -63,7 +67,12 @@ public class BulletProjectile : MonoBehaviour
         // included). Without this the bullet dies on the shooter at frame 1.
         if (owner != null)
         {
-            foreach (Collider ownerCollider in owner.GetComponentsInChildren<Collider>(true))
+            if (owner != _cachedOwner)
+            {
+                _cachedOwner = owner;
+                _cachedOwnerColliders = owner.GetComponentsInChildren<Collider>(true);
+            }
+            foreach (Collider ownerCollider in _cachedOwnerColliders)
             {
                 Physics.IgnoreCollision(_collider, ownerCollider, true);
             }

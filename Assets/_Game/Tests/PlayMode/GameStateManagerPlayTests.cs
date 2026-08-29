@@ -11,24 +11,31 @@ namespace Game.Tests.PlayMode
         private readonly List<GameObject> _cleanup = new List<GameObject>();
         private GameStateManager _gsm;
         private ZombieSpawner _spawner;
+        private VoidEventChannel _playerDiedChannel;
+        private BoolEventChannel _spawningEnabledChannel;
 
         [SetUp]
         public void SetUp()
         {
+            _playerDiedChannel = ScriptableObject.CreateInstance<VoidEventChannel>();
+            _spawningEnabledChannel = ScriptableObject.CreateInstance<BoolEventChannel>();
+
             var gsmHost = new GameObject("GameStateManagerHost");
             _gsm = gsmHost.AddComponent<GameStateManager>();
+            _gsm.playerDiedChannel = _playerDiedChannel;
+            _gsm.spawningEnabledChannel = _spawningEnabledChannel;
             _cleanup.Add(gsmHost);
 
             var spawnerHost = new GameObject("ZombieSpawnerHost");
             _spawner = spawnerHost.AddComponent<ZombieSpawner>();
-            _gsm.RegisterSpawningToggle(_spawner.SetSpawningEnabled);
+            _spawner.spawningEnabledChannel = _spawningEnabledChannel;
             _cleanup.Add(spawnerHost);
         }
 
         [TearDown]
         public void TearDown()
         {
-            // Global state (time scale, cursor, singleton) must not leak
+            // Global state (time scale, cursor) must not leak
             // into other play-mode tests.
             Time.timeScale = 1f;
             Cursor.lockState = CursorLockMode.None;
@@ -38,6 +45,8 @@ namespace Game.Tests.PlayMode
                 if (go != null) Object.DestroyImmediate(go);
             }
             _cleanup.Clear();
+            Object.DestroyImmediate(_playerDiedChannel);
+            Object.DestroyImmediate(_spawningEnabledChannel);
         }
 
         [Test]
@@ -103,12 +112,12 @@ namespace Game.Tests.PlayMode
         }
 
         [Test]
-        public void PlayerDeath_TriggersGameOver()
+        public void PlayerDeath_TriggersGameOverViaChannel()
         {
             var brainHost = new GameObject("TestBrainHost");
             _cleanup.Add(brainHost);
             var brain = brainHost.AddComponent<TestBrain>();
-            brain.Died += _gsm.NotifyPlayerDied;
+            brain.Died += _playerDiedChannel.Raise;
 
             brain.CallApplyDamage(100f);
 
@@ -121,7 +130,7 @@ namespace Game.Tests.PlayMode
             var brainHost = new GameObject("TestBrainHost");
             _cleanup.Add(brainHost);
             var brain = brainHost.AddComponent<TestBrain>();
-            brain.Died += _gsm.NotifyPlayerDied;
+            brain.Died += _playerDiedChannel.Raise;
 
             brain.CallApplyDamage(99f);
 

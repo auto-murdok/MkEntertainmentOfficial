@@ -11,11 +11,13 @@ public class AICharacterController : MonoBehaviour, IObserver<AICharacterActions
 
     private NavMeshAgent _agent;
     private Animator _animator;
+    private ICommandable _commandable;
 
     private void Awake()
     {
         _agent = GetComponent<NavMeshAgent>();
         _animator = GetComponent<Animator>();
+        _commandable = GetComponent<ICommandable>();
 
         Assert.IsNotNull(_agent, "NavMeshAgent missing in " + gameObject.name);
         Assert.IsNotNull(_animator, "Animator missing in " + gameObject.name);
@@ -32,10 +34,9 @@ public class AICharacterController : MonoBehaviour, IObserver<AICharacterActions
     // FSM movement as every other AI; fall back to the raw agent otherwise.
     private void MoveToDestination(Vector3 destination)
     {
-        ICommandable commandable = GetComponent<ICommandable>();
-        if (commandable != null)
+        if (_commandable != null)
         {
-            commandable.SetMoveDestination(destination);
+            _commandable.SetMoveDestination(destination);
         }
         else if (_agent != null)
         {

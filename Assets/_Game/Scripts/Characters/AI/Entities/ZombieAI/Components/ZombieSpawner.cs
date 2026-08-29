@@ -34,8 +34,41 @@ public class ZombieSpawner : MonoBehaviour
 
     public bool spawningEnabled => _autoSpawnEnabled;
 
+    // SO event channel wiring (set by the composition root): the game-flow
+    // layer broadcasts the toggle here, so this spawner never references
+    // GameStateManager and the manager never references this class.
+    private BoolEventChannel _spawningEnabledChannel;
+    private bool _channelSubscribed;
+
+    public BoolEventChannel spawningEnabledChannel
+    {
+        get => _spawningEnabledChannel;
+        set
+        {
+            if (_channelSubscribed && _spawningEnabledChannel != null)
+            {
+                _spawningEnabledChannel.OnRaised -= SetSpawningEnabled;
+            }
+            _spawningEnabledChannel = value;
+            _channelSubscribed = value != null;
+            if (_spawningEnabledChannel != null)
+            {
+                _spawningEnabledChannel.OnRaised += SetSpawningEnabled;
+            }
+        }
+    }
+
     // Game-flow hook: the GameStateManager switches spawning off on game over.
     public void SetSpawningEnabled(bool enabled) => _autoSpawnEnabled = enabled;
+
+    private void OnDisable()
+    {
+        if (_channelSubscribed && _spawningEnabledChannel != null)
+        {
+            _spawningEnabledChannel.OnRaised -= SetSpawningEnabled;
+            _channelSubscribed = false;
+        }
+    }
 
     private void Awake()
     {

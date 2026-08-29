@@ -35,7 +35,8 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
         _context.fireRate = DefaultFireRate;
         if (debugStateMachine)
         {
-            OnStateChanged += state => Debug.Log($"[{gameObject.name}] -> {state}");
+            // Named handler (not a lambda) so it can be unsubscribed again.
+            OnStateChanged += LogStateChanged;
         }
 
         _bulletPool = new ObjectPool<BulletProjectile>(
@@ -140,4 +141,6 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
     {
         _firearmEvents = fireArmEvents;
     }
+
+    private void LogStateChanged(HandgunState state) => Debug.Log($"[{gameObject.name}] -> {state}");
 }

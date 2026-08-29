@@ -1,14 +1,9 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class MousePositionHandler : Subject<AICharacterActions, Vector3>
 {
-    private const int LeftMouseButton = 0;
     private const float RaycastMaxDistance = 20f;
-
-    private void OnValidate()
-    {
-        Debug.Log("Changes made, Validating...");
-    }
 
     private Camera _mainCamera;
 
@@ -19,20 +14,25 @@ public class MousePositionHandler : Subject<AICharacterActions, Vector3>
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(LeftMouseButton))
+        // Input System API (project standard) — the legacy Input Manager calls
+        // break when Active Input Handling is set to Input System only.
+        Mouse mouse = Mouse.current;
+        if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
         {
-            if (_mainCamera == null)
-            {
-                _mainCamera = Camera.main;
-                if (_mainCamera == null) return;
-            }
+            return;
+        }
 
-            Ray ray = _mainCamera.ScreenPointToRay(Input.mousePosition);
-            bool isHit = Physics.Raycast(ray, out RaycastHit hit, RaycastMaxDistance);
-            if (isHit)
-            {
-                NotifyObservers(AICharacterActions.MoveToDestination, hit.point);
-            }
+        if (_mainCamera == null)
+        {
+            _mainCamera = Camera.main;
+            if (_mainCamera == null) return;
+        }
+
+        Ray ray = _mainCamera.ScreenPointToRay(mouse.position.ReadValue());
+        bool isHit = Physics.Raycast(ray, out RaycastHit hit, RaycastMaxDistance);
+        if (isHit)
+        {
+            NotifyObservers(AICharacterActions.MoveToDestination, hit.point);
         }
     }
 }

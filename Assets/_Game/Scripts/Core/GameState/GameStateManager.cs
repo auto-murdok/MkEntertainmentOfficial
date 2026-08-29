@@ -29,20 +29,55 @@ public class GameStateManager : MonoBehaviour
 
     public event Action<GameState> OnGameStateChanged;
 
-    // Composition wiring: the spawner is injected as a plain toggle delegate so
-    // this Core assembly stays decoupled from entity-specific types.
-    private Action<bool> _setSpawningEnabled;
+    // SO event channels injected by the composition root (PlayerSpawner): the
+    // manager consumes the player-died channel and raises the spawning-toggle
+    // channel, so Core never references entity types or spawners directly.
+    private VoidEventChannel _playerDiedChannel;
+    private BoolEventChannel _spawningEnabledChannel;
+    private bool _subscribedToDeathChannel;
     private float _gameOverElapsed;
     private Canvas _gameOverCanvas;
 
     // Plain component created and wired by the composition root (PlayerSpawner)
     // — no static Instance: game-flow consumers get the reference injected.
 
-    // Player wiring: the composition root subscribes this to the player's
-    // Died event (brain.Died += NotifyPlayerDied).
-    public void NotifyPlayerDied() => SetGameOver();
+    // Assigning the channel subscribes immediately (tests AddComponent without
+    // running Start) and unsubscribes from any previous channel. OnDisable
+    // cleans up.
+    public VoidEventChannel playerDiedChannel
+    {
+        get => _playerDiedChannel;
+        set
+        {
+            if (_subscribedToDeathChannel && _playerDiedChannel != null)
+            {
+                _playerDiedChannel.OnRaised -= HandlePlayerDied;
+            }
+            _playerDiedChannel = value;
+            _subscribedToDeathChannel = value != null;
+            if (_playerDiedChannel != null)
+            {
+                _playerDiedChannel.OnRaised += HandlePlayerDied;
+            }
+        }
+    }
 
-    public void RegisterSpawningToggle(Action<bool> setSpawningEnabled) => _setSpawningEnabled = setSpawningEnabled;
+    public BoolEventChannel spawningEnabledChannel
+    {
+        get => _spawningEnabledChannel;
+        set => _spawningEnabledChannel = value;
+    }
+
+    private void HandlePlayerDied() => SetGameOver();
+
+    private void OnDisable()
+    {
+        if (_subscribedToDeathChannel && _playerDiedChannel != null)
+        {
+            _playerDiedChannel.OnRaised -= HandlePlayerDied;
+            _subscribedToDeathChannel = false;
+        }
+    }
 
     // Idempotent entry into the GameOver state. Public so tests (and future
     // callers such as a "you were caught" trigger) can force the transition.
@@ -61,7 +96,7 @@ public class GameStateManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        _setSpawningEnabled?.Invoke(false);
+        _spawningEnabledChannel?.Raise(false);
 
         StartCoroutine(FreezeAfterCollapse());
 

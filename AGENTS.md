@@ -175,6 +175,7 @@ unity pipeline upgrade
 - **ScriptableObject architecture (modularity):** entities never reach out to scene objects or static singletons.
   - `InteractableRegistry` (SO, RuntimeSet pattern): every actor prefab references the shared asset (`Assets/_Game/Data/Registries/InteractableRegistry.asset`) and self-registers/unregisters; bite interactions go through `registry.Interact(...)`.
   - `ItemCatalog` (SO): `CharacterLocomotion` references `Assets/_Game/Data/Items/ItemCatalog_Default.asset` directly — no PrefabManager singleton.
+  - **Event channels (SO):** `VoidEventChannel` / `BoolEventChannel` (`Core/Events/`) decouple producers from consumers — player death (`PlayerDiedChannel.asset`) and the spawning toggle (`SpawningEnabledChannel.asset`). The composition root (`PlayerSpawner`) injects channel refs; consumers subscribe via their channel property (setter subscribes immediately + unsubscribes the old one; `OnDisable` cleans up).
   - `GameStateManager` is a plain component created and wired by the composition root (no static `Instance`).
 - **Player spawning architecture (composition root):**
   - Scenes contain **only** map + MainCamera (CinemachineBrain + `MousePosition` child) + baked NavMesh Surface + `PlayerSpawner`.

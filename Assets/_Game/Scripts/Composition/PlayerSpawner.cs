@@ -14,6 +14,10 @@ public class PlayerSpawner : MonoBehaviour
     [SerializeField] private GameObject _inputHandlerPrefab;
     [SerializeField] private GameObject _playerCorePrefab;
 
+    [Header("Game-flow event channels (SO assets)")]
+    [SerializeField] private VoidEventChannel _playerDiedChannel;
+    [SerializeField] private BoolEventChannel _spawningEnabledChannel;
+
     private void Awake()
     {
         // Game-flow: the state manager lives on the composition root so the
@@ -85,10 +89,17 @@ public class PlayerSpawner : MonoBehaviour
         // read the brain, locomotion and equipped weapon directly.
         player.AddComponent<DebugHud>();
 
-        // Game-flow wiring: player death triggers game over; zombie spawning is
-        // the system the state manager switches off on game over.
-        brain.Died += gameStateManager.NotifyPlayerDied;
+        // Game-flow wiring through SO event channels: the player's death is
+        // broadcast on the channel (any number of listeners may react), and the
+        // state manager consumes it and broadcasts the spawning toggle. Neither
+        // side references the other directly.
+        brain.Died += _playerDiedChannel.Raise;
+        gameStateManager.playerDiedChannel = _playerDiedChannel;
+        gameStateManager.spawningEnabledChannel = _spawningEnabledChannel;
         ZombieSpawner zombieSpawner = FindFirstObjectByType<ZombieSpawner>();
-        gameStateManager.RegisterSpawningToggle(zombieSpawner.SetSpawningEnabled);
+        if (zombieSpawner != null)
+        {
+            zombieSpawner.spawningEnabledChannel = _spawningEnabledChannel;
+        }
     }
 }

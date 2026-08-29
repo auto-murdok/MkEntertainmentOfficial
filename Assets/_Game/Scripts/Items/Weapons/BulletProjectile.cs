@@ -18,14 +18,18 @@ public class BulletProjectile : MonoBehaviour
     // in the same physics step (one per contact pair), but it may only go back
     // to the pool once.
     private bool _isReleased;
+    // Single-hit guard: a body crossing several overlapping limb colliders in
+    // one physics step must score exactly one damage event per flight.
+    private bool _hasHit;
 
     void Awake()
     {
         _bulletRigidbody = GetComponent<Rigidbody>();
         _collider = GetComponent<Collider>();
-        // CCD is a property of the rigidbody: configure it once here (at pool
-        // creation), never per shot.
-        _bulletRigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        // Speculative CCD: swept contacts are generated against ALL body types
+        // (static, kinematic, dynamic). ContinuousDynamic skips kinematic
+        // bodies, which let fast bullets tunnel through ragdoll limbs.
+        _bulletRigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
     }
 
     // Called by the pool owner every time this projectile is handed out.
@@ -33,9 +37,15 @@ public class BulletProjectile : MonoBehaviour
     // not overridden per shot.
     public void Launch(Vector3 position, Quaternion rotation, GameObject owner)
     {
+        // Teleport the rigidbody directly: a transform-only move on a freshly
+        // re-activated body can leave the physics pose at the pool's creation
+        // point (observed: bullets "hitting" the ground at the origin).
+        _bulletRigidbody.position = position;
+        _bulletRigidbody.rotation = rotation;
         transform.SetPositionAndRotation(position, rotation);
         _initialPosition = position;
         _isReleased = false;
+        _hasHit = false;
         _bulletRigidbody.linearVelocity = transform.forward * ProjectileSpeed;
 
         // The projectile spawns inside the shooter's rig, so it must never
@@ -84,16 +94,33 @@ public class BulletProjectile : MonoBehaviour
     {
         if ((transform.position - _initialPosition).sqrMagnitude > MaxTravelDistanceSqr)
         {
+            CombatLog.ReportImpact($"Bullet max-range release at {transform.position:F1}");
             ReleaseToPool();
         }
     }
 
     private void OnCollisionEnter(Collision other)
     {
+        // Later contact callbacks (same physics step, same body) after the
+        // scoring hit are ignored — the projectile is already spent/released.
+        if (_isReleased || _hasHit)
+        {
+            return;
+        }
+        _hasHit = true;
+
         IDamageable damageable = other.gameObject.GetComponentInParent<IDamageable>();
         if (damageable != null)
         {
-            damageable.TakeDamage(_damage);
+            using (CombatLog.BeginSource("Bullet"))
+            {
+                damageable.TakeDamage(_damage);
+            }
+        }
+        else
+        {
+            Vector3 point = other.GetContact(0).point;
+            CombatLog.ReportImpact($"Bullet hit {other.gameObject.name} [{LayerMask.LayerToName(other.gameObject.layer)}] at {point:F2} — no IDamageable");
         }
 
         ReleaseToPool();

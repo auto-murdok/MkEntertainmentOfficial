@@ -61,7 +61,10 @@ public class ZombieBrain : ActorBrainBase, IZombie
         // damage to the victim. The isBiting guard prevents re-firing per bite.
         if (target is IDamageable damageable)
         {
-            damageable.TakeDamage(biteDamage);
+            using (CombatLog.BeginSource("ZombieBite"))
+            {
+                damageable.TakeDamage(biteDamage);
+            }
         }
     }
 

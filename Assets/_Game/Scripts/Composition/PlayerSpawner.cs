@@ -62,5 +62,9 @@ public class PlayerSpawner : MonoBehaviour
 
         // The UI observes the spawned character's UI subject.
         coreUI._subject = player.GetComponent<CharacterUIController>();
+
+        // Debug overlay (F3 toggle) — lives on the player instance so it can
+        // read the brain, locomotion and equipped weapon directly.
+        player.AddComponent<DebugHud>();
     }
 }

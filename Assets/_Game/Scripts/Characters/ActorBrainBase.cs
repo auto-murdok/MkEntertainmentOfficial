@@ -26,6 +26,7 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
     protected void ApplyDamage(float amount)
     {
         _hitPoints = Mathf.Max(0f, _hitPoints - amount);
+        CombatLog.ReportDamage(amount, _hitPoints, gameObject);
         if (_hitPoints <= 0f) Context.isAlive = false;
     }
 

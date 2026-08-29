@@ -91,6 +91,12 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
         _context.UIController = uiController;
     }
 
+    // AIM-FIRST BEHAVIOUR: the shot direction is the stored aim vector toward
+    // the world aim point (CharacterLocomotion._aimTarget), which is only
+    // meaningful while the player is aiming — the aim camera/ray drives it.
+    // When shooting without aiming, the weapon's rest pose points DOWN, so the
+    // muzzle-forward fallback naturally sends the bullet into the ground. That
+    // is intended: fire first, then shoot.
     public void Shoot(Vector3 mouseWorldPosition)
     {
         if (!_context.isReloading && !_context.isTriggerPressed)
@@ -127,6 +133,7 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
 
         BulletProjectile bullet = _bulletPool.Get();
         bullet.Launch(spawnPos, Quaternion.LookRotation(direction, Vector3.up), transform.root.gameObject);
+        CombatLog.ReportImpact($"Bullet launched from {spawnPos:F2} dir {direction:F2}");
         return true;
     }
 

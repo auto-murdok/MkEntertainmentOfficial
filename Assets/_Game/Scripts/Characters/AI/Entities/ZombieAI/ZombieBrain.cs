@@ -10,6 +10,7 @@ public class ZombieBrain : ActorBrainBase, IZombie
     public override Transform victimHook => _behavior.victimHook;
     public override bool isPreparing => _behavior != null && _behavior._context != null && _behavior._context.isPreparing;
     public bool isBiting => _behavior != null && _behavior._context != null && _behavior._context.isBiting;
+    public bool isHandAttacking => _behavior != null && _behavior._context != null && _behavior._context.isHandAttacking;
 
     // Default Fallback Stats (used if ZombieData is not assigned on ZombieBehavior)
     private const float DefaultMaxHitPoints = 100f;
@@ -45,10 +46,21 @@ public class ZombieBrain : ActorBrainBase, IZombie
 
     public override void OnExternalInteraction(IInteractable target)
     {
-        // Ignore duplicate interactions while a bite is already in progress so the
-        // Bite trigger is not re-fired (which would replay the bite animation).
-        if (_behavior != null && _behavior._context.isBiting)
+        // Ignore duplicate interactions while an attack is already in progress so
+        // the animation triggers are not re-fired (which would replay the attack).
+        if (_behavior != null && (_behavior._context.isBiting || _behavior._context.isHandAttacking))
         {
+            return;
+        }
+
+        // Victim is pinned by another zombie's bite grab: the hand trigger still
+        // reached it, so answer with the standing right-hand swing instead of a
+        // (visually empty) bite grab. A pin held by this zombie itself is its
+        // own bite in progress and proceeds normally.
+        if (!ZombieBehavior.CanVictimBeBitten(target, this))
+        {
+            _behavior.StartHandAttack(target);
+            transform.LookAt(target.position);
             return;
         }
 

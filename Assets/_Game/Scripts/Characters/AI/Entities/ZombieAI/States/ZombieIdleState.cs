@@ -4,7 +4,11 @@ public class ZombieIdleState : State<ZombieStates, ZombieContext>
 {
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
-        if (character._context.isBiting)
+        if (character._context.isHandAttacking)
+        {
+            character.ChangeState(ZombieStates.HandAttacking);
+        }
+        else if (character._context.isBiting)
         {
             character.ChangeState(ZombieStates.Biting);
         }

@@ -24,6 +24,7 @@ public class GameStateManager : MonoBehaviour
 
     private const float CollapseBeforeFreezeSeconds = 1.5f;
     private const KeyCode RestartKey = KeyCode.R;
+    private const string MainMenuSceneName = "MainMenu";
 
     private GameState _state = GameState.Playing;
     public GameState state => _state;
@@ -168,7 +169,56 @@ public class GameStateManager : MonoBehaviour
         text.color = Color.white;
         text.text = "YOU DIED\nPress R to restart";
         textGo.AddComponent<Shadow>().effectColor = Color.black;
-        StretchFull(textGo.transform as RectTransform);
+        RectTransform textRect = textGo.transform as RectTransform;
+        textRect.anchorMin = new Vector2(0.5f, 0.5f);
+        textRect.anchorMax = new Vector2(0.5f, 0.5f);
+        textRect.sizeDelta = new Vector2(1200f, 220f);
+        textRect.anchoredPosition = new Vector2(0f, 120f);
+
+        CreateGameOverButton(canvasGo.transform, "RestartButton", "RESTART  (R)", new Vector2(0.5f, 0.32f), Restart);
+        CreateGameOverButton(canvasGo.transform, "MainMenuButton", "MAIN MENU", new Vector2(0.5f, 0.2f), ReturnToMenu);
+    }
+
+    // Returns to the menu scene, resetting the frozen clock and cursor state
+    // the game-over flow left behind. Public so the overlay button and tests
+    // can trigger it.
+    public void ReturnToMenu()
+    {
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        SceneManager.LoadScene(MainMenuSceneName);
+    }
+
+    private void CreateGameOverButton(Transform parent, string name, string label, Vector2 anchor, Action onClick)
+    {
+        GameObject buttonGo = new GameObject(name);
+        buttonGo.transform.SetParent(parent, false);
+        Image image = buttonGo.AddComponent<Image>();
+        image.color = new Color(0.14f, 0.02f, 0.02f, 0.85f);
+
+        RectTransform rect = buttonGo.GetComponent<RectTransform>();
+        rect.anchorMin = anchor;
+        rect.anchorMax = anchor;
+        rect.sizeDelta = new Vector2(420f, 72f);
+
+        Button button = buttonGo.AddComponent<Button>();
+        ColorBlock colors = button.colors;
+        colors.highlightedColor = new Color(0.28f, 0.05f, 0.05f, 1f);
+        colors.pressedColor = new Color(0.36f, 0.07f, 0.06f, 1f);
+        button.colors = colors;
+        button.onClick.AddListener(() => onClick());
+
+        GameObject labelGo = new GameObject("Label");
+        labelGo.transform.SetParent(buttonGo.transform, false);
+        Text labelText = labelGo.AddComponent<Text>();
+        labelText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        labelText.fontSize = 30;
+        labelText.alignment = TextAnchor.MiddleCenter;
+        labelText.color = Color.white;
+        labelText.text = label;
+        labelText.raycastTarget = false;
+        StretchFull(labelGo.transform as RectTransform);
     }
 
     private static void StretchFull(RectTransform rect)

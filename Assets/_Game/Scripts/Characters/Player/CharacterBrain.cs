@@ -3,7 +3,7 @@ using UnityEngine.Animations.Rigging;
 using UnityEngine.Assertions;
 using UnityEngine.InputSystem;
 
-public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerActions, InputValue>
+public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<InputHandlerActions, InputValue>
 {
     [Header("Connection Settings")]
     public Subject<InputHandlerActions, InputValue> _subject;
@@ -18,6 +18,11 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerA
     Vector3 ISurvivor.TargetPosition => transform.position;
     public override Transform victimHook => transform;
     public override bool isPreparing => false;
+
+    // A bite is an exclusive grab: while already pinned by one zombie's bite,
+    // other attackers must fall back to non-grab attacks (right-hand swing).
+    public bool canBeBitten => _locomotion == null || !_locomotion.isBeingAttacked;
+    public IInteractable currentBiter => _locomotion != null ? _locomotion.currentAttacker : null;
 
     private void Awake()
     {

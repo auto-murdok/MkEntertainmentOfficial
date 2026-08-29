@@ -82,4 +82,12 @@ namespace Game.Tests.EditMode
             HitPoints = Mathf.Max(0f, HitPoints - amount);
         }
     }
+
+    public class StubBiteTarget : StubInteractable, IBiteTarget
+    {
+        public StubBiteTarget(int id, Transform transform = null) : base(id, transform) { }
+
+        public bool canBeBitten { get; set; }
+        public IInteractable currentBiter { get; set; }
+    }
 }

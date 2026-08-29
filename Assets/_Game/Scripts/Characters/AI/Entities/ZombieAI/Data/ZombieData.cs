@@ -29,6 +29,14 @@ public class ZombieData : ScriptableObject
     [Tooltip("NavMeshAgent radius while biting (kept small so the zombie hugs the victim).")]
     [SerializeField] private float _bittingAgentRadius = 0.1f;
 
+    [Header("Hand Attack (victim already pinned by another zombie)")]
+    [Tooltip("Damage of the standing right-hand swing, used when the victim is locked in another zombie's bite grab.")]
+    [SerializeField] private float _handAttackDamage = 15f;
+    [Tooltip("Reach of the right-hand swing at the hit frame (a swipe reaches further than the grab bite).")]
+    [SerializeField] private float _handAttackRange = 1.6f;
+    [Tooltip("Length of the right-hand swing in seconds. The hit lands at HitFraction of this (ZombieHandAttackState).")]
+    [SerializeField] private float _handAttackDuration = 1.2f;
+
     [Header("Locomotion")]
     [SerializeField] private float _walkSpeed = 1.5f;
     [SerializeField] private float _chaseSpeed = 3.5f;
@@ -48,6 +56,9 @@ public class ZombieData : ScriptableObject
     public float biteDuration => _biteDuration;
     public float defaultAgentRadius => _defaultAgentRadius;
     public float bittingAgentRadius => _bittingAgentRadius;
+    public float handAttackDamage => _handAttackDamage;
+    public float handAttackRange => _handAttackRange;
+    public float handAttackDuration => _handAttackDuration;
     public float walkSpeed => _walkSpeed;
     public float chaseSpeed => _chaseSpeed;
 }

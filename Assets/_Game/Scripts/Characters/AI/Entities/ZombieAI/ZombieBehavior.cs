@@ -36,6 +36,7 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
         states[ZombieStates.Idle] = new ZombieIdleState();
         states[ZombieStates.Chasing] = new ZombieChasingState();
         states[ZombieStates.Biting] = new ZombieBiting();
+        states[ZombieStates.HandAttacking] = new ZombieHandAttackState();
         states[ZombieStates.CommandedMove] = new ZombieCommandedMoveState();
         states[ZombieStates.Dead] = new ActorDeadState<ZombieStates, ZombieContext>();
 
@@ -180,12 +181,47 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
         IInteractable interactableTarget = _context.target as IInteractable ?? _context.interactable;
         ZombieBrain brain = _context.brain != null ? _context.brain : GetComponent<ZombieBrain>();
 
-        if (interactableTarget != null && brain != null && _context.registry != null)
+        if (interactableTarget == null) return false;
+
+        // The bite is an exclusive grab attack: if the victim is already pinned
+        // by ANOTHER zombie's bite, fall back to the standing right-hand swing
+        // (no grab, no victim lock) instead of biting air.
+        if (!CanVictimBeBitten(interactableTarget, brain))
         {
-            _context.registry.Interact(interactableTarget.id, brain.id);
+            StartHandAttack(interactableTarget);
+            return true;
+        }
+
+        InteractableRegistry registry = brain != null ? brain.registry : null;
+        if (registry != null)
+        {
+            registry.Interact(interactableTarget.id, brain.id);
             return true;
         }
 
         return false;
+    }
+
+    // Pure attack-selection rule: a victim is biteable unless it reports itself
+    // pinned (IBiteTarget) by a DIFFERENT attacker. A pin held by this very
+    // attacker is our own bite in progress — the victim marks itself attacked
+    // synchronously inside the interaction, before this zombie's own side is
+    // notified, so the identity check prevents the initiator from diverting
+    // itself into a hand swing mid-bite.
+    public static bool CanVictimBeBitten(IInteractable victim, IInteractable attacker)
+    {
+        if (victim is not IBiteTarget biteTarget) return true;
+        if (biteTarget.canBeBitten) return true;
+        return ReferenceEquals(biteTarget.currentBiter, attacker);
+    }
+
+    // Raises the isHandAttacking flag; the FSM routes it into
+    // ZombieHandAttackState from Idle/Chasing on the same frame.
+    public void StartHandAttack(IInteractable victim)
+    {
+        if (victim == null || _context.isHandAttacking || _context.isBiting) return;
+
+        _context.interactable = victim;
+        _context.isHandAttacking = true;
     }
 }

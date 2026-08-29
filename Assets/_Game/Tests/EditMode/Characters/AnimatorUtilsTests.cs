@@ -29,6 +29,7 @@ namespace Game.Tests.EditMode
             Assert.AreEqual(Animator.StringToHash("isReloading"), AnimatorUtils.IsReloadingHash);
             Assert.AreEqual(Animator.StringToHash("Bite"), AnimatorUtils.BiteHash);
             Assert.AreEqual(Animator.StringToHash("TakeBite"), AnimatorUtils.TakeBiteHash);
+            Assert.AreEqual(Animator.StringToHash("RHandAttack"), AnimatorUtils.RHandAttackHash);
         }
 
         [Test]

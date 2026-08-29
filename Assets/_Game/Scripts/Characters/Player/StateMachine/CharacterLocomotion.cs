@@ -226,6 +226,7 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     }
 
     public bool isBeingAttacked => _context.isBeingAttacked;
+    public IInteractable currentAttacker => _context.attacker;
 
     private void onWeaponShoot()
     {

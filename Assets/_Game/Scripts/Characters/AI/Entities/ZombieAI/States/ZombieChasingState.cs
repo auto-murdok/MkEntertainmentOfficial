@@ -11,7 +11,11 @@ public class ZombieChasingState : State<ZombieStates, ZombieContext>
 
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
-        if (character._context.isBiting)
+        if (character._context.isHandAttacking)
+        {
+            character.ChangeState(ZombieStates.HandAttacking);
+        }
+        else if (character._context.isBiting)
         {
             character.ChangeState(ZombieStates.Biting);
         }
@@ -66,7 +70,7 @@ public class ZombieChasingState : State<ZombieStates, ZombieContext>
             float sqrDistance = (character.transform.position - targetPosition).sqrMagnitude;
             float biteRange = context.data != null ? context.data.biteRange : ZombieBehavior.DefaultBiteRange;
 
-            if (sqrDistance <= (biteRange * biteRange) && !context.isBiting && !context.recentlyBitten)
+            if (sqrDistance <= (biteRange * biteRange) && !context.isBiting && !context.isHandAttacking && !context.recentlyBitten)
             {
                 if (character is ZombieBehavior behavior && behavior.TryTriggerAttack())
                 {

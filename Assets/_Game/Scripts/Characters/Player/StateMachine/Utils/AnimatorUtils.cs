@@ -7,6 +7,7 @@ public class AnimatorUtils
     public static readonly int IsReloadingHash = Animator.StringToHash("isReloading");
     public static readonly int BiteHash = Animator.StringToHash("Bite");
     public static readonly int TakeBiteHash = Animator.StringToHash("TakeBite");
+    public static readonly int RHandAttackHash = Animator.StringToHash("RHandAttack");
 
     // Frame-rate-independent damping factor: Lerp(a, b, DampFactor(speed, dt))
     // converges at the same rate at any framerate, unlike Lerp(a, b, k * dt)

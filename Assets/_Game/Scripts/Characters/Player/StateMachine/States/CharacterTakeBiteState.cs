@@ -4,7 +4,6 @@ using UnityEngine;
 public class CharacterTakeBiteState : State<CharacterState, CharacterStateContext>
 {
     private const float AttackedAgentRadius = 0.1f;
-    private const float DefaultAgentRadius = 0.3f;
 
     // TUNING: distance (metres) the victim is pulled from the victimHook socket toward
     // the zombie's body. The socket sits ~0.5m in front of the zombie; this closes that
@@ -14,6 +13,10 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
     private const float PlayerBitePullInDistance = 0.35f;
 
     private float _biteTimer;
+    // The player prefab's actual NavMeshAgent radius, captured on entry so the
+    // exit restores the real value instead of a hardcoded default.
+    private float _originalAgentRadius;
+    private bool _agentRadiusCaptured;
 
     public void CheckTransitions(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
@@ -26,11 +29,6 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
     public void EnterState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
         CharacterStateContext context = stateMachine._context;
-        if (context.agent != null)
-        {
-            context.agent.radius = AttackedAgentRadius;
-            context.agent.ResetPath();
-        }
 
         // The ScriptableObject is the only source of truth for the bite duration:
         // fail loudly instead of falling back to a script-side default.
@@ -41,15 +39,23 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
             return;
         }
 
+        if (context.agent != null)
+        {
+            _originalAgentRadius = context.agent.radius;
+            _agentRadiusCaptured = true;
+            context.agent.radius = AttackedAgentRadius;
+            context.agent.ResetPath();
+        }
+
         _biteTimer = context.data.takeBiteDuration;
     }
 
     public void ExitState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
-        CharacterStateContext context = stateMachine._context;
-        if (context.agent != null)
+        if (_agentRadiusCaptured && stateMachine._context.agent != null)
         {
-            context.agent.radius = DefaultAgentRadius;
+            stateMachine._context.agent.radius = _originalAgentRadius;
+            _agentRadiusCaptured = false;
         }
     }
 

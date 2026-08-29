@@ -37,6 +37,13 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
 
     protected void ApplyDamage(float amount)
     {
+        // Dead actors ignore damage: bullets and swings hitting ragdolls must
+        // not decrement HP or spam the combat log.
+        if (Context == null || !Context.isAlive)
+        {
+            return;
+        }
+
         _hitPoints = Mathf.Max(0f, _hitPoints - amount);
         CombatLog.ReportDamage(amount, _hitPoints, gameObject);
         if (_hitPoints <= 0f && Context.isAlive)

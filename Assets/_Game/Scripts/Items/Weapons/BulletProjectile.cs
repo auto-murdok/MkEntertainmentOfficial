@@ -3,11 +3,13 @@ using UnityEngine.Pool;
 
 public class BulletProjectile : MonoBehaviour
 {
-    private const float MaxTravelDistance = 30f;
-    private const float MaxTravelDistanceSqr = MaxTravelDistance * MaxTravelDistance;
+    [Tooltip("Distance (metres) the projectile may travel before it is released back to the pool.")]
+    [SerializeField] private float _maxTravelDistance = 30f;
+    [SerializeField] private float _damage = 25f;
+
     private const float ProjectileSpeed = 50f;
 
-    [SerializeField] private float _damage = 25f;
+    private float _maxTravelDistanceSqr;
 
     private Rigidbody _bulletRigidbody;
     private Collider _collider;
@@ -30,6 +32,7 @@ public class BulletProjectile : MonoBehaviour
     {
         _bulletRigidbody = GetComponent<Rigidbody>();
         _collider = GetComponent<Collider>();
+        _maxTravelDistanceSqr = Mathf.Max(1f, _maxTravelDistance) * Mathf.Max(1f, _maxTravelDistance);
         // Speculative CCD: swept contacts are generated against ALL body types
         // (static, kinematic, dynamic). ContinuousDynamic skips kinematic
         // bodies, which let fast bullets tunnel through ragdoll limbs.
@@ -113,7 +116,7 @@ public class BulletProjectile : MonoBehaviour
 
     void Update()
     {
-        if ((transform.position - _initialPosition).sqrMagnitude > MaxTravelDistanceSqr)
+        if ((transform.position - _initialPosition).sqrMagnitude > _maxTravelDistanceSqr)
         {
             CombatLog.ReportImpact($"Bullet max-range release at {transform.position:F1}");
             ReleaseToPool();

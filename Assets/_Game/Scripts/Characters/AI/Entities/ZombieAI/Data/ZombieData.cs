@@ -14,10 +14,11 @@ public class ZombieData : ScriptableObject
 
     [Header("Detection & Senses")]
     [SerializeField] private float _detectionMaxDistance = 5f;
-    [SerializeField] private int _minDetectionAngle = 100;
-    [SerializeField] private int _maxDetectionAngle = 180;
+    [Tooltip("Full forward vision-cone angle in degrees (half of it on each side of forward). 120 = a 60-degree half cone.")]
+    [SerializeField] private float _fieldOfViewAngle = 120f;
     [SerializeField] private LayerMask _detectionLayerMask;
-    [SerializeField] private LayerMask _ignoreLayerMask;
+    [Tooltip("Layers that block line-of-sight (environment geometry, other actors). Empty = vision is never blocked.")]
+    [SerializeField] private LayerMask _obstacleLayerMask = (LayerMask)DefaultObstacleMask;
 
     [Header("Combat & Sizing")]
     [Tooltip("Distance at which the zombie bites. ALSO the separation threshold for re-biting: once the victim is farther than this after a push-off, recentlyBitten clears and a new bite can start after the cooldown.")]
@@ -42,16 +43,20 @@ public class ZombieData : ScriptableObject
     [SerializeField] private float _chaseSpeed = 3.5f;
 
     // Public Getters
+    // Default obstacle mask: environment (Default) + Water + other zombies.
+    // Matches the values previously stored in the Walker/Runner assets (which
+    // excluded Default and let zombies see through arena walls).
+    public const int DefaultObstacleMask = 133;
+
     public string zombieTypeName => _zombieTypeName;
     public AnimatorOverrideController animatorOverride => _animatorOverride;
     public float maxHitPoints => _maxHitPoints;
     public float biteDamage => _biteDamage;
     public float corpseDestroyDelay => _corpseDestroyDelay;
     public float detectionMaxDistance => _detectionMaxDistance;
-    public int minDetectionAngle => _minDetectionAngle;
-    public int maxDetectionAngle => _maxDetectionAngle;
+    public float fieldOfViewAngle => _fieldOfViewAngle;
     public LayerMask detectionLayerMask => _detectionLayerMask;
-    public LayerMask ignoreLayerMask => _ignoreLayerMask;
+    public LayerMask obstacleLayerMask => _obstacleLayerMask;
     public float biteRange => _biteRange;
     public float biteDuration => _biteDuration;
     public float defaultAgentRadius => _defaultAgentRadius;

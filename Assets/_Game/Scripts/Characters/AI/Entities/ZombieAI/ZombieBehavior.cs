@@ -12,12 +12,12 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
     [SerializeField] private Transform _visionHook;
     [SerializeField] private Transform _victimHook;
     [SerializeField] private LayerMask _detectionLayerMask;
-    [SerializeField] private LayerMask _ignoreLayerMask;
+    [Tooltip("Layers that block line-of-sight (environment geometry, other actors). Empty = vision is never blocked.")]
+    [SerializeField] private LayerMask _obstacleLayerMask = (LayerMask)ZombieData.DefaultObstacleMask;
     [SerializeField] private float _detectionMaxDistance = 12f;
 
     public const float DefaultBiteRange = 1.2f;
-    private const int DefaultMinDetectionAngle = 60;
-    private const int DefaultMaxDetectionAngle = 180;
+    public const float DefaultFieldOfViewAngle = AIDetectionUtils.DefaultFieldOfViewAngle;
 
     private ZombieSockets _sockets;
 
@@ -28,6 +28,7 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
 
     private const float VisionScanInterval = 0.15f;
     private float _visionScanTimer;
+    private bool _obstacleMaskWarned;
 
     private void Awake()
     {
@@ -83,7 +84,7 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
         if (data != null)
         {
             _context.detectionLayerMask = data.detectionLayerMask.value != 0 ? data.detectionLayerMask : _detectionLayerMask;
-            _context.ignoreLayerMask = data.ignoreLayerMask;
+            _context.obstacleLayerMask = data.obstacleLayerMask;
             _context.biteDuration = data.biteDuration;
 
             if (_context.agent != null)
@@ -99,7 +100,7 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
         else
         {
             _context.detectionLayerMask = _detectionLayerMask;
-            _context.ignoreLayerMask = _ignoreLayerMask;
+            _context.obstacleLayerMask = _obstacleLayerMask;
         }
 
         // Ensure default detection mask points to LocalPlayer if not explicitly assigned
@@ -121,18 +122,25 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
         _visionScanTimer = VisionScanInterval;
 
         float maxDist = _zombieData != null ? _zombieData.detectionMaxDistance : _detectionMaxDistance;
-        int minAngle = _zombieData != null ? _zombieData.minDetectionAngle : DefaultMinDetectionAngle;
-        int maxAngle = _zombieData != null ? _zombieData.maxDetectionAngle : DefaultMaxDetectionAngle;
+        float fovAngle = _zombieData != null ? _zombieData.fieldOfViewAngle : DefaultFieldOfViewAngle;
         LayerMask detectMask = _context.detectionLayerMask;
-        LayerMask ignoreMask = _context.ignoreLayerMask;
+        LayerMask obstacleMask = _context.obstacleLayerMask;
+
+        // Loud failure: an empty obstacle mask silently disables all line-of-sight
+        // blocking (zombies would see through walls).
+        if (obstacleMask.value == 0 && !_obstacleMaskWarned)
+        {
+            _obstacleMaskWarned = true;
+            Debug.LogWarning($"[{name}] ZombieData obstacle layer mask is empty — line of sight can never be blocked. " +
+                             "Assign obstacle layers (environment/actors) in the ZombieData asset.");
+        }
 
         ISurvivor survivor = AIDetectionUtils.DetectViaLineOfSight<ISurvivor>(
             visionHook,
             maxDist,
             detectMask,
-            ignoreMask,
-            minAngle,
-            maxAngle
+            obstacleMask,
+            fovAngle
         );
         SetTarget(survivor);
     }

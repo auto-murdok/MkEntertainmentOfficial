@@ -45,6 +45,17 @@ namespace Game.Tests.PlayMode
         [TearDown]
         public void TearDown()
         {
+            ClearSpawnedZombies();
+            if (_zombiePrefab != null) Object.DestroyImmediate(_zombiePrefab);
+            if (_host != null) Object.DestroyImmediate(_host);
+            if (_plane != null) Object.DestroyImmediate(_plane);
+            NavMesh.RemoveAllNavMeshData();
+        }
+
+        // Destroys every spawned zombie instance. Shared by TearDown and the
+        // test-body spawner reset below.
+        private static void ClearSpawnedZombies()
+        {
             foreach (Transform instance in Object.FindObjectsByType<Transform>(FindObjectsSortMode.None))
             {
                 if (instance.name.StartsWith("Walker_"))
@@ -52,10 +63,27 @@ namespace Game.Tests.PlayMode
                     Object.DestroyImmediate(instance.gameObject);
                 }
             }
-            if (_zombiePrefab != null) Object.DestroyImmediate(_zombiePrefab);
+        }
+
+        // The test runner may execute a [UnityTest] body a full frame after
+        // SetUp — by then the shared spawner's Start has already fired its
+        // opening wave (observed: 3 Walker_ zombies exist before the first
+        // coroutine step). Tests that need the spawner to NEVER spawn must
+        // recreate it with the guard state set before its Start can run.
+        private void RecreateSpawner()
+        {
             if (_host != null) Object.DestroyImmediate(_host);
-            if (_plane != null) Object.DestroyImmediate(_plane);
-            NavMesh.RemoveAllNavMeshData();
+            ClearSpawnedZombies();
+
+            _host = new GameObject("ZombieSpawnerHost");
+            CreateSpawnPoint(new Vector3(0f, 0.1f, 0f));
+            CreateSpawnPoint(new Vector3(8f, 0.1f, 0f));
+            CreateSpawnPoint(new Vector3(-8f, 0.1f, 0f));
+            _spawner = _host.AddComponent<ZombieSpawner>();
+
+            SetSerializedField("_maxZombies", 50);
+            SetSerializedField("_spawnInterval", 30f);
+            ConfigureZombieTypes();
         }
 
         [UnityTest]
@@ -70,6 +98,7 @@ namespace Game.Tests.PlayMode
         [UnityTest]
         public IEnumerator Start_SpawningDisabled_SpawnsNothing()
         {
+            RecreateSpawner();
             _spawner.SetSpawningEnabled(false);
             yield return null;
             yield return null;
@@ -80,6 +109,7 @@ namespace Game.Tests.PlayMode
         [UnityTest]
         public IEnumerator Start_EmptyZombieTypes_SpawnsNothing()
         {
+            RecreateSpawner();
             SetSerializedField("_zombieTypes", new System.Collections.Generic.List<ZombieSpawner.ZombieSpawnEntry>());
             yield return null;
             yield return null;

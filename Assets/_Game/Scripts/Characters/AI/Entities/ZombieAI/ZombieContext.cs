@@ -7,7 +7,7 @@ public class ZombieContext : ActorBlackboard
     public ZombieSockets sockets;
     public Transform visionHook;
     public LayerMask detectionLayerMask;
-    public LayerMask ignoreLayerMask;
+    public LayerMask obstacleLayerMask;
     public ISurvivor target;
     public IInteractable interactable;
     public InteractableRegistry registry;

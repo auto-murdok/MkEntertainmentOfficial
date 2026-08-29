@@ -40,6 +40,6 @@ public class AimTarget : MonoBehaviour
             targetWorldPosition = _fallbackMouseWorldHook != null ? _fallbackMouseWorldHook.position : transform.position;
         }
 
-        transform.position = Vector3.Lerp(transform.position, targetWorldPosition, FollowLerpSpeed * Time.deltaTime);
+        transform.position = Vector3.Lerp(transform.position, targetWorldPosition, AnimatorUtils.DampFactor(FollowLerpSpeed, Time.deltaTime));
     }
 }

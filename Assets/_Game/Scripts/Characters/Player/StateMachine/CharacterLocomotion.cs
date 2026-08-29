@@ -157,6 +157,9 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         };
 
         _equippedWeapon.RegisterEvents(fireArmEvents);
+        // Inject scene/UI references on the instance (composition-root rule —
+        // the weapon never discovers scene objects itself).
+        _equippedWeapon.InjectUIController(_context.UIController);
     }
 
     private void LateUpdate()

@@ -4,7 +4,6 @@ using UnityEngine;
 public class Weapon : Item
 {
     [Header("Settings")]
-    [SerializeField] private float _damage = 1f;
     [SerializeField] private float _fireRate = 0.2f;
     [SerializeField] private float _recoilForce = 5f;
     public float recoilForce { get { return _recoilForce; } }
@@ -19,10 +18,28 @@ public class Weapon : Item
     private void Awake()
     {
         _firearm = GetComponent<IFirearm>();
-        _firearm.Prepare(_clipSize);
+        // int.MaxValue reserve = infinite ammo pool for now (Ammo pickups not
+        // yet wired into the inventory); reload math already supports it.
+        _firearm.Prepare(_clipSize, int.MaxValue);
+
+        // Push the weapon's own config into the firearm so the firearm state
+        // machine has a single source of truth for cadence (damage lives on
+        // the projectile prefab itself).
+        if (_firearm is Handgun handgun)
+        {
+            handgun.SetFireRate(_fireRate);
+        }
 
         _onTriggerPressed = _firearm.Shoot;
         _onReload = _firearm.TriggerReload;
+    }
+
+    public void InjectUIController(CharacterUIController uiController)
+    {
+        if (_firearm is Handgun handgun)
+        {
+            handgun.InjectUIController(uiController);
+        }
     }
 
     public void RegisterEvents(FirearmEvents events)

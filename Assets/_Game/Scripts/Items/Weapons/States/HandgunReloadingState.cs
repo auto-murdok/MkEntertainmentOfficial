@@ -28,7 +28,12 @@ public class HandgunReloadingState : State<HandgunState, HandgunContext>
 
     public void ExitState(StateMachine<HandgunState, HandgunContext> character)
     {
-        character._context.clipSize = character._context.maxClipSize;
+        // Refill from the reserve pool: take as much as the clip can hold and
+        // the reserve can give (int.MaxValue reserve behaves as infinite).
+        int missing = character._context.maxClipSize - character._context.clipSize;
+        int taken = Mathf.Min(missing, character._context.reserveAmmo);
+        character._context.clipSize += taken;
+        character._context.reserveAmmo -= taken;
         character._context.isReloading = false;
         _reloadingTime = ReloadDuration;
 

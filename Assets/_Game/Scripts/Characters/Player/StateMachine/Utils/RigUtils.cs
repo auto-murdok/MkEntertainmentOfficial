@@ -8,11 +8,11 @@ public class RigUtils
 
     public static void HandleIncreaseRigWeight(Rig rig)
     {
-        rig.weight = Mathf.Lerp(rig.weight, 1f, Time.deltaTime * RigWeightIncreaseSpeed);
+        rig.weight = Mathf.Lerp(rig.weight, 1f, AnimatorUtils.DampFactor(RigWeightIncreaseSpeed, Time.deltaTime));
     }
 
     public static void HandleDecreaseRigWeight(Rig rig)
     {
-        rig.weight = Mathf.Lerp(rig.weight, 0f, Time.deltaTime * RigWeightDecreaseSpeed);
+        rig.weight = Mathf.Lerp(rig.weight, 0f, AnimatorUtils.DampFactor(RigWeightDecreaseSpeed, Time.deltaTime));
     }
 }

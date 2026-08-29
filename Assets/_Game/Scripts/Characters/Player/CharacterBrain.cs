@@ -73,10 +73,19 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerA
                 _locomotion.setIsAiming(inputValue.isPressed);
                 break;
             case InputHandlerActions.Shoot:
-                _locomotion.HandleShoot();
+                // Input System button actions notify once per phase (started /
+                // performed / canceled). Gate on isPressed so a single click
+                // can never fire the weapon twice.
+                if (inputValue.isPressed)
+                {
+                    _locomotion.HandleShoot();
+                }
                 break;
             case InputHandlerActions.Reload:
-                _locomotion.HandleReload();
+                if (inputValue.isPressed)
+                {
+                    _locomotion.HandleReload();
+                }
                 break;
             case InputHandlerActions.ManualEnableRagdoll:
                 RagdollUtils.EnableRagdoll(transform, OnRagdollEnabled);

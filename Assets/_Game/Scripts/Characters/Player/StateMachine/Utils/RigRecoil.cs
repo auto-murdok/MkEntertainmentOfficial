@@ -24,7 +24,7 @@ public class RigRecoil
     {
         if (_ikConstraint.data.offset != _originalConstraintOffset)
         {
-            _ikConstraint.data.offset = Vector3.Lerp(_ikConstraint.data.offset, _originalConstraintOffset, RecoilRecoverySpeed * Time.deltaTime);
+            _ikConstraint.data.offset = Vector3.Lerp(_ikConstraint.data.offset, _originalConstraintOffset, AnimatorUtils.DampFactor(RecoilRecoverySpeed, Time.deltaTime));
         }
     }
 }

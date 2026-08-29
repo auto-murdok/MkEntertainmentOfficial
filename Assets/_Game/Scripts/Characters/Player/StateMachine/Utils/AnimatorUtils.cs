@@ -8,6 +8,14 @@ public class AnimatorUtils
     public static readonly int BiteHash = Animator.StringToHash("Bite");
     public static readonly int TakeBiteHash = Animator.StringToHash("TakeBite");
 
+    // Frame-rate-independent damping factor: Lerp(a, b, DampFactor(speed, dt))
+    // converges at the same rate at any framerate, unlike Lerp(a, b, k * dt)
+    // which speeds up as the framerate rises.
+    public static float DampFactor(float speed, float deltaTime)
+    {
+        return 1f - Mathf.Exp(-speed * Mathf.Max(deltaTime, 0f));
+    }
+
     public static void SetMovementRootMotion(Animator animator, Vector2 motion, float speed)
     {
         if (animator == null) return;
@@ -25,6 +33,6 @@ public class AnimatorUtils
     public static void SetLayerWeight(Animator animator, int layer, float weight, float speed)
     {
         if (animator == null) return;
-        animator.SetLayerWeight(layer, Mathf.Lerp(animator.GetLayerWeight(layer), weight, Time.deltaTime * speed));
+        animator.SetLayerWeight(layer, Mathf.Lerp(animator.GetLayerWeight(layer), weight, DampFactor(speed, Time.deltaTime)));
     }
 }

@@ -4,9 +4,8 @@ using UnityEngine;
 
 public class HandgunShootingState : State<HandgunState, HandgunContext>
 {
-    // Rechambering delay before the state can complete. Reset on every Enter
-    // so the cadence is identical for each shot.
-    private const float RechamberingStartTime = 0.05f;
+    // Rechambering delay comes from the weapon's configured fire rate
+    // (HandgunContext.fireRate), not a hardcoded constant.
     private static readonly int ShootAnimationHash = Animator.StringToHash("fakeGun_shoot");
     private static readonly int IdleAnimationHash = Animator.StringToHash("Idle");
 
@@ -29,11 +28,18 @@ public class HandgunShootingState : State<HandgunState, HandgunContext>
 
     public void EnterState(StateMachine<HandgunState, HandgunContext> character)
     {
-        _rechamberingTime = RechamberingStartTime;
+        _rechamberingTime = character._context.fireRate;
         Handgun fireArm = (Handgun)character;
         character._context.animator.CrossFade(ShootAnimationHash, 0f);
-        fireArm.ExecuteActualShoot();
-        fireArm.fireArmEvents.onShoot?.Invoke();
+
+        // Recoil (and its onShoot event) only fires when a projectile was
+        // actually launched — never on a dry fire.
+        bool fired = fireArm.ExecuteActualShoot();
+        if (fired)
+        {
+            fireArm.fireArmEvents.onShoot?.Invoke();
+        }
+
         character._context.clipSize--;
 
         if (character._context.UIController != null)

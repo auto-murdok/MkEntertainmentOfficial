@@ -32,8 +32,10 @@ public class CameraUtils
 
     private static float ClampAngle(float angle, float min, float max)
     {
-        if (angle < -360f) angle += 360f;
-        if (angle > 360f) angle -= 360f;
+        // Wrap with while loops: a single if only corrects one 360-degree step,
+        // which breaks after fast multi-rotation yaw accumulation.
+        while (angle < -360f) angle += 360f;
+        while (angle > 360f) angle -= 360f;
         return Mathf.Clamp(angle, min, max);
     }
 }

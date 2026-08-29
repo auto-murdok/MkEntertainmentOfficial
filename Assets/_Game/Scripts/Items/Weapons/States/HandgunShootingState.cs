@@ -38,9 +38,9 @@ public class HandgunShootingState : State<HandgunState, HandgunContext>
         if (fired)
         {
             fireArm.fireArmEvents.onShoot?.Invoke();
+            // A dry fire (missing prefab) must not consume a round.
+            character._context.clipSize--;
         }
-
-        character._context.clipSize--;
 
         if (character._context.UIController != null)
         {

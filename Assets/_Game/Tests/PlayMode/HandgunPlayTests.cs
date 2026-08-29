@@ -214,8 +214,11 @@ namespace Game.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Shoot_TransitionsToShootingAndSpendsOneBulletOnUpdate()
+        public IEnumerator Shoot_DryFire_TransitionsToShootingWithoutSpendOrShootEvent()
         {
+            // No bullet prefab -> ExecuteActualShoot fails: the FSM still
+            // runs the shooting state, but no round is spent and no onShoot
+            // event fires.
             yield return null;
             _handgun.Prepare(5, 10);
             int shootEvents = 0;
@@ -227,7 +230,7 @@ namespace Game.Tests.PlayMode
             yield return null;
 
             Assert.AreEqual(HandgunState.Shooting, _handgun.CurrentStateName);
-            Assert.AreEqual(4, Context.clipSize);
+            Assert.AreEqual(5, Context.clipSize);
             Assert.AreEqual(0, shootEvents);
         }
 
@@ -436,6 +439,19 @@ namespace Game.Tests.PlayMode
             Assert.AreEqual(HandgunState.Ready, _handgun.CurrentStateName);
             Assert.AreEqual(0, Context.clipSize);
             Assert.AreEqual(0, Context.reserveAmmo);
+        }
+
+        [UnityTest]
+        public IEnumerator ShootingState_DryFire_DoesNotConsumeClip()
+        {
+            // Missing bullet prefab -> ExecuteActualShoot returns false; the
+            // clip must not be decremented for a round that was never fired.
+            _handgun.Prepare(5, 10);
+            _handgun.SetFireRate(0.05f);
+            _handgun.Shoot(new Vector3(0, 0, 5));
+            yield return new WaitForSeconds(0.1f);
+            Assert.AreEqual(HandgunState.Ready, _handgun.CurrentStateName);
+            Assert.AreEqual(5, Context.clipSize);
         }
     }
 }

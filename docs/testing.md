@@ -25,7 +25,7 @@ unity command test_status          # poll until "completed"
 
 Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
 
-## What is covered (170 tests, all green)
+## What is covered (197 tests, all green)
 
 - **Core**
   - `CombatLog` — ring buffer capacity/overflow, `CopyRecent` truncation, `BeginSource`
@@ -36,7 +36,8 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
   - `StateMachine<TStateKey,TContext>` — deferred transitions (first request wins per
     frame), exit→enter ordering, `OnCommonUpdate`/`UpdateState`/`CheckTransitions`
     pipeline order, `OnStateChanged`, unregistered-state error, global transition guard
-    (death), initial state from non-default enum, empty-state assertion.
+    (death) including override of a same-frame pending transition (`ChangeState(force)`),
+    initial state from non-default enum, empty-state assertion.
   - `InteractableRegistry` (SO) — register/unregister/overwrite, by-id and by-reference
     interaction (both sides notified), `TryGet`, null safety, clean-slate reset on unload.
   - `VoidEventChannel` / `BoolEventChannel` (SO) — Raise/subscriber notification,
@@ -51,20 +52,29 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
   - `Handgun` / `Weapon` / handgun states — state registration, `Prepare`, fire-rate
     fallback, aim-direction resolution (muzzle-forward fallback), trigger/reload
     gating, dry-fire vs live-fire `onShoot`, empty-clip → auto-reload transition,
-    reload refill math (finite & `int.MaxValue` reserve), reload UI notification,
-    `Weapon` → firearm forwarding.
+    out-of-ammo (0 clip + 0 reserve) stays Ready, reload refill math (finite &
+    de-facto infinite reserve), reload UI notification, `Weapon` → firearm forwarding,
+    `AddReserveAmmo` (positive only), dry fire never consumes a round.
+  - `AmmoPickup` (PlayMode) — grants reserve to a `Weapon`-carrying target and is
+    consumed exactly once, non-weapon targets ignored, null-target safety, both
+    ZombieData archetypes have the drop prefab assigned.
   - `BulletProjectile` (PlayMode physics) — launch velocity, hit scoring (exactly one
     damage per flight), self-destruct without pool, owner-collider ignore, max-range
     release, pooled re-flight (same instance scores again — guards the stale-contact
     fix in `BulletProjectile.OnCollisionEnter`).
 - **Characters**
   - `ActorBrainBase` — damage/death flag, CombatLog reporting, death hook → ragdoll →
-    interactable deregistration, `DestroyActorCore`, id/position/victimHook.
+    interactable deregistration, `DestroyActorCore`, id/position/victimHook,
+    delayed health regeneration (delay gate, heal after delay, cap, dead/full-health
+    no-ops, non-positive rate).
+  - `PlayerData` / `ZombieData` — health-regen defaults positive, default obstacle
+    mask constant, hand-attack defaults non-zero.
   - `AnimatorUtils` — parameter hashes, `DampFactor` exponential math, null-animator safety.
   - `CameraUtils` — mouse vs controller thresholds, yaw accumulation/wrapping, pitch
     clamping, sensitivity scaling.
-  - `AIDetectionUtils` — vision cone angles (default 60°, backward half-cone, invalid
-    ranges), obstacle linecast, null origin.
+  - `AIDetectionUtils` — explicit full-cone field-of-view angles (half-cone edges,
+    invalid-range fallback to default cone), obstacle linecast, null origin;
+    nearest-survivor selection over real colliders (`AIDetectionPlayTests`).
   - `ZombieBehavior` attack selection (`CanVictimBeBitten`) — free/plain/pinned
     victims, pin held by self (own bite continues) vs by another attacker
     (hand-attack fallback), `ZombieData` hand-attack defaults.
@@ -124,6 +134,13 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
     *"Test tree is not available for PostbuildCleanupTask"* in the console.
     Recover with `editor_stop` + re-run, and parse `test_status` with
     `ConvertFrom-Json`, not `-match` (escaped quotes false-fail).
+13. **A `[UnityTest]` body may execute a full frame after `SetUp`.** Components
+    added in `SetUp` get their `Start` on the next frame — which can run
+    *before* the first coroutine step. Tests that must prevent a component's
+    `Start` behaviour (e.g. `ZombieSpawner.SpawnInitialWave`) must recreate the
+    component inside the test body with the guard state pre-set via
+    `SerializedObject` (`ZombieSpawnerSpawnTests.RecreateSpawner`). Failing
+    that, the wave fires first and "expect 0" assertions see the wave.
 
 ## Coverage notes
 

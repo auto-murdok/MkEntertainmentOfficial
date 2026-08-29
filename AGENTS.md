@@ -180,12 +180,31 @@ unity pipeline upgrade
   - `PlayerCoreUI._aimTarget` is the **Crossair UI toggle**, not the world aim point; the world aim point is the `AimTarget` child of `PlayerCoreComponents`.
 - **Shooting engine:**
   - **AIM FIRST:** the weapon's rest pose points **down**. Shooting without aiming fires along the muzzle's rest forward — bullets go into the ground. This is intended; the aim direction (`HandgunContext.aimDirection` toward `CharacterLocomotion._aimTarget`) is only meaningful while the crosshair is active. Details + debug workflow: `docs/shooting_engine_notes.md`.
-  - Bullets are pooled (`ObjectPool<BulletProjectile>`), teleported via `Rigidbody.position` (never transform-only on re-activated bodies), use `ContinuousSpeculative` CCD, and score exactly one damage event per flight (`_hasHit` / `_isReleased` guards).
+  - Bullets are pooled (`ObjectPool<BulletProjectile>`), teleported via `Rigidbody.position` (never transform-only on re-activated bodies), use `ContinuousSpeculative` CCD, and score exactly one damage event per flight (`_hasHit` / `_isReleased` guards). Pooled bodies are **posed before activation** and `OnCollisionEnter` rejects stale contacts behind the bullet's velocity (see `BulletProjectile.Launch` + `docs/testing.md` §5) — re-firing must never score a phantom hit on the previous target.
   - `DebugHud` (F3 toggle, attached by `PlayerSpawner`) shows player HP, FSM states, clip/reserve, live bullets and the `CombatLog` ring buffer — the fastest way to diagnose combat issues.
 - **Conventions:**
   - Follow standard C# naming conventions (PascalCase for public methods/properties, camelCase / `_camelCase` for private fields).
   - Always maintain corresponding `.meta` files when creating, moving, or deleting C# scripts and assets.
   - Test state machine changes incrementally.
+
+---
+
+## 🧪 Testing (Unity Test Framework — keep the suite green)
+
+The project has a regression suite in `Assets/_Game/Tests/` (EditMode + PlayMode assemblies, 138 tests). **Run it after every behaviour change** and **add/extend tests for any new gameplay logic** — see `docs/testing.md` for the full guide, coverage map and gotchas.
+
+```bash
+# via unity-cli while the Editor is open (poll test_status until "completed")
+unity command run_tests --mode editmode --async_tests
+unity command run_tests --mode playmode --async_tests
+unity command test_status
+```
+
+Rules of thumb (details in `docs/testing.md`):
+- **EditMode** (`Game.Tests.EditMode`) for pure logic/statics; **PlayMode** (`Game.Tests.PlayMode`) for anything needing `Awake`/`Start`/`Update`, physics, or singletons.
+- In the Editor, `AddComponent` never runs `Awake`, and closed-generic MonoBehaviours cannot be added — test generic bases through non-generic subclasses (`TestFsm : StateMachine<...>`).
+- PlayMode tests run in the currently open scene — spawn physics tests in clear airspace, one "lane" per test, and clean up singletons with `DestroyImmediate`.
+- Set private serialized fields via `SerializedObject`; assert error logs with `LogAssert.Expect`.
 
 ---
 

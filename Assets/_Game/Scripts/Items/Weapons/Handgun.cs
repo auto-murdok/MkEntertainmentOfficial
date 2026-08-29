@@ -40,7 +40,7 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
 
         _bulletPool = new ObjectPool<BulletProjectile>(
             CreateProjectile,
-            OnGetFromPool,
+            null,
             OnReleaseToPool,
             OnDestroyPooledObject,
             collectionCheck: true,
@@ -55,11 +55,6 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
         // Bullets live dormant in the pool between shots.
         projectile.gameObject.SetActive(false);
         return projectile;
-    }
-
-    private void OnGetFromPool(BulletProjectile pooledObject)
-    {
-        pooledObject.gameObject.SetActive(true);
     }
 
     private void OnReleaseToPool(BulletProjectile pooledObject)

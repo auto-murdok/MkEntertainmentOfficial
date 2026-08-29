@@ -46,6 +46,16 @@ public class BulletProjectile : MonoBehaviour
         _initialPosition = position;
         _isReleased = false;
         _hasHit = false;
+
+        // Activate only after the pose is corrected: a pooled body re-activates
+        // at its dormant pose (often inside whatever it last hit), and Unity
+        // registers that stale overlap as a contact — the next shot would
+        // instantly die on the shooter's old collision. Reactivating at the
+        // corrected pose registers a clean broadphase entry instead.
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+        }
         _bulletRigidbody.linearVelocity = transform.forward * ProjectileSpeed;
 
         // The projectile spawns inside the shooter's rig, so it must never
@@ -107,6 +117,22 @@ public class BulletProjectile : MonoBehaviour
         {
             return;
         }
+
+        // Stale-contact guard: a pooled body re-activated for its next flight
+        // can report a residual contact pair from the previous flight (the
+        // contact lies BEHIND the travelling bullet). A valid hit for a
+        // forward-only projectile is always ahead of it, so reject contacts
+        // behind the current pose instead of scoring a phantom hit.
+        Vector3 velocity = _bulletRigidbody.linearVelocity;
+        if (velocity.sqrMagnitude > 0.01f)
+        {
+            Vector3 point = other.GetContact(0).point;
+            if (Vector3.Dot(point - transform.position, velocity) < 0f)
+            {
+                return;
+            }
+        }
+
         _hasHit = true;
 
         IDamageable damageable = other.gameObject.GetComponentInParent<IDamageable>();

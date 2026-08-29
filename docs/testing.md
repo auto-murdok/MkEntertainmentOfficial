@@ -1,0 +1,111 @@
+# Testing Guide — Unity 6000.3 / Unity Test Framework 1.6
+
+This project keeps a regression-proof test suite over all gameplay logic. Tests live in
+`Assets/_Game/Tests/` and are split into two NUnit assemblies following the official
+Unity Test Framework (UTF) recommendations for Unity 6:
+
+| Assembly | Location | Platform | Covers |
+|---|---|---|---|
+| `Game.Tests.EditMode` | `Assets/_Game/Tests/EditMode/` | Editor only | Pure logic, statics, utils, math, serialization-driven values |
+| `Game.Tests.PlayMode` | `Assets/_Game/Tests/PlayMode/` | All platforms | MonoBehaviour lifecycle (`Awake`/`Start`/`Update`), physics, pooling, singletons |
+
+Both asmdefs reference all game assemblies (`Game.Core`, `Game.Characters`, `Game.Items`,
+`Game.UI`, `Game.Composition`) plus `UnityEngine.TestRunner` / `UnityEditor.TestRunner`
+with `nunit.framework.dll` as a precompiled reference (`overrideReferences: true`).
+
+## Running the tests
+
+Via the live editor (preferred — see AGENTS.md `unity-cli` section):
+
+```bash
+unity command run_tests --mode editmode --async_tests
+unity command run_tests --mode playmode --async_tests
+unity command test_status          # poll until "completed"
+```
+
+Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
+
+## What is covered (138 tests, all green)
+
+- **Core**
+  - `CombatLog` — ring buffer capacity/overflow, `CopyRecent` truncation, `BeginSource`
+    scoping & nesting, damage/impact formatting, destroyed-victim placeholder.
+  - `Subject<TAction,TValue>` / `CharacterUIController` — add/remove/notify, reverse
+    notification order, no dedupe (documented gotcha), destroyed-observer skipping,
+    self-removal during notify.
+  - `StateMachine<TStateKey,TContext>` — deferred transitions (first request wins per
+    frame), exit→enter ordering, `OnCommonUpdate`/`UpdateState`/`CheckTransitions`
+    pipeline order, `OnStateChanged`, unregistered-state error, global transition guard
+    (death), initial state from non-default enum, empty-state assertion.
+  - `InteractableManager` — registry add/remove/overwrite, by-id and by-reference
+    interaction (both sides notified), singleton `Instance` lifecycle, duplicate
+    component destroyed while its GameObject survives.
+  - `RagdollUtils` — kinematic toggling, callbacks, empty hierarchies.
+- **Items**
+  - `Ammo` — clip draw math (partial/exact/overflow/empty, parameterized).
+  - `Item` / `PrefabManager` — id lookup, null/empty/unknown id handling, `Instance`.
+  - `Handgun` / `Weapon` / handgun states — state registration, `Prepare`, fire-rate
+    fallback, aim-direction resolution (muzzle-forward fallback), trigger/reload
+    gating, dry-fire vs live-fire `onShoot`, empty-clip → auto-reload transition,
+    reload refill math (finite & `int.MaxValue` reserve), reload UI notification,
+    `Weapon` → firearm forwarding.
+  - `BulletProjectile` (PlayMode physics) — launch velocity, hit scoring (exactly one
+    damage per flight), self-destruct without pool, owner-collider ignore, max-range
+    release, pooled re-flight (same instance scores again — guards the stale-contact
+    fix in `BulletProjectile.OnCollisionEnter`).
+- **Characters**
+  - `ActorBrainBase` — damage/death flag, CombatLog reporting, death hook → ragdoll →
+    interactable deregistration, `DestroyActorCore`, id/position/victimHook.
+  - `AnimatorUtils` — parameter hashes, `DampFactor` exponential math, null-animator safety.
+  - `CameraUtils` — mouse vs controller thresholds, yaw accumulation/wrapping, pitch
+    clamping, sensitivity scaling.
+  - `AIDetectionUtils` — vision cone angles (default 60°, backward half-cone, invalid
+    ranges), obstacle linecast, null origin.
+  - `LayerUtils` — recursive layer assignment incl. inactive children, unknown-layer warning.
+- **UI** — `CharacterUIContext` factories, `CharacterUIElement`, `UpdateUI` notification.
+
+## Conventions & hard-won lessons (read before writing tests)
+
+1. **EditMode vs PlayMode choice.** In the Editor, `AddComponent` does **not** run
+   `Awake`, and `AddComponent` of a *closed generic* MonoBehaviour (e.g.
+   `Subject<string,int>`) returns **null** and logs
+   *"Generic MonoBehaviours are not supported"*. Therefore:
+   - Test generic bases via a **non-generic subclass** in the test assembly
+     (`class TestFsm : StateMachine<PlayKey, PlayContext> { }`).
+   - Anything relying on `Awake`/`Start`/`Update` or physics is a PlayMode test.
+2. **Singleton tests must clean up synchronously.** Use `Object.DestroyImmediate` in
+   PlayMode teardowns for anything involved with statics (`Instance`) — deferred
+   `Destroy` leaks a fake-alive static across fixtures and instance IDs get reused,
+   corrupting dictionary-keyed registries.
+3. **`Time.deltaTime` is real editor time in EditMode**, and animator value reads
+   (`GetFloat`/`GetLayerWeight`) are unreliable without a controller — assert the math
+   (`DampFactor`) and no-throw paths in EditMode; assert animator values only in
+   PlayMode.
+4. **PlayMode tests run in the currently open scene.** Never assume an empty scene:
+   spawn physics objects in clear airspace and give each physics test its own "lane"
+   (this suite uses y=500…900) so tests cannot shoot each other.
+5. **Pooled projectiles: pose before activate.** Re-activating a pooled body at its
+   dormant pose registers stale physics contacts (phantom hit on the previous target).
+   `BulletProjectile.Launch` now corrects the pose *then* activates, and
+   `OnCollisionEnter` rejects contacts behind the bullet's velocity vector (a valid
+   hit for a forward-only projectile is always ahead of it). `PooledBullet_SecondFlight_
+   ScoresDamageAgain` is the regression test for this.
+6. **Private serialized fields** (`_quantity`, `_id`, `_bulletPrefab`,
+   `currentStateEnum`) are set with `SerializedObject` + `ApplyModifiedProperties`.
+7. **Error paths** use `LogAssert.Expect(LogType.Error, regex)` — unhandled error logs
+   fail PlayMode tests.
+8. **Static state** (`CombatLog`, `InteractableManager.Instance`) persists across
+   tests — never assert global emptiness; always search for your unique marker.
+
+## Coverage notes
+
+Every gameplay/runtime type is covered by the suites above. Deliberately not
+unit-tested (they are editor tooling / scene-composition surfaces better validated by
+play sessions and the editor itself):
+
+- `ExpandedArenaGenerator`, `RenderingScalabilitySetup` (Editor menu tooling).
+- `DebugHud` (IMGUI rendering), `PlayerCoreUI`/`AimTarget` (scene-bound UI wiring).
+- `PlayerSpawner` (composition root — covered indirectly by play sessions; its wiring
+  rules live in `docs/spawnable_player_requirements.md`).
+
+If you change any of those, at minimum smoke-test the editor flows they drive.

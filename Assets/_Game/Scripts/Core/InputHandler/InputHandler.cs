@@ -17,7 +17,7 @@ public class InputHandler : Subject<InputHandlerActions, InputValue>
 
     public void OnRun(InputValue value)
     {
-        NotifyObservers(InputHandlerActions.ToogleRun, value);
+        NotifyObservers(InputHandlerActions.ToggleRun, value);
     }
 
     public void OnLook(InputValue value)

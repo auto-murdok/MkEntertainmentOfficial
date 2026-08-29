@@ -97,6 +97,19 @@ namespace Game.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator GlobalTransition_OverridesPendingTransition()
+        {
+            // A normal transition is requested during OnCommonUpdate; the
+            // global guard (death) evaluated later the same frame must win.
+            yield return null;
+            _fsm.CheckGlobalTransition = current => PlayKey.Dead;
+            _fsm.OnCommonUpdate += key => _fsm.ChangeState(PlayKey.B);
+            yield return null;
+            Assert.AreEqual(PlayKey.Dead, _fsm.CurrentStateName);
+            Assert.AreEqual(0, _stateB.Enters);
+        }
+
+        [UnityTest]
         public IEnumerator Update_RunsCommonUpdateBeforeStatePipeline()
         {
             var order = new List<PlayKey>();

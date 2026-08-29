@@ -46,7 +46,9 @@ public class StateMachine<TStateKey, TContext> : MonoBehaviour
             TStateKey forced = CheckGlobalTransition(currentStateEnum);
             if (!EqualityComparer<TStateKey>.Default.Equals(forced, currentStateEnum))
             {
-                ChangeState(forced);
+                // Forced: overrides a pending normal transition so a global
+                // guard (death) can never be dropped by first-request-wins.
+                ChangeState(forced, force: true);
             }
         }
 
@@ -73,7 +75,9 @@ public class StateMachine<TStateKey, TContext> : MonoBehaviour
     // Update so a state can never be left/exited more than once per frame.
     // First request wins within a frame; later requests are ignored (this gives
     // priority to the transition evaluated first, e.g. "being attacked").
-    public void ChangeState(TStateKey newState)
+    // With force = true the request replaces any pending one — used by the
+    // global transition guard so death always lands on the same frame.
+    public void ChangeState(TStateKey newState, bool force = false)
     {
         if (EqualityComparer<TStateKey>.Default.Equals(newState, currentStateEnum))
         {
@@ -86,7 +90,7 @@ public class StateMachine<TStateKey, TContext> : MonoBehaviour
             return;
         }
 
-        if (_hasPendingTransition)
+        if (_hasPendingTransition && !force)
         {
             return;
         }

@@ -122,10 +122,20 @@ public class GameStateManager : MonoBehaviour
 
         // Unscaled time: the scene is frozen while the overlay is up.
         _gameOverElapsed += Time.unscaledDeltaTime;
+        if (_gameOverElapsed < RestartLockoutSeconds)
+        {
+            return;
+        }
+
         // Input System API (project standard) — legacy Input.GetKeyDown breaks
-        // when Active Input Handling is set to Input System only.
+        // when Active Input Handling is set to Input System only. Both keyboard
+        // (R) and gamepad (East/B button) can restart.
         Keyboard keyboard = Keyboard.current;
-        if (_gameOverElapsed >= RestartLockoutSeconds && keyboard != null && keyboard.rKey.wasPressedThisFrame)
+        Gamepad gamepad = Gamepad.current;
+        bool restartPressed =
+            (keyboard != null && keyboard.rKey.wasPressedThisFrame) ||
+            (gamepad != null && gamepad.buttonEast.wasPressedThisFrame);
+        if (restartPressed)
         {
             Restart();
         }

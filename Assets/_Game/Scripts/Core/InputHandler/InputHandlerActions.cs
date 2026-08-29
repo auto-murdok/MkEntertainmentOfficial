@@ -6,6 +6,6 @@ public enum InputHandlerActions
     Aim,
     Shoot,
     Reload,
-    ToogleRun,
+    ToggleRun,
     ManualEnableRagdoll
 }

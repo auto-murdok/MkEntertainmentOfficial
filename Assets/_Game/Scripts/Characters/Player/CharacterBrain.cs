@@ -83,7 +83,7 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
                 string controlScheme = _playerInput != null ? _playerInput.currentControlScheme : string.Empty;
                 _locomotion.setLookInput(inputValue.Get<Vector2>(), controlScheme);
                 break;
-            case InputHandlerActions.ToogleRun:
+            case InputHandlerActions.ToggleRun:
                 _locomotion.setIsRunning(inputValue.isPressed);
                 break;
             case InputHandlerActions.Aim:

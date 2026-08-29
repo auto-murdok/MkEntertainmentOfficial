@@ -59,8 +59,17 @@ unity command --format json
 
 ### 3. Executing Editor Commands
 ```bash
-# Toggle / Enter Play mode
+# Enter / exit Play mode (NOT 'editor_play_exit' — it does not exist)
 unity command editor_play
+unity command editor_stop
+
+# Read the Unity Console (supports --level error|warning and --tail N)
+unity command console --level error --tail 20
+unity command clear_console
+
+# Force script recompilation and poll until done
+unity command recompile
+unity command recompile_status
 
 # Capture Game/Scene view screenshot
 unity command screenshot --output ./screenshot.png --width 1920 --height 1080
@@ -68,25 +77,51 @@ unity command screenshot --output ./screenshot.png --width 1920 --height 1080
 # Log messages to the Unity Console
 unity command log_editor "Message from agent"
 ```
+Note: `unity logs` reads the **Unity Hub CLI** log, NOT the Editor console. For
+Editor log output use `unity command console` (or tail
+`%LOCALAPPDATA%\Unity\Editor\Editor.log` with `FileShare.ReadWrite` — the file
+is locked while the Editor runs).
 
-### 4. Live C# Evaluation (`eval`)
-Use `eval` to inspect hierarchy, instantiate prefabs, inspect components, or manipulate the scene in real time:
-```bash
-# Inspect Unity Version / Scene
-unity command eval "return UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;"
+### 4. Live C# Evaluation — ALWAYS use `eval_file`, not inline `eval`
 
-# Find a GameObject or component property
-unity command eval "return UnityEngine.GameObject.Find('Player')?.transform.position.ToString();"
+> **CRITICAL:** Passing C# inline through PowerShell breaks on (a) embedded
+> double quotes, (b) `-` at token starts (parsed as CLI flags), (c) char
+> literals like `' '` (PowerShell merges/mangles them), and (d) single quotes.
+> WSL does not fix this either (`wsl.exe` joins args without re-quoting).
 
-# Create or configure objects live in Editor
-unity command eval "var go = new UnityEngine.GameObject('TestTarget'); go.transform.position = new UnityEngine.Vector3(0, 1, 0);"
+**The reliable pattern:** write the C# to a temp `.cs` file, then run it.
 
-# Instantiate a Prefab from Assets
-unity command eval "var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>('Assets/Prefabs/Characters/Zombie/ZombieModel.prefab'); UnityEditor.PrefabUtility.InstantiatePrefab(prefab);"
-
-# Mark active scene dirty & save
-unity command eval "UnityEditor.SceneManagement.EditorSceneManager.SaveOpenScenes();"
+```powershell
+# 1) Write the script (Write tool) to e.g. C:\Users\<user>\AppData\Local\Temp\opencode\task.cs
+# 2) Execute:
+unity command eval_file --file "C:\Users\<user>\AppData\Local\Temp\opencode\task.cs"
 ```
+
+Rules for eval scripts:
+- **No `using` directives** — the Roslyn context rejects them. Fully qualify
+  everything (`UnityEngine.GameObject`, `System.Text.StringBuilder`, …).
+- Top-level statements + local functions are OK; `return value;` returns output.
+- Multi-line, real string literals, bullets, quotes — all fine once in a file.
+- Long output (>50 KB) is truncated but saved to a file; parse that file (it is
+  a single JSON line — extract the `"result":"..."` field and split on `\r\n`).
+
+Minimal example `task.cs`:
+```csharp
+var sb = new System.Text.StringBuilder();
+sb.AppendLine("Scene: " + UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+foreach (var r in UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects())
+    sb.AppendLine("- " + r.name);
+return sb.ToString();
+```
+
+### 5. Comparing objects / prefabs safely
+Prefer serialized-property diffs over guessing. See
+`docs/spawnable_player_rigging_fixes.md` for a reusable diff approach:
+iterate `SerializedObject.GetIterator()`, compare by `propertyPath`, and
+**ignore identity noise** (`m_FileID`, `m_CorrespondingSourceObject`,
+`m_PrefabInstance`, `m_PrefabAsset`, `m_GameObject`, `m_Father`, `m_Children`,
+`m_Bones`, `m_RootBone`). When diffing two hierarchies, normalize paths so
+different root names still match (compare relative paths under the root).
 
 ---
 
@@ -97,11 +132,11 @@ When the C# codebase has compilation errors:
 2. In Safe Mode, custom packages including `com.unity.pipeline` are disabled, causing `unity command` to fail or time out.
 
 ### Recovery Workflow:
-1. **Check compilation errors:**
-   ```bash
-   unity logs --tail 50
+1. **Check compilation errors** (tail the Editor log — `unity logs` reads the Hub log, not this):
+   ```powershell
+   Get-Content "$env:LOCALAPPDATA\Unity\Editor\Editor.log" -Tail 50
    ```
-2. **Fix C# syntax/type errors** in `Assets/Scripts/`.
+2. **Fix C# syntax/type errors** in `Assets/_Game/Scripts/`.
 3. **Verify the Editor leaves Safe Mode** and pipeline reconnects:
    ```bash
    unity pipeline list
@@ -128,11 +163,19 @@ unity pipeline upgrade
 
 ## 🏗️ Project Architecture & Coding Standards
 
-- **Scripts Directory:** `Assets/Scripts/`
+- **Scripts Directory:** `Assets/_Game/Scripts/`
+  - `Characters/Player/`: Player brain, input observers, and player locomotion states (`StateMachine/`).
   - `Core/AI/`: AI locomotion, context, state machine, and reactive triggers.
-  - `Core/CharacterStateMachine/`: Base state machine, state definitions, and blackboard architecture.
-  - `Player/`: Player controllers, contexts, UI elements, and player locomotion states.
-  - `Items/Weapons/`: Weapon interfaces (`IFirearm`), weapon states, firearm events, and gun contexts.
+  - `Core/InputHandler/`: Input actions enum and input subject.
+  - `Core/Observer/`: Generic `Subject<TAction, TValue>` / `IObserver` pattern. `Subject.AddObserver` does **not** dedupe — guard subscriptions with a flag when both `OnEnable` and `Start` can subscribe.
+  - `Core/UI/`: Character UI controller/elements.
+  - `Items/`: PrefabManager, weapons, firearm events and gun contexts.
+- **Player spawning architecture (composition root):**
+  - Scenes contain **only** map + MainCamera (CinemachineBrain + `MousePosition` child) + baked NavMesh Surface + `PlayerSpawner`.
+  - `PlayerSpawner.Awake` instantiates `SpawnableFemaleCharacter`, `InputHandler`, and `PlayerCoreComponents` prefabs and wires ALL cross-references on the **instances** (never on prefab assets — mutating a prefab asset at runtime corrupts it for every future spawn).
+  - Unity **strips prefab → scene references** on save. Any scene object a prefab needs must be re-injected at spawn time. See `docs/spawnable_player_requirements.md`.
+  - **Animation Rigging:** `RigBuilder` builds its graph during `Instantiate`. After changing constraint data (e.g. `MultiAimConstraint.sourceObjects`) at runtime, call `rigBuilder.Clear(); rigBuilder.Build();` or the constraints silently ignore the new data. Details: `docs/spawnable_player_rigging_fixes.md`.
+  - `PlayerCoreUI._aimTarget` is the **Crossair UI toggle**, not the world aim point; the world aim point is the `AimTarget` child of `PlayerCoreComponents`.
 - **Conventions:**
   - Follow standard C# naming conventions (PascalCase for public methods/properties, camelCase / `_camelCase` for private fields).
   - Always maintain corresponding `.meta` files when creating, moving, or deleting C# scripts and assets.
@@ -168,5 +211,5 @@ When configuring Universal Render Pipeline in Unity 6:
 4. **Spatial-Temporal Post-Processing (STP)**:
    - Configure `upscalingFilter = UpscalingFilterSelection.STP` on quality tier assets for temporal spatial upscaling.
 5. **Unity CLI `eval` Quoting in PowerShell**:
-   - When passing C# code to `unity command eval` via PowerShell, avoid unescaped double quotes inside strings as the CLI argument parser may split arguments. Use char arrays (e.g., `new string(new char[]{'p','a','t','h'})`), string formatting, or single quotes carefully.
+   - Do not pass C# inline. Use `unity command eval_file --file <task.cs>` — see §4 "Live C# Evaluation".
 

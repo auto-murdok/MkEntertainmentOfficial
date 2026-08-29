@@ -13,7 +13,7 @@ first client; start sessions from code via `NetworkManager.Singleton`.
 | `NetworkedCombatArena.unity` | `Assets/_Game/Scenes/Arenas/` | Copy of `ExpandedCombatArena`; the networked playground. Both are in EditorBuildSettings (the old `ZombieCombatArena` and the one-shot `ExpandedArenaGenerator` were removed). |
 | `NetworkManager` GO | networked scene | `NetworkManager` + `UnityTransport` (127.0.0.1:7777 default). **`NetworkConfig.NetworkTransport` must reference the transport** — script-added components are NOT auto-wired, and `StartHost` without it errors + NREs. `NetworkConfig.PlayerPrefab` = `FemaleCharacter.prefab` → NGO auto-spawns it on every peer. |
 | `NetworkPrefabs_Arena.asset` | `Assets/_Game/Data/Network/` | `NetworkPrefabsList` registering `FemaleCharacter.prefab`. Assigned into `NetworkConfig.Prefabs.NetworkPrefabsLists` (NGO 2.13 renamed the single-list field). |
-| `NetworkObject` + `NetworkTransform` | `FemaleCharacter.prefab` root | Server-authoritative transform replication of the root-motion-driven character. Dormant while no `NetworkManager` runs — the single-player arena is unaffected. |
+| `NetworkObject` + `NetworkTransform` | `FemaleCharacter.prefab` root | **Owner-authoritative** transform replication (`AuthorityMode = Owner`): each peer commits its own player's pose — required for client movement (see lesson 8). Dormant while no `NetworkManager` runs — the single-player arena is unaffected. |
 | `NetworkedPlayerComposition` | `Scripts/Composition/`, on the player prefab | `NetworkBehaviour`: the **owner** composes the local rig (input handler, core components/UI, aim target, cameras, HUDs) in `OnNetworkSpawn` via the shared `PlayerRigging` helper; remote players do nothing. |
 | `NetworkArenaBootstrap` | `Scripts/Composition/`, on the NetworkManager GO | Auto-`StartHost()`; starts a **client** instead when launched with `-mlclient`/`-client` (`Environment.GetCommandLineArgs`). |
 | `ClientLaunchRedirect` | MainMenu scene | Jumps straight to `NetworkedCombatArena` on `-mlclient` launches (player builds boot scene 0). |
@@ -36,6 +36,18 @@ first client; start sessions from code via `NetworkManager.Singleton`.
    asserted `_playerInput` and threw on the *other* peer's player object —
    remote networked players must early-out of local input wiring
    (`NetworkObject.IsSpawned && !IsOwner`).
+8. **The client "can't move" with a server-authoritative `NetworkTransform`.**
+   Symptom: the host moves fine, the client's player does nothing (local root
+   motion is overwritten every network tick by the server's stale pose).
+   Root cause: NGO's `NetworkTransform` defaults to `AuthorityMode = Server` —
+   correct for server-simulated NPCs, wrong for player-controlled objects.
+   Fix: on the player prefab set `AuthorityMode = Owner` (serialized property
+   `AuthorityMode`, enum 0 = Server / 1 = Owner). Result: each peer commits
+   its own player's pose (`CanCommitToTransform = IsOwner`) and every other
+   peer applies the replicated pose. Keep server authority for anything the
+   server simulates (future zombies), owner authority for anything a peer
+   controls. Verified live: host view shows `serverAuth=False`,
+   host player `canCommit=True`, remote (client) player `canCommit=False`.
 4. **NGO 2.13 prefab config surface:** `NetworkPrefabsList` uses
    `PrefabList`/`Add()` (no `List` field), and lives at serialized path
    `NetworkConfig.Prefabs.NetworkPrefabsLists` (an array of list assets).
@@ -158,14 +170,22 @@ Typical full loop: `recompile` → build client (poll) → editor `editor_play`
    `Session started as client` + `Local rig composed for client player object`;
    moving the host player streams its position to the client; game-view
    screenshot shows both characters.
+4. Movement authority probe (after lesson 8's fix):
+   `nt.IsServerAuthoritative()` is `False` on both players;
+   `nt.CanCommitToTransform` is `True` for the local player, `False` for the
+   remote one; movement works on **both** peers (verified manually by the
+   user on the built client).
 
 ## Deliberately NOT networked yet (milestone order)
 
 - Zombies, bite/hand-attack interactions, bullets, ammo pickups — host-only
-  (`ZombieSpawner` early-outs on networked clients).
+  (`ZombieSpawner` early-outs on networked clients). When zombies get
+  networked, their `NetworkTransform` must stay **server-authoritative**
+  (default) — only player-controlled objects use owner authority.
 - Client death/game-flow (GameStateManager channels are wired server-side
   only in networked scenes); remote players currently keep their default layer
   (the local-player layer assignment in `OnActorStart` runs on every peer and
   should eventually be owner-only).
-- Client input authority is implicit (owner-driven transform) until gameplay
-  actions (shoot/bite) are networked.
+- Gameplay actions (shoot/bite/pickup) are not networked yet — movement
+  authority is resolved (owner-committed `NetworkTransform`), but combat and
+  item logic still run host-locally.

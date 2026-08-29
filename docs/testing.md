@@ -25,7 +25,7 @@ unity command test_status          # poll until "completed"
 
 Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
 
-## What is covered (138 tests, all green)
+## What is covered (170 tests, all green)
 
 - **Core**
   - `CombatLog` — ring buffer capacity/overflow, `CopyRecent` truncation, `BeginSource`
@@ -65,6 +65,13 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
     clamping, sensitivity scaling.
   - `AIDetectionUtils` — vision cone angles (default 60°, backward half-cone, invalid
     ranges), obstacle linecast, null origin.
+  - `ZombieBehavior` attack selection (`CanVictimBeBitten`) — free/plain/pinned
+    victims, pin held by self (own bite continues) vs by another attacker
+    (hand-attack fallback), `ZombieData` hand-attack defaults.
+  - `ZombieHandAttackState` (PlayMode) — pinned victim swings instead of biting,
+    exactly one damage event per swing at the hit frame, returns to Idle with
+    cooldown armed, hand-trigger redirect, duplicate interactions suppressed,
+    own-bite race regression.
   - `LayerUtils` — recursive layer assignment incl. inactive children, unknown-layer warning.
 - **UI** — `CharacterUIContext` factories, `CharacterUIElement`, `UpdateUI` notification.
 
@@ -101,6 +108,22 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
 8. **Static state** (`CombatLog`) persists across tests — never assert global
    emptiness; always search for your unique marker. SO channel/registry fixtures are
    created per-test via `ScriptableObject.CreateInstance` and destroyed in teardown.
+9. **AI vision tests: keep fake victims undetectable.** `SearchForSurvivors`
+   overwrites `_context.target` every 0.15 s and auto-attacks — leave the fake
+   victim on the `Default` layer (outside the detection mask) and set
+   `_context.target` manually. Anything that must survive scans has to be
+   captured outside the target field (see `StartHandAttack` → `_context.interactable`).
+10. **`NavMeshAgent.ResetPath()` errors off-mesh** ("can only be called on an
+    active agent that has been placed on a NavMesh") and fails PlayMode tests
+    as an unhandled log — guard with `agent.isOnNavMesh`.
+11. **Controller-less `Animator` is safe for parameter writes** (int-hash
+    `SetTrigger`/`SetFloat` are silent) — test rigs need only
+    `Animator` + `NavMeshAgent` + the FSM components.
+12. **Never launch an EditMode run while a PlayMode run is still winding down**
+    (scene teardown) — the runner wedges at `status: "running"` forever with
+    *"Test tree is not available for PostbuildCleanupTask"* in the console.
+    Recover with `editor_stop` + re-run, and parse `test_status` with
+    `ConvertFrom-Json`, not `-match` (escaped quotes false-fail).
 
 ## Coverage notes
 

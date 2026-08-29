@@ -196,7 +196,7 @@ unity pipeline upgrade
 
 ## 🧪 Testing (Unity Test Framework — keep the suite green)
 
-The project has a regression suite in `Assets/_Game/Tests/` (EditMode + PlayMode assemblies, 138 tests). **Run it after every behaviour change** and **add/extend tests for any new gameplay logic** — see `docs/testing.md` for the full guide, coverage map and gotchas.
+The project has a regression suite in `Assets/_Game/Tests/` (EditMode + PlayMode assemblies, 170 tests). **Run it after every behaviour change** and **add/extend tests for any new gameplay logic** — see `docs/testing.md` for the full guide, coverage map and gotchas.
 
 ```bash
 # via unity-cli while the Editor is open (poll test_status until "completed")

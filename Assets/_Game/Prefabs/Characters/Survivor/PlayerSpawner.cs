@@ -1,24 +1,65 @@
 using Cinemachine;
 using UnityEngine;
+using UnityEngine.Animations.Rigging;
 
+/// <summary>
+/// Composition root for the playable layer. Spawns every player-related object
+/// (input handler, core components, character) and wires the cross-references
+/// on the instances. Scenes only contain map + camera + this spawner.
+/// </summary>
 public class PlayerSpawner : MonoBehaviour
 {
-    public GameObject _spawnablePlayer;
-    public InputHandler _inputHandler;
-    public PlayerCoreUI playerCore;
+    [Header("Prefabs (spawned at runtime)")]
+    [SerializeField] private GameObject _spawnablePlayer;
+    [SerializeField] private GameObject _inputHandlerPrefab;
+    [SerializeField] private GameObject _playerCorePrefab;
 
     private void Awake()
     {
-        InputHandler inputHandler = Instantiate(_inputHandler);
-        GameObject playerGO = Instantiate(_spawnablePlayer);
-        PlayerCoreUI playerCoreUI = new PlayerCoreUI();
+        InputHandler inputHandler = Instantiate(_inputHandlerPrefab).GetComponent<InputHandler>();
+        GameObject playerCore = Instantiate(_playerCorePrefab);
+        GameObject player = Instantiate(_spawnablePlayer);
 
-        CharacterBrain characterBrain = _spawnablePlayer.GetComponent<CharacterBrain>();
-        CharacterLocomotion characterLocomotion = _spawnablePlayer.GetComponent<CharacterLocomotion>();
+        CharacterBrain brain = player.GetComponent<CharacterBrain>();
+        CharacterLocomotion locomotion = player.GetComponent<CharacterLocomotion>();
+        PlayerCoreUI coreUI = playerCore.GetComponentInChildren<PlayerCoreUI>();
 
-        characterBrain._subject = inputHandler;
-        characterLocomotion._aimTarget = playerCoreUI._aimTarget.transform;
+        // Input flow: the InputHandler subject broadcasts to the character brain.
+        brain._subject = inputHandler;
 
-        playerCore.GetComponentInChildren<CinemachineVirtualCamera>().Follow = characterLocomotion._cinemachineTarget;
+        // Combat: the world-space aim point is the AimTarget child of the core
+        // components (PlayerCoreUI._aimTarget is the crosshair UI toggle, not
+        // the aim point — matches the arena wiring).
+        Transform aimTarget = playerCore.transform.Find("AimTarget");
+        locomotion._aimTarget = aimTarget;
+
+        // The aim target's fallback hook is a scene reference (MainCamera child);
+        // prefab assets cannot store it, so the spawner re-injects it.
+        aimTarget.GetComponent<AimTarget>()._fallbackMouseWorldHook =
+            UnityEngine.Camera.main != null ? UnityEngine.Camera.main.transform.Find("MousePosition") : null;
+
+        // Rigging: re-inject the aim source into every MultiAimConstraint —
+        // prefab assets cannot store scene references, so they arrive NULL.
+        foreach (MultiAimConstraint constraint in player.GetComponentsInChildren<MultiAimConstraint>())
+        {
+            var data = constraint.data;
+            data.sourceObjects = new WeightedTransformArray { new WeightedTransform(aimTarget, 1f) };
+            constraint.data = data;
+        }
+
+        // RigBuilder built its animation graph during Instantiate, before the
+        // sources above existed — rebuild it so the constraints pick them up.
+        var rigBuilder = player.GetComponent<RigBuilder>();
+        rigBuilder.Clear();
+        rigBuilder.Build();
+
+        // Both cinemachine cameras follow the player's camera hook.
+        foreach (CinemachineVirtualCamera vcam in playerCore.GetComponentsInChildren<CinemachineVirtualCamera>())
+        {
+            vcam.Follow = locomotion._cinemachineTarget;
+        }
+
+        // The UI observes the spawned character's UI subject.
+        coreUI._subject = player.GetComponent<CharacterUIController>();
     }
 }

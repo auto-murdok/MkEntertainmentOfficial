@@ -5,11 +5,13 @@ using UnityEngine;
 
 public class PlayerCoreUI : MonoBehaviour, IObserver<CharacterUIElement, CharacterUIContext>
 {
-    [SerializeField] private Subject<CharacterUIElement, CharacterUIContext> _subject;
+    [Header("Connection (wired by the PlayerSpawner at runtime)")]
+    public Subject<CharacterUIElement, CharacterUIContext> _subject;
     [SerializeField] private GameObject _aimUi;
     [SerializeField] private GameObject _aimCamera;
     public GameObject _aimTarget;
     [SerializeField] private TMP_Text _clipInfo;
+    private bool _subscribed;
 
     public void OnNotify(CharacterUIElement element, CharacterUIContext context)
     {
@@ -27,19 +29,38 @@ public class PlayerCoreUI : MonoBehaviour, IObserver<CharacterUIElement, Charact
         }
     }
 
+    private void Start()
+    {
+        // The subject is wired by the spawner after instantiation, so the first
+        // reliable subscription point is Start, not OnEnable.
+        Subscribe();
+    }
+
     private void OnEnable()
     {
-        if (_subject != null)
-        {
-            _subject.AddObserver(this);
-        }
+        Subscribe();
     }
 
     private void OnDisable()
     {
-        if (_subject != null)
+        Unsubscribe();
+    }
+
+    private void Subscribe()
+    {
+        if (_subject != null && !_subscribed)
+        {
+            _subject.AddObserver(this);
+            _subscribed = true;
+        }
+    }
+
+    private void Unsubscribe()
+    {
+        if (_subject != null && _subscribed)
         {
             _subject.RemoveObserver(this);
+            _subscribed = false;
         }
     }
 }

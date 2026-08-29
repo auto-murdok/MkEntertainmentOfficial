@@ -10,6 +10,7 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerA
 
     private CharacterLocomotion _locomotion;
     private PlayerInput _playerInput;
+    private bool _subscribed;
 
     [Header("Stats")]
     [SerializeField] private float _maxHitPoints = 100f;
@@ -21,13 +22,11 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerA
     private void Awake()
     {
         _locomotion = GetComponent<CharacterLocomotion>();
-        if (_subject != null)
-        {
-            _playerInput = _subject.GetComponent<PlayerInput>();
-        }
+        // The subject is wired by the spawner after instantiation, so it may
+        // legitimately be null here; validation happens in Start.
+        _playerInput = _subject != null ? _subject.GetComponent<PlayerInput>() : null;
 
         Assert.IsNotNull(_locomotion, "Please attach a component of type CharacterLocomotion");
-        Assert.IsNotNull(_playerInput, "Ensure a subject is properly hooked up");
 
         _hitPoints = _maxHitPoints;
 
@@ -35,6 +34,17 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerA
         // base's onDeath hook.
         Context = _locomotion._context;
         SetupDeathHook();
+    }
+
+    private void Start()
+    {
+        // Re-resolve here: the spawner wires _subject after Awake has run.
+        if (_playerInput == null && _subject != null)
+        {
+            _playerInput = _subject.GetComponent<PlayerInput>();
+        }
+        Assert.IsNotNull(_playerInput, "Ensure a subject is properly hooked up");
+        Subscribe();
     }
 
     protected override void OnActorStart()
@@ -83,17 +93,29 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerA
 
     private void OnEnable()
     {
-        if (_subject != null)
-        {
-            _subject.AddObserver(this);
-        }
+        Subscribe();
     }
 
     private void OnDisable()
     {
-        if (_subject != null)
+        Unsubscribe();
+    }
+
+    private void Subscribe()
+    {
+        if (_subject != null && !_subscribed)
+        {
+            _subject.AddObserver(this);
+            _subscribed = true;
+        }
+    }
+
+    private void Unsubscribe()
+    {
+        if (_subject != null && _subscribed)
         {
             _subject.RemoveObserver(this);
+            _subscribed = false;
         }
     }
 

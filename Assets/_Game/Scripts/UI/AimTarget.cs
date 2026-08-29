@@ -3,7 +3,8 @@ using UnityEngine;
 public class AimTarget : MonoBehaviour
 {
     [SerializeField] private LayerMask _aimColliderMask;
-    [SerializeField] private Transform _fallbackMouseWorldHook;
+    // Wired by the PlayerSpawner at runtime (scene reference, cannot live in a prefab).
+    public Transform _fallbackMouseWorldHook;
 
     // How far the center-screen ray is cast when searching for an aim point.
     private const float RaycastMaxDistance = 999f;

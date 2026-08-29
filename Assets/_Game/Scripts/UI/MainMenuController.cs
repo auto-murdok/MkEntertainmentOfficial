@@ -264,7 +264,7 @@ public class MainMenuController : MonoBehaviour
         GameObject hintGo = new GameObject("VersionHint");
         hintGo.transform.SetParent(parent, false);
         TMP_Text hint = hintGo.AddComponent<TextMeshProUGUI>();
-        hint.text = "WASD MOVE · MOUSE AIM · LMB FIRE · R RELOAD · F3 DEBUG";
+        hint.text = "WASD MOVE · MOUSE AIM · LMB FIRE · R RELOAD · ESC/START MENU · F3 DEBUG";
         hint.fontSize = 20f;
         hint.color = new Color(0.6f, 0.55f, 0.53f, 0.45f);
         hint.alignment = TextAlignmentOptions.Center;

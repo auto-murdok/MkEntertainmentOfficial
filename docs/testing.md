@@ -25,7 +25,7 @@ unity command test_status          # poll until "completed"
 
 Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
 
-## What is covered (204 tests: 86 EditMode + 118 PlayMode, all green)
+## What is covered (211 tests: 86 EditMode + 125 PlayMode, all green)
 
 - **Core**
   - `CombatLog` — ring buffer capacity/overflow, `CopyRecent` truncation, `BeginSource`
@@ -90,7 +90,12 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
   after the collapse window, spawner stop via `SpawningEnabledChannel`,
   game-over overlay canvas; `ZombieSpawner` spawning toggle.
   `MainMenuController` (PlayMode): overlay canvas build (idempotent),
-  start-game event raised once with double-start guard, quit/transition event.
+  start-game event raised once with double-start guard, quit/transition event;
+  **HOST/JOIN** buttons set `NetworkSession.desiredMode` with the same
+  event/transition-guard contract. `PauseMenuController` (PlayMode): overlay
+  build (Resume/Quit buttons, closed by default), open/close cursor contract,
+  toggle, resume event, quit-to-menu event + double-quit guard (`_quitLoadsMenuScene`
+  seam keeps the scene load out of tests).
 - **UI** — `CharacterUIContext` factories, `CharacterUIElement`, `UpdateUI` notification.
 
 ## Conventions & hard-won lessons (read before writing tests)

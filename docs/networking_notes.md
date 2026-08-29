@@ -17,6 +17,7 @@ first client; start sessions from code via `NetworkManager.Singleton`.
 | `NetworkedPlayerComposition` | `Scripts/Composition/`, on the player prefab | `NetworkBehaviour`: the **owner** composes the local rig (input handler, core components/UI, aim target, cameras, HUDs) in `OnNetworkSpawn` via the shared `PlayerRigging` helper; remote players do nothing. |
 | `NetworkArenaBootstrap` | `Scripts/Composition/`, on the NetworkManager GO | Auto-`StartHost()`; starts a **client** instead when launched with `-mlclient`/`-client` (`Environment.GetCommandLineArgs`). |
 | `ClientLaunchRedirect` | MainMenu scene | Jumps straight to `NetworkedCombatArena` on `-mlclient` launches (player builds boot scene 0). |
+| `PauseMenuController` | attached by `PlayerSpawner` in both arenas | Esc / gamepad-Start system menu (RESUME / QUIT TO MENU). Quit shuts the NGO session down (`NetworkManager.Shutdown()`), then reloads `MainMenu` — disconnect for clients, stop-hosting for the host, plain exit in the single-player arena. Not a pause: the simulation keeps running (networked reality). Input polled off `Keyboard.current`/`Gamepad.current` — UI plumbing, deliberately outside the InputHandler subject. |
 | `Game.Composition.asmdef` / `Game.Characters.asmdef` | — | Reference `Unity.Netcode.Runtime`. |
 
 ## Hard-won lessons (verified in Play Mode via unity-cli)

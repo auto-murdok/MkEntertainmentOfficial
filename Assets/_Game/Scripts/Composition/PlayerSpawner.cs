@@ -21,6 +21,8 @@ public class PlayerSpawner : MonoBehaviour
         // Game-flow: the state manager lives on the composition root so the
         // arena scene needs no extra setup object.
         GameStateManager gameStateManager = gameObject.AddComponent<GameStateManager>();
+        // Esc / gamepad-Start system menu (disconnect/exit) for both arenas.
+        gameObject.AddComponent<PauseMenuController>();
 
         ZombieSpawner zombieSpawner = FindFirstObjectByType<ZombieSpawner>();
         if (zombieSpawner != null)

@@ -180,7 +180,7 @@ unity pipeline upgrade
   - `Core/Observer/`: Generic `Subject<TAction, TValue>` / `IObserver` pattern. `Subject.AddObserver` does **not** dedupe — guard subscriptions with a flag when both `OnEnable` and `Start` can subscribe.
   - Singleton duplicate guards must `Destroy(this)` (the component), **never** `Destroy(gameObject)` — killing the GameObject takes siblings with it and `OnDestroy` then nulls the singleton (see `docs/zombie_bite_interaction_fixes.md`).
   - Unity magic methods (`Start`, `Awake`, …) are **not virtual**: a private `Start` in a derived class hides the base one, silently skipping base setup (e.g. `ActorBrainBase.Start` registration). Make the base `protected virtual` and call `base.Start()` from overrides.
-  - `Core/UI/`: Character UI controller/elements, `PlayerHud` (visible gameplay HUD: HP, ammo, combat ticker), `DebugHud` (hidden F3 diagnostics overlay), `MainMenuController` (menu canvas + start/quit flow).
+  - `Core/UI/`: Character UI controller/elements, `PlayerHud` (visible gameplay HUD: HP, ammo, combat ticker), `DebugHud` (hidden F3 diagnostics overlay), `MainMenuController` (menu canvas + start/host/join/quit flow), `PauseMenuController` (Esc/Start overlay in arenas: resume / quit-to-menu with session shutdown).
   - `Core/GameState/`: `GameStateManager` — game flow (Playing → GameOver): consumes `PlayerDiedChannel`, shows the game-over screen, disables spawning via `SpawningEnabledChannel`, reloads the main menu.
   - `Items/`: ItemCatalog (SO asset), weapons, firearm events and gun contexts, `AmmoPickup` (zombie ammo drops / reserve refill).
 - **ScriptableObject architecture (modularity):** entities never reach out to scene objects or static singletons.

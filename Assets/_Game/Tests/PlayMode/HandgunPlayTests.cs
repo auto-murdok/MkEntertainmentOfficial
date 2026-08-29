@@ -173,6 +173,28 @@ namespace Game.Tests.PlayMode
             Assert.AreEqual(50f, bullet.GetComponent<Rigidbody>().linearVelocity.magnitude, 0.1f);
         }
 
+        [UnityTest]
+        public IEnumerator LiveBullets_TracksPooledBulletsWithoutSceneScan()
+        {
+            yield return null; // Awake runs: pool exists
+            CreateBulletSource();
+            Assert.AreEqual(0, _handgun.liveBullets);
+
+            Assert.IsTrue(_handgun.ExecuteActualShoot());
+            yield return null;
+            Assert.AreEqual(1, _handgun.liveBullets);
+
+            // Release the bullet back and confirm the count follows the pool.
+            BulletProjectile live = null;
+            foreach (var candidate in Object.FindObjectsByType<BulletProjectile>(FindObjectsSortMode.None))
+            {
+                if (candidate.gameObject != _bulletSource) live = candidate;
+            }
+            Assert.IsNotNull(live);
+            live.ReleaseToPool();
+            Assert.AreEqual(0, _handgun.liveBullets);
+        }
+
         [Test]
         public void RegisterEvents_StoresFirearmEvents()
         {

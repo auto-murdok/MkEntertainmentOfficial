@@ -79,6 +79,10 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
         _context.fireRate = fireRate > 0f ? fireRate : DefaultFireRate;
     }
 
+    // Live-bullet count straight from the pool (checked-out objects) — lets the
+    // DebugHud read it without a per-refresh FindObjectsByType scene scan.
+    public int liveBullets => _bulletPool != null ? _bulletPool.CountActive : 0;
+
     public void InjectUIController(CharacterUIController uiController)
     {
         // UI references are injected by the composition root (equip site) — the

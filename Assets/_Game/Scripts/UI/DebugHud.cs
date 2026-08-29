@@ -100,7 +100,7 @@ public class DebugHud : MonoBehaviour
             _builder.AppendLine($"Gun: {_handgun.CurrentStateName}  Clip: {gun.clipSize}/{gun.maxClipSize}  Reserve: {reserve}");
         }
 
-        _builder.AppendLine($"Live bullets: {UnityEngine.Object.FindObjectsByType<BulletProjectile>(FindObjectsSortMode.None).Length}");
+        _builder.AppendLine($"Live bullets: {(_handgun != null ? _handgun.liveBullets : 0)}");
 
         _builder.AppendLine("--- combat log (newest last) ---");
         int count = CombatLog.CopyRecent(_logLines);

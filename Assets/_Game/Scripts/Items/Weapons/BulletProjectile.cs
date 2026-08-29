@@ -80,7 +80,9 @@ public class BulletProjectile : MonoBehaviour
         set => _objectPool = value;
     }
 
-    private void ReleaseToPool()
+    // Idempotent (guarded by _isReleased) so test code can release a live bullet
+    // to verify pool bookkeeping.
+    public void ReleaseToPool()
     {
         if (_isReleased) return;
         _isReleased = true;

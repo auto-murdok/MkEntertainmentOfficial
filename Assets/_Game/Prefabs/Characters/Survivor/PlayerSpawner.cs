@@ -16,9 +16,10 @@ public class PlayerSpawner : MonoBehaviour
 
     private void Awake()
     {
-        InputHandler inputHandler = Instantiate(_inputHandlerPrefab).GetComponent<InputHandler>();
-        GameObject playerCore = Instantiate(_playerCorePrefab);
-        GameObject player = Instantiate(_spawnablePlayer);
+        // Spawn at the spawner's own transform so scenes control the spawn point.
+        InputHandler inputHandler = Instantiate(_inputHandlerPrefab, transform.position, transform.rotation).GetComponent<InputHandler>();
+        GameObject playerCore = Instantiate(_playerCorePrefab, transform.position, transform.rotation);
+        GameObject player = Instantiate(_spawnablePlayer, transform.position, transform.rotation);
 
         CharacterBrain brain = player.GetComponent<CharacterBrain>();
         CharacterLocomotion locomotion = player.GetComponent<CharacterLocomotion>();

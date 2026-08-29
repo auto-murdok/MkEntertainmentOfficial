@@ -20,9 +20,10 @@ public class ZombieHand : MonoBehaviour
         if (_zombieBrain == null || _zombieBrain.isBiting) return;
 
         ISurvivor survivor = other.GetComponentInParent<ISurvivor>();
-        if (survivor is IInteractable interactableSurvivor && interactableSurvivor.id != _zombieBrain.id && InteractableManager.Instance != null)
+        InteractableRegistry registry = _zombieBrain != null ? _zombieBrain.registry : null;
+        if (survivor is IInteractable interactableSurvivor && interactableSurvivor.id != _zombieBrain.id && registry != null)
         {
-            InteractableManager.Instance.Interact(interactableSurvivor.id, _zombieBrain.id);
+            registry.Interact(interactableSurvivor.id, _zombieBrain.id);
             Disable();
         }
     }

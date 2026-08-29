@@ -18,8 +18,6 @@ public enum GameState
 /// </summary>
 public class GameStateManager : MonoBehaviour
 {
-    public static GameStateManager Instance { get; private set; }
-
     // Grace period after death so a held key cannot skip the game-over screen.
     private const float RestartLockoutSeconds = 1f;
 
@@ -37,26 +35,8 @@ public class GameStateManager : MonoBehaviour
     private float _gameOverElapsed;
     private Canvas _gameOverCanvas;
 
-    private void Awake()
-    {
-        if (Instance != null && Instance != this)
-        {
-            // Destroy only the duplicate component, never the GameObject:
-            // siblings on the same object must survive.
-            Destroy(this);
-            return;
-        }
-
-        Instance = this;
-    }
-
-    private void OnDestroy()
-    {
-        if (Instance == this)
-        {
-            Instance = null;
-        }
-    }
+    // Plain component created and wired by the composition root (PlayerSpawner)
+    // — no static Instance: game-flow consumers get the reference injected.
 
     // Player wiring: the composition root subscribes this to the player's
     // Died event (brain.Died += NotifyPlayerDied).

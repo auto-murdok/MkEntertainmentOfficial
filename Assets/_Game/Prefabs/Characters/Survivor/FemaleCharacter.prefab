@@ -3738,6 +3738,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb4e7a1717a52424a95d352f365cc2b0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _registry: {fileID: 11400000, guid: 5d657cd83453b924ab589878230a8a46, type: 2}
   _subject: {fileID: 0}
   _maxHitPoints: 100
 --- !u!114 &1294663506210136946
@@ -3762,6 +3763,7 @@ MonoBehaviour:
   _mouseLookSensitivity: 0.3
   _gamepadLookSensitivity: 100
   _rightHandWeaponHolder: {fileID: 5984236954024464051}
+  _itemCatalog: {fileID: 11400000, guid: e72ac5d2335d6c048bb5500252e8756c, type: 2}
   _aimTarget: {fileID: 0}
   _playerData: {fileID: 11400000, guid: be6955c799da5154784d9fbcf759faac, type: 2}
 --- !u!114 &6698483046295224724

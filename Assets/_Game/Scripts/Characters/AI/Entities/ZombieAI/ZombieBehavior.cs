@@ -53,6 +53,9 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
 
         _context.sockets = _sockets;
         _context.visionHook = visionHook;
+        // The registry asset lives on the brain (ActorBrainBase field); the FSM
+        // context just mirrors it for the states.
+        _context.registry = _context.brain != null ? _context.brain.registry : null;
 
         ApplyZombieData(_zombieData);
 
@@ -177,9 +180,9 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
         IInteractable interactableTarget = _context.target as IInteractable ?? _context.interactable;
         ZombieBrain brain = _context.brain != null ? _context.brain : GetComponent<ZombieBrain>();
 
-        if (interactableTarget != null && brain != null && InteractableManager.Instance != null)
+        if (interactableTarget != null && brain != null && _context.registry != null)
         {
-            InteractableManager.Instance.Interact(interactableTarget.id, brain.id);
+            _context.registry.Interact(interactableTarget.id, brain.id);
             return true;
         }
 

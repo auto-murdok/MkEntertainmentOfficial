@@ -10,6 +10,7 @@ public class ZombieContext : ActorBlackboard
     public LayerMask ignoreLayerMask;
     public ISurvivor target;
     public IInteractable interactable;
+    public InteractableRegistry registry;
     public ZombieBrain brain;
     public ZombieHand[] hands;
     public float biteDuration;

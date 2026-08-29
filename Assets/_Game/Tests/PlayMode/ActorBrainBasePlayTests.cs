@@ -37,23 +37,25 @@ namespace Game.Tests.PlayMode
     {
         private GameObject _host;
         private TestBrain _brain;
-        private GameObject _managerHost;
+        private InteractableRegistry _registry;
         private readonly List<GameObject> _cleanup = new List<GameObject>();
 
         [SetUp]
         public void SetUp()
         {
-            _managerHost = new GameObject("ManagerHost");
-            _managerHost.AddComponent<InteractableManager>();
+            _registry = ScriptableObject.CreateInstance<InteractableRegistry>();
             _host = new GameObject("BrainHost");
             _brain = _host.AddComponent<TestBrain>();
+            var so = new UnityEditor.SerializedObject(_brain);
+            so.FindProperty("_registry").objectReferenceValue = _registry;
+            so.ApplyModifiedProperties();
         }
 
         [TearDown]
         public void TearDown()
         {
             Object.DestroyImmediate(_host);
-            Object.DestroyImmediate(_managerHost);
+            Object.DestroyImmediate(_registry);
             foreach (var go in _cleanup)
             {
                 if (go != null) Object.DestroyImmediate(go);
@@ -191,13 +193,13 @@ namespace Game.Tests.PlayMode
         }
 
         [Test]
-        public void OnRagdollEnabled_RemovesFromInteractableManager()
+        public void OnRagdollEnabled_RemovesFromInteractableRegistry()
         {
             var partner = new StubInteractable(_host.GetInstanceID() + 1);
-            InteractableManager.Instance.AddInteractable(_brain);
-            InteractableManager.Instance.AddInteractable(partner);
+            _registry.Register(_brain);
+            _registry.Register(partner);
 
-            InteractableManager.Instance.Interact(_brain.id, partner.id);
+            _registry.Interact(_brain.id, partner.id);
             Assert.AreEqual(1, _brain.ExternalInteractions);
 
             _brain.CallSetupDeathHook();
@@ -205,7 +207,7 @@ namespace Game.Tests.PlayMode
 
             partner.InteractionCount = 0;
             _brain.ExternalInteractions = 0;
-            InteractableManager.Instance.Interact(_brain.id, partner.id);
+            _registry.Interact(_brain.id, partner.id);
             Assert.AreEqual(0, _brain.ExternalInteractions, "Dead actor must no longer receive interactions.");
             Assert.AreEqual(0, partner.InteractionCount, "Pair interaction requires both sides to be registered.");
         }

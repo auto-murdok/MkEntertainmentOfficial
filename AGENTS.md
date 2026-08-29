@@ -171,7 +171,11 @@ unity pipeline upgrade
   - Singleton duplicate guards must `Destroy(this)` (the component), **never** `Destroy(gameObject)` — killing the GameObject takes siblings with it and `OnDestroy` then nulls the singleton (see `docs/zombie_bite_interaction_fixes.md`).
   - Unity magic methods (`Start`, `Awake`, …) are **not virtual**: a private `Start` in a derived class hides the base one, silently skipping base setup (e.g. `ActorBrainBase.Start` registration). Make the base `protected virtual` and call `base.Start()` from overrides.
   - `Core/UI/`: Character UI controller/elements.
-  - `Items/`: PrefabManager, weapons, firearm events and gun contexts.
+  - `Items/`: ItemCatalog (SO asset), weapons, firearm events and gun contexts.
+- **ScriptableObject architecture (modularity):** entities never reach out to scene objects or static singletons.
+  - `InteractableRegistry` (SO, RuntimeSet pattern): every actor prefab references the shared asset (`Assets/_Game/Data/Registries/InteractableRegistry.asset`) and self-registers/unregisters; bite interactions go through `registry.Interact(...)`.
+  - `ItemCatalog` (SO): `CharacterLocomotion` references `Assets/_Game/Data/Items/ItemCatalog_Default.asset` directly — no PrefabManager singleton.
+  - `GameStateManager` is a plain component created and wired by the composition root (no static `Instance`).
 - **Player spawning architecture (composition root):**
   - Scenes contain **only** map + MainCamera (CinemachineBrain + `MousePosition` child) + baked NavMesh Surface + `PlayerSpawner`.
   - `PlayerSpawner.Awake` instantiates `SpawnableFemaleCharacter`, `InputHandler`, and `PlayerCoreComponents` prefabs and wires ALL cross-references on the **instances** (never on prefab assets — mutating a prefab asset at runtime corrupts it for every future spawn).

@@ -4,13 +4,18 @@ using UnityEngine.AI;
 
 // Shared brain lifecycle for any actor driven by an ActorBlackboard-backed FSM
 // (Player and Zombie). Consolidates the duplication that lived in every brain:
-// InteractableManager registration, ragdoll enable/disable, the context.onDeath
+// InteractableRegistry registration, ragdoll enable/disable, the context.onDeath
 // hook, and the HP-reduction -> isAlive death signal. Entity-specific concerns
 // (victimHook, bite interaction, health source, corpse teardown) stay in the
 // derived class via the abstract/virtual hooks below.
 public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
 {
     protected ActorBlackboard Context;
+
+    // SO-architecture: every actor prefab references the shared registry asset,
+    // so entities never reach out to a scene object or static singleton.
+    [SerializeField] private InteractableRegistry _registry;
+    public InteractableRegistry registry => _registry;
 
     // --- IInteractable: generic members shared by every actor ---
     public int id => gameObject.GetInstanceID();
@@ -50,7 +55,7 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
 
     protected virtual void OnRagdollEnabled()
     {
-        InteractableManager.Instance?.RemoveInteractable(this);
+        _registry?.Unregister(this);
         DestroyActorCore(); // NavMeshAgent + Animator are torn down for every actor
     }
 
@@ -73,24 +78,21 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
     protected virtual void Start()
     {
         RagdollUtils.DisableRagdoll(transform);
-        if (InteractableManager.Instance != null)
+        if (_registry != null)
         {
-            InteractableManager.Instance.AddInteractable(this);
+            _registry.Register(this);
         }
         else
         {
-            Debug.LogError($"[{name}] No InteractableManager in the scene — actor cannot be bitten/targeted. " +
-                           "Add an InteractableManager to the scene (it lives on the PlayerCoreComponents prefab).");
+            Debug.LogError($"[{name}] No InteractableRegistry asset assigned — actor cannot be bitten/targeted. " +
+                           "Assign the shared InteractableRegistry asset in the actor prefab (inspector field on the brain).");
         }
         OnActorStart();
     }
 
     private void OnDestroy()
     {
-        if (InteractableManager.Instance != null)
-        {
-            InteractableManager.Instance.RemoveInteractable(this);
-        }
+        _registry?.Unregister(this);
         OnActorDestroy();
     }
 }

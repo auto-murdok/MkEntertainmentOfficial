@@ -30,6 +30,9 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     [Header("Item hooks")]
     [SerializeField] private Transform _rightHandWeaponHolder;
+    // SO-architecture: the player prefab references the shared item catalog
+    // asset directly — no scene singleton lookup.
+    [SerializeField] private ItemCatalog _itemCatalog;
     private Weapon _equippedWeapon;
 
     [Header("Combat hooks")]
@@ -142,17 +145,17 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     private void EquipWeapon(string weaponName)
     {
-        if (PrefabManager.Instance == null)
+        if (_itemCatalog == null)
         {
-            Debug.LogWarning($"[{name}] PrefabManager not present — no weapon equipped. " +
-                             "Spawn the PlayerCoreComponents prefab (it carries the PrefabManager).");
+            Debug.LogWarning($"[{name}] No ItemCatalog asset assigned — no weapon equipped. " +
+                             "Assign the shared ItemCatalog asset on CharacterLocomotion (player prefab).");
             return;
         }
 
-        Item prefab = PrefabManager.Instance.GetItemPrefab(weaponName);
+        Item prefab = _itemCatalog.GetItemPrefab(weaponName);
         if (prefab == null || _rightHandWeaponHolder == null)
         {
-            Debug.LogWarning($"[{name}] Weapon '{weaponName}' not equipped (prefab missing from PrefabManager or right-hand holder unset).");
+            Debug.LogWarning($"[{name}] Weapon '{weaponName}' not equipped (prefab missing from ItemCatalog or right-hand holder unset).");
             return;
         }
 

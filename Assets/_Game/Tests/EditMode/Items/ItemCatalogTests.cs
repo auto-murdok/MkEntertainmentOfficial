@@ -1,18 +1,23 @@
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 
 namespace Game.Tests.EditMode
 {
-    public class PrefabManagerTests
+    // The SO catalog replaces the PrefabManager singleton: same lookup
+    // semantics, but the catalog is an authored asset referenced directly by
+    // the consumer prefab.
+    public class ItemCatalogTests
     {
+        private ItemCatalog _catalog;
         private GameObject _host;
-        private PrefabManager _manager;
+        private GameObject _itemHost;
 
         [SetUp]
         public void SetUp()
         {
-            _host = new GameObject("PrefabManagerHost");
-            _manager = _host.AddComponent<PrefabManager>();
+            _catalog = ScriptableObject.CreateInstance<ItemCatalog>();
+            _host = new GameObject("ItemCatalogHost");
         }
 
         [TearDown]
@@ -20,9 +25,8 @@ namespace Game.Tests.EditMode
         {
             UnityEngine.Object.DestroyImmediate(_host);
             UnityEngine.Object.DestroyImmediate(_itemHost);
+            UnityEngine.Object.DestroyImmediate(_catalog);
         }
-
-        private GameObject _itemHost;
 
         private Item CreateItem(string id)
         {
@@ -37,45 +41,39 @@ namespace Game.Tests.EditMode
         [Test]
         public void GetItemPrefab_NullItems_ReturnsNull()
         {
-            Assert.IsNull(_manager.GetItemPrefab("anything"));
+            Assert.IsNull(_catalog.GetItemPrefab("anything"));
         }
 
         [Test]
         public void GetItemPrefab_RegisteredId_ReturnsItem()
         {
             var item = CreateItem("handgun_ammo");
-            _manager.items = new Item[] { item };
-            Assert.AreEqual(item, _manager.GetItemPrefab("handgun_ammo"));
+            _catalog.items = new Item[] { item };
+            Assert.AreEqual(item, _catalog.GetItemPrefab("handgun_ammo"));
         }
 
         [Test]
         public void GetItemPrefab_UnknownId_ReturnsNull()
         {
             var item = CreateItem("handgun_ammo");
-            _manager.items = new Item[] { item };
-            Assert.IsNull(_manager.GetItemPrefab("rifle_ammo"));
+            _catalog.items = new Item[] { item };
+            Assert.IsNull(_catalog.GetItemPrefab("rifle_ammo"));
         }
 
         [Test]
         public void GetItemPrefab_EmptyArray_ReturnsNull()
         {
-            _manager.items = new Item[] { };
-            Assert.IsNull(_manager.GetItemPrefab("x"));
+            _catalog.items = new Item[] { };
+            Assert.IsNull(_catalog.GetItemPrefab("x"));
         }
 
         [Test]
         public void FindItemById_NullEntries_AreSkipped()
         {
             var item = CreateItem("bandage");
-            _manager.items = new Item[] { null, item, null };
-            Assert.AreEqual(item, _manager.GetItemPrefab("bandage"));
-            Assert.IsNull(_manager.GetItemPrefab("null-id"));
-        }
-
-        [Test]
-        public void Instance_FindsManagerInScene()
-        {
-            Assert.AreEqual(_manager, PrefabManager.Instance);
+            _catalog.items = new Item[] { null, item, null };
+            Assert.AreEqual(item, _catalog.GetItemPrefab("bandage"));
+            Assert.IsNull(_catalog.GetItemPrefab("null-id"));
         }
 
         [Test]

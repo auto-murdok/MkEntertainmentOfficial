@@ -143,7 +143,7 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
 
         BulletProjectile bullet = _bulletPool.Get();
         bullet.Launch(spawnPos, Quaternion.LookRotation(direction, Vector3.up), transform.root.gameObject);
-        CombatLog.ReportImpact($"Bullet launched from {spawnPos:F2} dir {direction:F2}");
+        CombatLog.ReportImpact($"Bullet launched from {spawnPos:F2} dir {direction:F2}", CombatLog.EntryKind.Debug);
         return true;
     }
 

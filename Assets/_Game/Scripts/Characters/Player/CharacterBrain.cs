@@ -15,6 +15,8 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
     [Header("Stats")]
     [SerializeField] private float _maxHitPoints = 100f;
 
+    public float maxHitPoints => _maxHitPoints;
+
     Vector3 ISurvivor.TargetPosition => transform.position;
     public override Transform victimHook => transform;
     public override bool isPreparing => false;

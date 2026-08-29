@@ -22,7 +22,9 @@ public class DebugHud : MonoBehaviour
     private Handgun _handgun; // resolved lazily: the weapon is equipped in the locomotion's Awake
     private float _nextRefresh;
     private float _fps;
-    private bool _visible = true;
+    // Hidden by default: the PlayerHud is the visible gameplay HUD; F3 opens
+    // this full diagnostics overlay (including the unfiltered combat log).
+    private bool _visible = false;
 
     private void Awake()
     {

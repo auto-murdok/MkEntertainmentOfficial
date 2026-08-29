@@ -186,7 +186,6 @@ public class ZombieSpawner : MonoBehaviour
 
         _activeInstances.Add(instance);
 
-        Debug.Log($"[{name}] Spawned {instance.name} at {spawnPosition}");
         return instance;
     }
 

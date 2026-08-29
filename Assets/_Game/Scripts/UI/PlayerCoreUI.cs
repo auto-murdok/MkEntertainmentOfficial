@@ -29,6 +29,14 @@ public class PlayerCoreUI : MonoBehaviour, IObserver<CharacterUIElement, Charact
         }
     }
 
+    // The premium PlayerHud owns the ammo readout; the prefab-authored legacy
+    // clip text can be suppressed at spawn time without breaking ShootUI
+    // notifications (writes continue into the hidden text harmlessly).
+    public void SetClipInfoActive(bool active)
+    {
+        if (_clipInfo != null) _clipInfo.gameObject.SetActive(active);
+    }
+
     private void Start()
     {
         // The subject is wired by the spawner after instantiation, so the first

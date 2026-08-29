@@ -39,6 +39,10 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
     // player instance; entity code never subscribes to its own death.
     public event Action Died;
 
+    // Raised on every accepted hit with the damage amount (drives the HUD
+    // damage vignette). Never raised after death.
+    public event Action<float> Damaged;
+
     protected void ApplyDamage(float amount)
     {
         // Dead actors ignore damage: bullets and swings hitting ragdolls must
@@ -51,6 +55,7 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
         _hitPoints = Mathf.Max(0f, _hitPoints - amount);
         _lastDamageTime = Time.time;
         CombatLog.ReportDamage(amount, _hitPoints, gameObject);
+        Damaged?.Invoke(amount);
         if (_hitPoints <= 0f && Context.isAlive)
         {
             Context.isAlive = false;

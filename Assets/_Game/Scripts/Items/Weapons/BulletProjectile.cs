@@ -118,7 +118,7 @@ public class BulletProjectile : MonoBehaviour
     {
         if ((transform.position - _initialPosition).sqrMagnitude > _maxTravelDistanceSqr)
         {
-            CombatLog.ReportImpact($"Bullet max-range release at {transform.position:F1}");
+            CombatLog.ReportImpact($"Bullet max-range release at {transform.position:F1}", CombatLog.EntryKind.Debug);
             ReleaseToPool();
         }
     }
@@ -160,7 +160,7 @@ public class BulletProjectile : MonoBehaviour
         else
         {
             Vector3 point = other.GetContact(0).point;
-            CombatLog.ReportImpact($"Bullet hit {other.gameObject.name} [{LayerMask.LayerToName(other.gameObject.layer)}] at {point:F2} — no IDamageable");
+            CombatLog.ReportImpact($"Bullet hit {other.gameObject.name} [{LayerMask.LayerToName(other.gameObject.layer)}] at {point:F2} — no IDamageable", CombatLog.EntryKind.Debug);
         }
 
         ReleaseToPool();

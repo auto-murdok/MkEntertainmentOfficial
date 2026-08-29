@@ -110,6 +110,29 @@ namespace Game.Tests.PlayMode
         }
 
         [Test]
+        public void Damaged_EventRaisedWithAmountOnAcceptedHit()
+        {
+            float reported = 0f;
+            int calls = 0;
+            _brain.Damaged += amount => { reported = amount; calls++; };
+
+            _brain.CallApplyDamage(25f);
+            Assert.AreEqual(1, calls);
+            Assert.AreEqual(25f, reported);
+        }
+
+        [Test]
+        public void Damaged_EventNotRaisedAfterDeath()
+        {
+            int calls = 0;
+            _brain.Damaged += _ => calls++;
+            _brain.CallApplyDamage(100f); // dies — the lethal blow is itself an accepted hit
+            Assert.AreEqual(1, calls);
+            _brain.CallApplyDamage(10f);  // corpse hit — ignored
+            Assert.AreEqual(1, calls);
+        }
+
+        [Test]
         public void Regen_NoRegenBeforeDelayElapses()
         {
             _brain.CallApplyDamage(50f);

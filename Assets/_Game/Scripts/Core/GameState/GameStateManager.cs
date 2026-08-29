@@ -161,6 +161,8 @@ public class GameStateManager : MonoBehaviour
         GameObject canvasGo = new GameObject("GameOverCanvas");
         _gameOverCanvas = canvasGo.AddComponent<Canvas>();
         _gameOverCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        // Above the PlayerHud (100) so the overlay fully covers the HUD.
+        _gameOverCanvas.sortingOrder = 500;
         canvasGo.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         canvasGo.AddComponent<GraphicRaycaster>();
 

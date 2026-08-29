@@ -84,9 +84,13 @@ public class PlayerSpawner : MonoBehaviour
 
         // The UI observes the spawned character's UI subject.
         coreUI._subject = player.GetComponent<CharacterUIController>();
+        // The PlayerHud owns the ammo readout — retire the legacy clip text.
+        coreUI.SetClipInfoActive(false);
 
-        // Debug overlay (F3 toggle) — lives on the player instance so it can
-        // read the brain, locomotion and equipped weapon directly.
+        // HUDs live on the player instance so they can read the brain,
+        // locomotion and equipped weapon directly. PlayerHud is the visible
+        // gameplay HUD; DebugHud is the hidden F3 diagnostics overlay.
+        player.AddComponent<PlayerHud>();
         player.AddComponent<DebugHud>();
 
         // Game-flow wiring through SO event channels: the player's death is

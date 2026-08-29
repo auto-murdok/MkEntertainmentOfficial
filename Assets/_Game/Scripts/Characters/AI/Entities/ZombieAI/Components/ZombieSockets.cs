@@ -102,8 +102,6 @@ public class ZombieSockets : MonoBehaviour
                 _victimHook = CreateSocket("VictimHook", new Vector3(0, 1.4f, 0.5f));
             }
         }
-
-        Debug.Log($"[{gameObject.name}] ZombieSockets auto-bound: Vision={_visionHook?.name}, Victim={_victimHook?.name}, Hand={_attackHandHook?.name}");
     }
 
     private Transform CreateSocket(string socketName, Vector3 localPosition)

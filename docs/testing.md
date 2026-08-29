@@ -149,7 +149,10 @@ unit-tested (they are editor tooling / scene-composition surfaces better validat
 play sessions and the editor itself):
 
 - `ExpandedArenaGenerator`, `RenderingScalabilitySetup` (Editor menu tooling).
-- `DebugHud` (IMGUI rendering), `PlayerCoreUI`/`AimTarget` (scene-bound UI wiring).
+- `DebugHud` (IMGUI-free but pure rendering), `PlayerHud` (procedural canvas
+  rendering — its logic inputs (`CombatLog` kind filtering, `ActorBrainBase.Damaged`,
+  regen values) are unit-tested; the pixels are validated by play sessions),
+  `PlayerCoreUI`/`AimTarget` (scene-bound UI wiring).
 - `PlayerSpawner` (composition root — covered indirectly by play sessions; its wiring
   rules live in `docs/spawnable_player_requirements.md`).
 

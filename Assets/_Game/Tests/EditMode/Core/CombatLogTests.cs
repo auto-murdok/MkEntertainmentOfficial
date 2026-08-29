@@ -107,6 +107,43 @@ namespace Game.Tests.EditMode
         }
 
         [Test]
+        public void CopyRecent_KindFilter_ExcludesDebugEntries()
+        {
+            string noise = "DebugNoise" + Guid.NewGuid().ToString("N");
+            string impact = "ImpactEvent" + Guid.NewGuid().ToString("N");
+            CombatLog.ReportImpact(noise, CombatLog.EntryKind.Debug);
+            CombatLog.ReportImpact(impact);
+
+            var filtered = new string[8];
+            int written = CombatLog.CopyRecent(filtered, CombatLog.EntryKind.Impact);
+            string joined = string.Join("|", filtered, 0, written);
+            StringAssert.Contains(impact, joined);
+            StringAssert.DoesNotContain(noise, joined);
+
+            // Unfiltered copy still sees everything (F3 diagnostics view).
+            var all = new string[8];
+            int allWritten = CombatLog.CopyRecent(all);
+            string allJoined = string.Join("|", all, 0, allWritten);
+            StringAssert.Contains(noise, allJoined);
+            StringAssert.Contains(impact, allJoined);
+        }
+
+        [Test]
+        public void ReportDamage_EntryKind_IsDamage()
+        {
+            _victim = new GameObject("KindVictim");
+            string marker = "DamageKindNoise" + Guid.NewGuid().ToString("N");
+            CombatLog.ReportImpact(marker, CombatLog.EntryKind.Debug);
+            CombatLog.ReportDamage(5f, 95f, _victim);
+
+            var damageOnly = new string[8];
+            int written = CombatLog.CopyRecent(damageOnly, CombatLog.EntryKind.Damage);
+            string joined = string.Join("|", damageOnly, 0, written);
+            StringAssert.Contains("KindVictim", joined);
+            StringAssert.DoesNotContain(marker, joined);
+        }
+
+        [Test]
         public void CopyRecent_SmallBuffer_FillsExactlyBufferSizeSlots()
         {
             CombatLog.ReportImpact("SmallBuf" + Guid.NewGuid().ToString("N"));

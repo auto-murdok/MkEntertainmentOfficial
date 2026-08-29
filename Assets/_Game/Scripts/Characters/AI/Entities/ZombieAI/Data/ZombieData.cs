@@ -42,6 +42,10 @@ public class ZombieData : ScriptableObject
     [SerializeField] private float _walkSpeed = 1.5f;
     [SerializeField] private float _chaseSpeed = 3.5f;
 
+    [Header("Ammo Drop (ammunition economy)")]
+    [Tooltip("Pickup prefab instantiated at the corpse position on death. Null = no drop.")]
+    [SerializeField] private GameObject _ammoDropPrefab;
+
     // Public Getters
     // Default obstacle mask: environment (Default) + Water + other zombies.
     // Matches the values previously stored in the Walker/Runner assets (which
@@ -66,4 +70,5 @@ public class ZombieData : ScriptableObject
     public float handAttackDuration => _handAttackDuration;
     public float walkSpeed => _walkSpeed;
     public float chaseSpeed => _chaseSpeed;
+    public GameObject ammoDropPrefab => _ammoDropPrefab;
 }

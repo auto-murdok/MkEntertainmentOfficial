@@ -18,6 +18,7 @@ public class ZombieBrain : ActorBrainBase, IZombie
     private const float DefaultCorpseDestroyDelay = 5f;
 
     public float maxHitPoints => _behavior != null && _behavior.zombieData != null ? _behavior.zombieData.maxHitPoints : DefaultMaxHitPoints;
+    public ZombieData zombieData => _behavior != null ? _behavior.zombieData : null;
     public float biteDamage => _behavior != null && _behavior.zombieData != null ? _behavior.zombieData.biteDamage : DefaultBiteDamage;
     public float corpseDestroyDelay => _behavior != null && _behavior.zombieData != null ? _behavior.zombieData.corpseDestroyDelay : DefaultCorpseDestroyDelay;
 
@@ -89,6 +90,8 @@ public class ZombieBrain : ActorBrainBase, IZombie
             Debug.Log($"[{gameObject.name}] RAGDOLL activated!");
         }
 
+        DropAmmo();
+
         Destroy(GetComponent<ZombieBehavior>());
         foreach (ZombieHand hand in GetComponentsInChildren<ZombieHand>())
         {
@@ -96,6 +99,17 @@ public class ZombieBrain : ActorBrainBase, IZombie
         }
 
         Destroy(gameObject, corpseDestroyDelay);
+    }
+
+    // Ammunition economy: dead zombies drop an ammo pickup so the finite
+    // reserve on the player's weapon is renewable. Data-driven via ZombieData;
+    // a null prefab means the archetype drops nothing.
+    private void DropAmmo()
+    {
+        GameObject dropPrefab = zombieData != null ? zombieData.ammoDropPrefab : null;
+        if (dropPrefab == null) return;
+
+        Instantiate(dropPrefab, transform.position, Quaternion.identity);
     }
 }
 

@@ -12,10 +12,12 @@ public class HandgunReadyState : State<HandgunState, HandgunContext>
             {
                 character.ChangeState(HandgunState.Shooting);
             }
-            else
+            else if (character._context.reserveAmmo > 0)
             {
                 character.ChangeState(HandgunState.Reloading);
             }
+            // else: completely out of ammo — stay Ready (dry weapon). A later
+            // pickup (AddReserveAmmo) re-arms the auto-reload on the next check.
         }
         else if (character._context.isReloading)
         {

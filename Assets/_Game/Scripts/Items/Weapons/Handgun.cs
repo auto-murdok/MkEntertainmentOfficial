@@ -84,6 +84,16 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
     // DebugHud read it without a per-refresh FindObjectsByType scene scan.
     public int liveBullets => _bulletPool != null ? _bulletPool.CountActive : 0;
 
+    // Current reserve pool (read by HUD/tests).
+    public int reserveAmmo => _context.reserveAmmo;
+
+    // Ammo economy: ammo pickups and future systems add to the reserve pool.
+    public void AddReserveAmmo(int amount)
+    {
+        if (amount <= 0) return;
+        _context.reserveAmmo += amount;
+    }
+
     public void InjectUIController(CharacterUIController uiController)
     {
         // UI references are injected by the composition root (equip site) — the

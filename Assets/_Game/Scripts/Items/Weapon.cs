@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class Weapon : Item
+public class Weapon : Item, IAmmoReceiver
 {
     [Header("Settings")]
     [SerializeField] private float _fireRate = 0.2f;
@@ -9,6 +9,8 @@ public class Weapon : Item
     public float recoilForce { get { return _recoilForce; } }
     [SerializeField] private int _clipSize = 5;
     public int clipSize { get { return _clipSize; } }
+    [Tooltip("Reserve ammo pool the reload pulls from. Refilled by ammo pickups.")]
+    [SerializeField] private int _reserveAmmo = 45;
 
     // Internal
     private IFirearm _firearm;
@@ -18,9 +20,10 @@ public class Weapon : Item
     private void Awake()
     {
         _firearm = GetComponent<IFirearm>();
-        // int.MaxValue reserve = infinite ammo pool for now (Ammo pickups not
-        // yet wired into the inventory); reload math already supports it.
-        _firearm.Prepare(_clipSize, int.MaxValue);
+        // Finite reserve from the weapon config; refilled by ammo pickups
+        // (zombie drops). Reload math treats huge values as a de-facto
+        // infinite pool.
+        _firearm.Prepare(_clipSize, _reserveAmmo);
 
         // Push the weapon's own config into the firearm so the firearm state
         // machine has a single source of truth for cadence (damage lives on
@@ -55,5 +58,14 @@ public class Weapon : Item
     public void TriggerReload()
     {
         _onReload?.Invoke();
+    }
+
+    // IAmmoReceiver: ammo pickups (and future systems) add to the reserve pool.
+    public void AddReserveAmmo(int amount)
+    {
+        if (_firearm is Handgun handgun)
+        {
+            handgun.AddReserveAmmo(amount);
+        }
     }
 }

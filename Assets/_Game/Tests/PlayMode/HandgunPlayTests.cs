@@ -355,7 +355,7 @@ namespace Game.Tests.PlayMode
             yield return null;
             Assert.AreEqual(5, Context.clipSize);
             Assert.AreEqual(5, Context.maxClipSize);
-            Assert.AreEqual(int.MaxValue, Context.reserveAmmo);
+            Assert.AreEqual(45, Context.reserveAmmo);
             Assert.AreEqual(0.2f, Context.fireRate);
         }
 
@@ -395,6 +395,47 @@ namespace Game.Tests.PlayMode
             var ui = uiHost.AddComponent<CharacterUIController>();
             _host.GetComponent<Weapon>().InjectUIController(ui);
             Assert.AreEqual(ui, Context.UIController);
+        }
+
+        [Test]
+        public void AddReserveAmmo_PositiveAmount_IncreasesReserve()
+        {
+            _handgun.Prepare(5, 10);
+            _handgun.AddReserveAmmo(15);
+            Assert.AreEqual(25, _handgun.reserveAmmo);
+        }
+
+        [Test]
+        public void AddReserveAmmo_NonPositive_IsNoOp()
+        {
+            _handgun.Prepare(5, 10);
+            _handgun.AddReserveAmmo(0);
+            _handgun.AddReserveAmmo(-5);
+            Assert.AreEqual(10, _handgun.reserveAmmo);
+        }
+
+        [Test]
+        public void Weapon_AddReserveAmmo_ForwardsToHandgun()
+        {
+            _host.AddComponent<Weapon>();
+            _handgun.Prepare(5, 10);
+            _host.GetComponent<Weapon>().AddReserveAmmo(20);
+            Assert.AreEqual(30, _handgun.reserveAmmo);
+        }
+
+        [UnityTest]
+        public IEnumerator ReadyState_EmptyClipWithNoReserve_StaysReady()
+        {
+            // Out of ammo entirely: the empty-clip press must NOT start a
+            // pointless reload cycle — the weapon stays Ready (dry).
+            _handgun.Prepare(0, 0);
+            _handgun.SetFireRate(0.05f);
+            _handgun.Shoot(new Vector3(0, 0, 5));
+            yield return null;
+            yield return null;
+            Assert.AreEqual(HandgunState.Ready, _handgun.CurrentStateName);
+            Assert.AreEqual(0, Context.clipSize);
+            Assert.AreEqual(0, Context.reserveAmmo);
         }
     }
 }

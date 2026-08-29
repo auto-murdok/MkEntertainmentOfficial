@@ -18,16 +18,21 @@ MonoBehaviour:
   _biteDamage: 30
   _corpseDestroyDelay: 5
   _detectionMaxDistance: 10
-  _minDetectionAngle: 120
-  _maxDetectionAngle: 180
+  _fieldOfViewAngle: 120
   _detectionLayerMask:
     serializedVersion: 2
     m_Bits: 64
-  _ignoreLayerMask:
+  _obstacleLayerMask:
     serializedVersion: 2
-    m_Bits: 132
+    m_Bits: 133
   _biteRange: 1.2
+  _biteDuration: 1.5
   _defaultAgentRadius: 0.3
   _bittingAgentRadius: 0.1
+  _handAttackDamage: 15
+  _handAttackRange: 1.6
+  _handAttackDuration: 1.2
   _walkSpeed: 1.5
   _chaseSpeed: 3.5
+  _ammoDropPrefab: {fileID: 104759073330834925, guid: 60d382be0531cbb48af988483920d98a,
+    type: 3}

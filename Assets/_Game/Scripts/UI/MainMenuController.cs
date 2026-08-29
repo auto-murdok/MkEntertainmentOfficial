@@ -26,6 +26,7 @@ public class MainMenuController : MonoBehaviour
 {
     [Header("Scene flow")]
     [SerializeField] private string _gameSceneName = "ExpandedCombatArena";
+    [SerializeField] private string _networkSceneName = "NetworkedCombatArena";
 
     [Header("Menu copy")]
     [SerializeField] private string _title = "OUTBREAK";
@@ -41,6 +42,8 @@ public class MainMenuController : MonoBehaviour
 
     public event Action startRequested;
     public event Action quitRequested;
+    public event Action hostRequested;
+    public event Action joinRequested;
 
     public bool isTransitioning { get; private set; }
 
@@ -112,6 +115,34 @@ public class MainMenuController : MonoBehaviour
         isTransitioning = true;
         quitRequested?.Invoke();
         StartCoroutine(TransitionToScene(null));
+    }
+
+    // Multiplayer entry points (localhost for now): both load the networked
+    // arena; NetworkArenaBootstrap reads the desired mode from NetworkSession.
+    public void HostGame()
+    {
+        if (isTransitioning)
+        {
+            return;
+        }
+
+        isTransitioning = true;
+        NetworkSession.desiredMode = NetworkSessionMode.Host;
+        hostRequested?.Invoke();
+        StartCoroutine(TransitionToScene(_networkSceneName));
+    }
+
+    public void JoinGame()
+    {
+        if (isTransitioning)
+        {
+            return;
+        }
+
+        isTransitioning = true;
+        NetworkSession.desiredMode = NetworkSessionMode.Client;
+        joinRequested?.Invoke();
+        StartCoroutine(TransitionToScene(_networkSceneName));
     }
 
     private IEnumerator EntranceSequence()
@@ -225,8 +256,10 @@ public class MainMenuController : MonoBehaviour
 
     private void BuildButtons(Transform parent)
     {
-        UiTheme.CreateMenuButton(parent, "StartGameButton", "START GAME", new Vector2(0.5f, 0.42f), StartGame);
-        UiTheme.CreateMenuButton(parent, "QuitButton", "QUIT", new Vector2(0.5f, 0.27f), QuitGame);
+        UiTheme.CreateMenuButton(parent, "StartGameButton", "START GAME", new Vector2(0.5f, 0.46f), StartGame);
+        UiTheme.CreateMenuButton(parent, "HostButton", "HOST GAME (LAN)", new Vector2(0.5f, 0.365f), HostGame);
+        UiTheme.CreateMenuButton(parent, "JoinButton", "JOIN GAME (LOCALHOST)", new Vector2(0.5f, 0.29f), JoinGame);
+        UiTheme.CreateMenuButton(parent, "QuitButton", "QUIT", new Vector2(0.5f, 0.215f), QuitGame);
 
         GameObject hintGo = new GameObject("VersionHint");
         hintGo.transform.SetParent(parent, false);

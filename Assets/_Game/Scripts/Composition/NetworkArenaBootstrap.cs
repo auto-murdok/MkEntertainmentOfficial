@@ -27,7 +27,24 @@ public class NetworkArenaBootstrap : MonoBehaviour
             return; // already started (e.g. scene reloaded during a session)
         }
 
-        bool asClient = IsCommandLineClient();
+        // Role resolution: an explicit menu choice wins; otherwise the command
+        // line decides (-mlclient joins, anything else hosts).
+        NetworkSessionMode mode = NetworkSession.desiredMode;
+        bool asClient = mode switch
+        {
+            NetworkSessionMode.Host => false,
+            NetworkSessionMode.Client => true,
+            _ => IsCommandLineClient(),
+        };
+
+        if (asClient)
+        {
+            // Loopback for now — everything points at localhost until a real
+            // server/IP flow exists.
+            networkManager.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>()
+                .SetConnectionData(NetworkSession.ServerAddress, NetworkSession.ServerPort);
+        }
+
         bool started = asClient ? networkManager.StartClient() : networkManager.StartHost();
         if (!started)
         {
@@ -35,7 +52,7 @@ public class NetworkArenaBootstrap : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[NetworkArenaBootstrap] Session started as {(asClient ? "client" : "host")}.");
+        Debug.Log($"[NetworkArenaBootstrap] Session started as {(asClient ? "client" : "host")} (mode={mode}, {NetworkSession.ServerAddress}:{NetworkSession.ServerPort}).");
     }
 
     public static bool IsCommandLineClient()

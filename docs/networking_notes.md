@@ -98,6 +98,55 @@ first client; start sessions from code via `NetworkManager.Singleton`.
   single-player scenes and tests, so `if (nm != null && !nm.IsServer) return;`
   is safe everywhere without touching the single-player path.
 
+## Command cheat-sheet (multiplayer build/test loop)
+
+All long operations are async — poll `*_status` in ≤60 s increments
+(AGENTS.md responsiveness rules). Everything below runs from the project root.
+
+```bash
+# ── Script recompile (after any code change; poll until completed/failed) ──
+unity command recompile
+unity command recompile_status
+
+# ── Session roles ──
+#   Menu buttons: HOST GAME / JOIN GAME (localhost 127.0.0.1:7777)
+#   Command line: no args = host · -mlclient / -client = join
+#   (menu choice wins over the command line; Auto = command line)
+
+# ── Host in the editor ──
+unity command open_scene --path "Assets/_Game/Scenes/Arenas/NetworkedCombatArena.unity"
+unity command editor_play                    # auto-hosts (or menu → HOST GAME)
+unity command editor_stop
+
+# ── Build the standalone client (player builds are async) ──
+unity command build --target StandaloneWindows64 --outputPath "Builds/NetworkClient.exe" --scenes "Assets/_Game/Scenes/Arenas/NetworkedCombatArena.unity" --confirm
+unity command build_status                   # poll until status=completed
+
+# ── Run the client (joins localhost; shows the menu → JOIN also works) ──
+Start-Process -FilePath "Builds\NetworkClient.exe" -ArgumentList "-mlclient", "-screen-width", "960", "-screen-height", "540"
+Stop-Process -Name "NetworkClient" -Force    # cleanup
+
+# ── Client-side logs (the client is a black box otherwise) ──
+Get-Content "$env:USERPROFILE\AppData\LocalLow\DefaultCompany\Official\Player.log" -Tail 40
+
+# ── Test suite (keep green after every behaviour change) ──
+unity command run_tests --mode editmode --async_tests
+unity command run_tests --mode playmode --async_tests
+unity command test_status                    # poll until status=completed
+
+# ── Live probes during a session (eval_file, never inline eval) ──
+# ConnectedClients count, spawned player NetworkObjects:
+#   NetworkManager.Singleton.ConnectedClientsIds.Count
+#   FindObjectsByType<NetworkObject>() → name/OwnerClientId/IsSpawned/transform.position
+# Editor console errors:
+unity command console --level error --tail 5
+```
+
+Typical full loop: `recompile` → build client (poll) → editor `editor_play`
+(host) → launch `NetworkClient.exe -mlclient` → probe host (`ConnectedClients
+= 2`, two player NetworkObjects) → check client `Player.log` → `editor_stop`
+→ kill client → run both test suites.
+
 ## Two-instance verification (host + built client)
 
 1. Editor: open `NetworkedCombatArena`, play → auto-host.

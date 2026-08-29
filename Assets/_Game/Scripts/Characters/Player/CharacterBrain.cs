@@ -41,6 +41,18 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
         SetupDeathHook();
     }
 
+    private void Update()
+    {
+        // Passive health regeneration (PlayerData config via the locomotion
+        // context). The shared brain helper guards dead/full-health actors and
+        // the since-last-hit delay.
+        PlayerData data = _locomotion != null ? _locomotion._context.data : null;
+        if (data != null)
+        {
+            RegenerateHitPoints(data.healthRegenRate, _maxHitPoints, data.healthRegenDelay);
+        }
+    }
+
     protected override void Start()
     {
         // Register with the InteractableRegistry, disable ragdoll, set layers, etc.

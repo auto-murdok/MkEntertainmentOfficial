@@ -30,6 +30,10 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
     protected float _hitPoints;
     public float remainingHitPoints => _hitPoints;
 
+    // Time (Time.time) of the last accepted hit. Drives delayed health
+    // regeneration: every new hit restarts the regen delay.
+    protected float _lastDamageTime = float.NegativeInfinity;
+
     // Raised once when hit points reach zero (true death — the manual-ragdoll
     // debug action does NOT raise it). The game-flow layer listens on the
     // player instance; entity code never subscribes to its own death.
@@ -45,6 +49,7 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
         }
 
         _hitPoints = Mathf.Max(0f, _hitPoints - amount);
+        _lastDamageTime = Time.time;
         CombatLog.ReportDamage(amount, _hitPoints, gameObject);
         if (_hitPoints <= 0f && Context.isAlive)
         {
@@ -55,6 +60,19 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
 
     // IDamageable: attacker-supplied damage, centralized through ApplyDamage.
     public void TakeDamage(float amount) => ApplyDamage(amount);
+
+    // Passive health regeneration — call once per Update from the derived brain
+    // with the entity's data config. Heals at `rate` HP/second once `regenDelay`
+    // seconds have passed since the last hit, capped at max. Dead actors and
+    // full-health actors never regenerate.
+    protected void RegenerateHitPoints(float rate, float maxHitPoints, float regenDelay)
+    {
+        if (rate <= 0f || _hitPoints >= maxHitPoints) return;
+        if (Context == null || !Context.isAlive) return;
+        if (Time.time - _lastDamageTime < regenDelay) return;
+
+        _hitPoints = Mathf.Min(maxHitPoints, _hitPoints + rate * Time.deltaTime);
+    }
 
     // --- Ragdoll / death lifecycle ---
     protected void SetupDeathHook() => Context.onDeath = HandleDeath;

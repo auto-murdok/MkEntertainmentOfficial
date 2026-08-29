@@ -27,6 +27,7 @@ namespace Game.Tests.PlayMode
         }
 
         public void CallApplyDamage(float amount) => ApplyDamage(amount);
+        public void CallRegenerate(float rate, float maxHitPoints, float regenDelay) => RegenerateHitPoints(rate, maxHitPoints, regenDelay);
         public void CallSetupDeathHook() => SetupDeathHook();
         public void CallDestroyActorCore() => DestroyActorCore();
         public bool HasDeathHook => Context.onDeath != null;
@@ -106,6 +107,55 @@ namespace Game.Tests.PlayMode
             var buffer = new string[8];
             int written = CombatLog.CopyRecent(buffer);
             StringAssert.Contains(_host.name, string.Join("|", buffer, 0, written));
+        }
+
+        [Test]
+        public void Regen_NoRegenBeforeDelayElapses()
+        {
+            _brain.CallApplyDamage(50f);
+            _brain.CallRegenerate(10f, 100f, 10f);
+            Assert.AreEqual(50f, _brain.remainingHitPoints);
+        }
+
+        [UnityTest]
+        public IEnumerator Regen_HealsAfterDelayElapses()
+        {
+            _brain.CallApplyDamage(50f);
+            yield return new WaitForSeconds(0.2f);
+            _brain.CallRegenerate(10f, 100f, 0.1f);
+            Assert.Greater(_brain.remainingHitPoints, 50f);
+        }
+
+        [Test]
+        public void Regen_CapsAtMaxHitPoints()
+        {
+            _brain.CallApplyDamage(1f);
+            _brain.CallRegenerate(1000f, 100f, 0f);
+            Assert.AreEqual(100f, _brain.remainingHitPoints);
+        }
+
+        [UnityTest]
+        public IEnumerator Regen_DeadActorDoesNotRegenerate()
+        {
+            _brain.CallApplyDamage(100f);
+            yield return new WaitForSeconds(0.2f);
+            _brain.CallRegenerate(10f, 100f, 0f);
+            Assert.AreEqual(0f, _brain.remainingHitPoints);
+        }
+
+        [Test]
+        public void Regen_FullHealthActor_IsNoOp()
+        {
+            _brain.CallRegenerate(10f, 100f, 0f);
+            Assert.AreEqual(100f, _brain.remainingHitPoints);
+        }
+
+        [Test]
+        public void Regen_NonPositiveRate_IsNoOp()
+        {
+            _brain.CallApplyDamage(50f);
+            _brain.CallRegenerate(0f, 100f, 0f);
+            Assert.AreEqual(50f, _brain.remainingHitPoints);
         }
 
         [Test]

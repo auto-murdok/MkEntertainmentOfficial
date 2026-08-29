@@ -15,9 +15,17 @@ public class PlayerData : ScriptableObject
     [SerializeField] private float _reloadDuration = 2f;
     [SerializeField] private float _takeBiteDuration = 3f;
 
+    [Header("Health")]
+    [Tooltip("Seconds without taking damage before passive regeneration starts.")]
+    [SerializeField] private float _healthRegenDelay = 5f;
+    [Tooltip("Hit points regenerated per second once the delay has elapsed.")]
+    [SerializeField] private float _healthRegenRate = 5f;
+
     public float moveSpeed => _moveSpeed;
     public float sprintSpeed => _sprintSpeed;
     public float aimTurnSpeed => _aimTurnSpeed;
     public float reloadDuration => _reloadDuration;
     public float takeBiteDuration => _takeBiteDuration;
+    public float healthRegenDelay => _healthRegenDelay;
+    public float healthRegenRate => _healthRegenRate;
 }

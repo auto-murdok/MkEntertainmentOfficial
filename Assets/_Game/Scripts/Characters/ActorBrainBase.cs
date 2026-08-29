@@ -54,12 +54,21 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
     protected virtual void OnActorStart() { }
     protected virtual void OnActorDestroy() { }
 
-    private void Start()
+    // virtual so derived brains that define their own Start can (and must) call
+    // base.Start() — a plain private Start here would be hidden by any derived
+    // Start and silently skip registration (Unity calls only the most-derived
+    // magic method in the hierarchy).
+    protected virtual void Start()
     {
         RagdollUtils.DisableRagdoll(transform);
         if (InteractableManager.Instance != null)
         {
             InteractableManager.Instance.AddInteractable(this);
+        }
+        else
+        {
+            Debug.LogError($"[{name}] No InteractableManager in the scene — actor cannot be bitten/targeted. " +
+                           "Add an InteractableManager to the scene (it lives on the PlayerCoreComponents prefab).");
         }
         OnActorStart();
     }

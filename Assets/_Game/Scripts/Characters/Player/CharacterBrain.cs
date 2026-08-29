@@ -36,8 +36,11 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerA
         SetupDeathHook();
     }
 
-    private void Start()
+    protected override void Start()
     {
+        // Register with the InteractableManager, disable ragdoll, set layers, etc.
+        base.Start();
+
         // Re-resolve here: the spawner wires _subject after Awake has run.
         if (_playerInput == null && _subject != null)
         {

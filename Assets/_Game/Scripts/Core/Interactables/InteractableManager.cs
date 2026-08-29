@@ -11,7 +11,9 @@ public class InteractableManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Destroy(gameObject);
+            // Destroy only the duplicate component, never the GameObject:
+            // siblings on the same object (and the singleton itself) must survive.
+            Destroy(this);
             return;
         }
 

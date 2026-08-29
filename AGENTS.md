@@ -168,6 +168,8 @@ unity pipeline upgrade
   - `Core/AI/`: AI locomotion, context, state machine, and reactive triggers.
   - `Core/InputHandler/`: Input actions enum and input subject.
   - `Core/Observer/`: Generic `Subject<TAction, TValue>` / `IObserver` pattern. `Subject.AddObserver` does **not** dedupe — guard subscriptions with a flag when both `OnEnable` and `Start` can subscribe.
+  - Singleton duplicate guards must `Destroy(this)` (the component), **never** `Destroy(gameObject)` — killing the GameObject takes siblings with it and `OnDestroy` then nulls the singleton (see `docs/zombie_bite_interaction_fixes.md`).
+  - Unity magic methods (`Start`, `Awake`, …) are **not virtual**: a private `Start` in a derived class hides the base one, silently skipping base setup (e.g. `ActorBrainBase.Start` registration). Make the base `protected virtual` and call `base.Start()` from overrides.
   - `Core/UI/`: Character UI controller/elements.
   - `Items/`: PrefabManager, weapons, firearm events and gun contexts.
 - **Player spawning architecture (composition root):**

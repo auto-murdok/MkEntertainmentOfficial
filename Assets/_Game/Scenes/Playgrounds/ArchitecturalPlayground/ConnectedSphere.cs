@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ConnectedSphere : ContextConection, IConnectionClient
+public class ConnectedSphere : ContextConnection, IConnectionClient
 {
     [SerializeField] private string _objective;
 

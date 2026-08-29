@@ -1,12 +1,12 @@
 using UnityEngine;
 
-public class ZombieIdle : State<ZombieStates, ZombieContext>
+public class ZombieIdleState : State<ZombieStates, ZombieContext>
 {
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
-        if (character._context.isBitting)
+        if (character._context.isBiting)
         {
-            character.ChangeState(ZombieStates.Bitting);
+            character.ChangeState(ZombieStates.Biting);
         }
         else if (character._context.moveDestination != null)
         {
@@ -23,7 +23,7 @@ public class ZombieIdle : State<ZombieStates, ZombieContext>
             character._context.recentlyBitten = false;
             character.ChangeState(ZombieStates.Chasing);
         }
-        else if (character._context.attackCooldownTimer <= 0f && !character._context.isBitting && !character._context.recentlyBitten)
+        else if (character._context.attackCooldownTimer <= 0f && !character._context.isBiting && !character._context.recentlyBitten)
         {
             // Target is within bite range, cooldown elapsed, and this is a fresh contact:
             // re-engage bite!

@@ -33,9 +33,9 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
     {
         _visionScanTimer = UnityEngine.Random.Range(0f, VisionScanInterval);
 
-        states[ZombieStates.Idle] = new ZombieIdle();
-        states[ZombieStates.Chasing] = new ZombieChasing();
-        states[ZombieStates.Bitting] = new ZombieBitting();
+        states[ZombieStates.Idle] = new ZombieIdleState();
+        states[ZombieStates.Chasing] = new ZombieChasingState();
+        states[ZombieStates.Biting] = new ZombieBiting();
         states[ZombieStates.CommandedMove] = new ZombieCommandedMoveState();
         states[ZombieStates.Dead] = new ActorDeadState<ZombieStates, ZombieContext>();
 
@@ -147,9 +147,9 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
         _context.target = survivor;
     }
 
-    public void SetIsBitting(bool isBitting)
+    public void SetIsBiting(bool isBiting)
     {
-        _context.isBitting = isBitting;
+        _context.isBiting = isBiting;
     }
 
     public void SetInteractable(IInteractable interactable)

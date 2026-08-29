@@ -3,12 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Handgun : StateMachine<HandgunState, HandgunContext>, IFireArm
+public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
 {
     [Header("Transforms")]
     [SerializeField] private GameObject _bulletPrefab;
     [SerializeField] private Transform _shootPoint;
-    private FireArmEvents _fireArmEvents; public FireArmEvents fireArmEvents { get { return _fireArmEvents; } }
+    private FirearmEvents _firearmEvents; public FirearmEvents fireArmEvents { get { return _firearmEvents; } }
 
     // Amount of positional kick applied to the weapon when firing.
     private const int GunKickAmount = 5;
@@ -63,8 +63,8 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFireArm
         Instantiate(_bulletPrefab, spawnPos, Quaternion.LookRotation(direction, Vector3.up));
     }
 
-    public void RegisterEvents(FireArmEvents fireArmEvents)
+    public void RegisterEvents(FirearmEvents fireArmEvents)
     {
-        _fireArmEvents = fireArmEvents;
+        _firearmEvents = fireArmEvents;
     }
 }

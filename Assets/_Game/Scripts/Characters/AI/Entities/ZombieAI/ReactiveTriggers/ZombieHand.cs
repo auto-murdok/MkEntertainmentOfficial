@@ -17,7 +17,7 @@ public class ZombieHand : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
-        if (_zombieBrain == null || _zombieBrain.isBitting) return;
+        if (_zombieBrain == null || _zombieBrain.isBiting) return;
 
         ISurvivor survivor = other.GetComponentInParent<ISurvivor>();
         if (survivor is IInteractable interactableSurvivor && interactableSurvivor.id != _zombieBrain.id && InteractableManager.Instance != null)

@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public struct FireArmEvents {
+public struct FirearmEvents {
     public Action onShoot;
     public Action onReloadStarted;
     public Action onReloadFinished;

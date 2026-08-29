@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TestWeapon : ContextConection, IConnectionClient
+public class TestWeapon : ContextConnection, IConnectionClient
 {
     [SerializeField] private Transform bulletPoint;
 

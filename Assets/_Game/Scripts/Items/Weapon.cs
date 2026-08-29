@@ -12,20 +12,20 @@ public class Weapon : Item
     public int clipSize { get { return _clipSize; } }
 
     // Internal
-    private IFireArm _firearm;
+    private IFirearm _firearm;
     private Action<Vector3> _onTriggerPressed;
     private Action _onReload;
 
     private void Awake()
     {
-        _firearm = GetComponent<IFireArm>();
+        _firearm = GetComponent<IFirearm>();
         _firearm.Prepare(_clipSize);
 
         _onTriggerPressed = _firearm.Shoot;
         _onReload = _firearm.TriggerReload;
     }
 
-    public void RegisterEvents(FireArmEvents events)
+    public void RegisterEvents(FirearmEvents events)
     {
         _firearm.RegisterEvents(events);
     }

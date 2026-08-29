@@ -9,9 +9,9 @@ public class ZombieCommandedMoveState : ActorMoveToTargetState<ZombieStates, Zom
     {
         ZombieContext context = character._context;
 
-        if (context.isBitting)
+        if (context.isBiting)
         {
-            character.ChangeState(ZombieStates.Bitting);
+            character.ChangeState(ZombieStates.Biting);
             return;
         }
 

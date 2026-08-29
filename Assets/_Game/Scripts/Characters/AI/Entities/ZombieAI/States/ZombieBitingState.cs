@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class ZombieBitingState : State<ZombieStates, ZombieContext>
 {
-    private const float DefaultBittingRadius = 0.1f;
+    private const float DefaultBitingRadius = 0.1f;
     private const float DefaultRadius = 0.3f;
     private const float DefaultAttackCooldown = 1.2f;
     // TUNING: fraction of the total bite (ZombieData.biteDuration) spent in the push-off /
@@ -21,7 +21,7 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
 
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
-        if (!character._context.isBitting)
+        if (!character._context.isBiting)
         {
             character.ChangeState(ZombieStates.Idle);
         }
@@ -32,7 +32,7 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         _initialPosition = character.transform.position;
         _initialRotation = character.transform.rotation;
         ZombieContext context = character._context;
-        float bittingRadius = context.data != null ? context.data.bittingAgentRadius : DefaultBittingRadius;
+        float bittingRadius = context.data != null ? context.data.bittingAgentRadius : DefaultBitingRadius;
         if (context.agent != null)
         {
             context.agent.radius = bittingRadius;
@@ -98,11 +98,11 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
 
         // End the bite from the C# side once the duration elapses.
         _biteTimer -= Time.deltaTime;
-        if (_biteTimer <= 0f && character._context.isBitting)
+        if (_biteTimer <= 0f && character._context.isBiting)
         {
-            character._context.isBitting = false;
+            character._context.isBiting = false;
         }
     }
 }
 
-public class ZombieBitting : ZombieBitingState {}
+public class ZombieBiting : ZombieBitingState {}

@@ -149,7 +149,7 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
         _equippedWeapon = (Weapon)Instantiate(prefab, _rightHandWeaponHolder);
 
-        FireArmEvents fireArmEvents = new FireArmEvents
+        FirearmEvents fireArmEvents = new FirearmEvents
         {
             onShoot = onWeaponShoot,
             onReloadStarted = onWeaponReloadStarted,

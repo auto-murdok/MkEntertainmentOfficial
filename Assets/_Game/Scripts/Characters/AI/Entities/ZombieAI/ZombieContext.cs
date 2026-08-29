@@ -16,7 +16,7 @@ public class ZombieContext : ActorBlackboard
     // Set when a bite starts; cleared once the victim leaves bite range so the
     // zombie only bites once per contact (re-arms after the push-off separates them).
     public bool recentlyBitten;
-    public bool isBitting;
+    public bool isBiting;
     public bool isPreparing;
     public float attackCooldownTimer;
 }

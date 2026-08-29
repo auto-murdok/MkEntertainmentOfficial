@@ -9,7 +9,7 @@ public class ZombieBrain : ActorBrainBase, IZombie
 
     public override Transform victimHook => _behavior.victimHook;
     public override bool isPreparing => _behavior != null && _behavior._context != null && _behavior._context.isPreparing;
-    public bool isBitting => _behavior != null && _behavior._context != null && _behavior._context.isBitting;
+    public bool isBiting => _behavior != null && _behavior._context != null && _behavior._context.isBiting;
 
     // Default Fallback Stats (used if ZombieData is not assigned on ZombieBehavior)
     private const float DefaultMaxHitPoints = 100f;
@@ -38,27 +38,27 @@ public class ZombieBrain : ActorBrainBase, IZombie
         SetupDeathHook();
     }
 
-    public void StopBitting()
+    public void StopBiting()
     {
-        _behavior.SetIsBitting(false);
+        _behavior.SetIsBiting(false);
     }
 
     public override void OnExternalInteraction(IInteractable target)
     {
         // Ignore duplicate interactions while a bite is already in progress so the
         // Bite trigger is not re-fired (which would replay the bite animation).
-        if (_behavior != null && _behavior._context.isBitting)
+        if (_behavior != null && _behavior._context.isBiting)
         {
             return;
         }
 
         _behavior.SetInteractable(target);
-        _behavior.SetIsBitting(true);
+        _behavior.SetIsBiting(true);
         _animator.SetTrigger(AnimatorUtils.BiteHash);
         transform.LookAt(target.position);
 
         // Gold-standard, attacker-driven damage: the zombie applies its own bite
-        // damage to the victim. The isBitting guard prevents re-firing per bite.
+        // damage to the victim. The isBiting guard prevents re-firing per bite.
         if (target is IDamageable damageable)
         {
             damageable.TakeDamage(biteDamage);
@@ -86,5 +86,5 @@ public class ZombieBrain : ActorBrainBase, IZombie
 
 public interface IZombie
 {
-    public void StopBitting();
+    public void StopBiting();
 }

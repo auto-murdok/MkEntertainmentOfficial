@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-public class ContextConection : MonoBehaviour
+public class ContextConnection : MonoBehaviour
 {
     private void OnValidate()
     {
-        Assert.IsNotNull(GetComponent<IConnectionClient>(), $"{gameObject.name} ContextConection does not implement IConnectionClient");
+        Assert.IsNotNull(GetComponent<IConnectionClient>(), $"{gameObject.name} ContextConnection does not implement IConnectionClient");
     }
 
     private void PrintToConsole()

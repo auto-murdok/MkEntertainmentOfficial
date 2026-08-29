@@ -38,7 +38,7 @@ public abstract class BaseStore : MonoBehaviour
         OnStoreUpdated?.Invoke();
     }
 
-    public void DispatchWithInitiator(ContextConection initiator, ConnectedClientId target)
+    public void DispatchWithInitiator(ContextConnection initiator, ConnectedClientId target)
     {
         IConnectionClient executor = initiator.GetComponent<IConnectionClient>();
         _connections[target]?.OnDispatch(executor);

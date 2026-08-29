@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class ZombieChasing : State<ZombieStates, ZombieContext>
+public class ZombieChasingState : State<ZombieStates, ZombieContext>
 {
     private const float DestinationUpdateInterval = 0.15f;
     private const float DestinationMoveThresholdSqr = 0.25f; // 0.5m squared
@@ -11,9 +11,9 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
 
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
-        if (character._context.isBitting)
+        if (character._context.isBiting)
         {
-            character.ChangeState(ZombieStates.Bitting);
+            character.ChangeState(ZombieStates.Biting);
         }
         else if (character._context.moveDestination != null)
         {
@@ -66,7 +66,7 @@ public class ZombieChasing : State<ZombieStates, ZombieContext>
             float sqrDistance = (character.transform.position - targetPosition).sqrMagnitude;
             float biteRange = context.data != null ? context.data.biteRange : ZombieBehavior.DefaultBiteRange;
 
-            if (sqrDistance <= (biteRange * biteRange) && !context.isBitting && !context.recentlyBitten)
+            if (sqrDistance <= (biteRange * biteRange) && !context.isBiting && !context.recentlyBitten)
             {
                 if (character is ZombieBehavior behavior && behavior.TryTriggerAttack())
                 {

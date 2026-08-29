@@ -1,13 +1,14 @@
 {
-    "name": "Game.Characters",
+    "name": "Game.Composition",
     "rootNamespace": "",
     "references": [
         "Game.Core",
+        "Game.Characters",
         "Game.Items",
-        "Unity.InputSystem",
-        "Unity.AI.Navigation",
+        "Game.UI",
+        "Cinemachine",
         "Unity.Animation.Rigging",
-        "Cinemachine"
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

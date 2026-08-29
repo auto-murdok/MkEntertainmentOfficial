@@ -1,9 +1,9 @@
 using UnityEngine;
 
-public interface IFireArm
+public interface IFirearm
 {
     public void Prepare(int clipSize);
     public void Shoot(Vector3 mouseWorldPosition);
     public void TriggerReload();
-    public void RegisterEvents(FireArmEvents fireArmEvents);
+    public void RegisterEvents(FirearmEvents fireArmEvents);
 }

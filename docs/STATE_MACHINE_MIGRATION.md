@@ -68,7 +68,7 @@ framework (`Core/CharacterStateMachine/`).
 
 ## Verification
 - `unity status` → `unity command editor_play`; instantiate prefab variants.
-- Validate transitions via `OnStateChanged` debug logging (`unity command log_editor`).
+- Validate transitions via `OnStateChanged` debug logging (`unity command log`).
 - Regression: player shoot/reload/bite, zombie chase/bite, death → ragdoll.
 
 ---

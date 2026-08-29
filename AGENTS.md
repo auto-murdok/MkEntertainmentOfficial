@@ -74,8 +74,8 @@ unity command recompile_status
 # Capture Game/Scene view screenshot
 unity command screenshot --output ./screenshot.png --width 1920 --height 1080
 
-# Log messages to the Unity Console
-unity command log_editor "Message from agent"
+# Log messages to the Unity Console (command name is 'log', not 'log_editor')
+unity command log "Message from agent"
 ```
 Note: `unity logs` reads the **Unity Hub CLI** log, NOT the Editor console. For
 Editor log output use `unity command console` (or tail
@@ -143,6 +143,16 @@ When the C# codebase has compilation errors:
    unity status
    ```
 
+### 🕐 Responsiveness rules (user-mandated)
+- **Never wait more than ~60 seconds on any single command or poll.** Long
+  operations (builds, test runs, bakes) are async via unity-cli: poll
+  `*_status` in short increments (≤60 s per wait) instead of one long sleep.
+- **If the Editor wedges** (main-thread unity-cli commands time out while the
+  process sits idle at 0% CPU — typically a modal dialog or stuck gate),
+  **restart the Editor immediately** instead of debugging the hang:
+  `Stop-Process -Id <pid> -Force` (all assets must be saved first), then
+  `unity open . --args "-automated"` and wait for `unity status` → `ready`.
+
 ---
 
 ## 📦 Pipeline Package Management
@@ -179,7 +189,7 @@ unity pipeline upgrade
   - **Event channels (SO):** `VoidEventChannel` / `BoolEventChannel` (`Core/Events/`) decouple producers from consumers — player death (`PlayerDiedChannel.asset`) and the spawning toggle (`SpawningEnabledChannel.asset`). The composition root (`PlayerSpawner`) injects channel refs; consumers subscribe via their channel property (setter subscribes immediately + unsubscribes the old one; `OnDisable` cleans up).
   - `GameStateManager` is a plain component created and wired by the composition root (no static `Instance`).
   - **Game flow:** scenes are `MainMenu` and the arena. `GameStateManager` consumes `PlayerDiedChannel` → GameOver (game-over UI, cursor release, time freeze), raises `SpawningEnabledChannel` so `ZombieSpawner` stops, and reloads the menu; `MainMenuController` fades and loads the arena scene.
-  - **Networking (milestone 1):** `NetworkedCombatArena` is the NGO playground (`NetworkManager` + `UnityTransport` + `NetworkArenaBootstrap` auto-host; player prefab `FemaleCharacter` carries `NetworkObject` + `NetworkTransform`). The old `ZombieCombatArena` scene was removed. Details + gotchas: `docs/networking_notes.md`.
+  - **Networking (milestone 2):** `NetworkedCombatArena` is the NGO playground (`NetworkManager` + `UnityTransport`; `NetworkArenaBootstrap` auto-hosts, `-mlclient` launches a client). `NetworkManager.PlayerPrefab` = `FemaleCharacter` (carries `NetworkObject` + `NetworkTransform` + `NetworkedPlayerComposition` — the owner composes the local rig in `OnNetworkSpawn`; remote players must early-out of input wiring). Zombies are host-only (`ZombieSpawner` guards networked clients). Client builds: `unity command build` → run `Builds/NetworkClient.exe -mlclient`. The old `ZombieCombatArena` scene was removed. Details + gotchas: `docs/networking_notes.md`.
 - **Player spawning architecture (composition root):**
   - Scenes contain **only** map + MainCamera (CinemachineBrain + `MousePosition` child) + baked NavMesh Surface + `PlayerSpawner`.
   - `PlayerSpawner.Awake` instantiates `FemaleCharacter` (the spawnable player prefab, with `NetworkObject` + `NetworkTransform` for the networked arena), `InputHandler`, and `PlayerCoreComponents` prefabs and wires ALL cross-references on the **instances** (never on prefab assets — mutating a prefab asset at runtime corrupts it for every future spawn).

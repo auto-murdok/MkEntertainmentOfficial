@@ -7,7 +7,7 @@ Unity Test Framework (UTF) recommendations for Unity 6:
 | Assembly | Location | Platform | Covers |
 |---|---|---|---|
 | `Game.Tests.EditMode` | `Assets/_Game/Tests/EditMode/` | Editor only | Pure logic, statics, utils, math, serialization-driven values |
-| `Game.Tests.PlayMode` | `Assets/_Game/Tests/PlayMode/` | All platforms | MonoBehaviour lifecycle (`Awake`/`Start`/`Update`), physics, pooling, singletons |
+| `Game.Tests.PlayMode` | `Assets/_Game/Tests/PlayMode/` | Editor only (all-platforms + `UNITY_INCLUDE_TESTS` define constraint — compiles in the Editor, skipped by player builds) | MonoBehaviour lifecycle (`Awake`/`Start`/`Update`), physics, pooling, singletons |
 
 Both asmdefs reference all game assemblies (`Game.Core`, `Game.Characters`, `Game.Items`,
 `Game.UI`, `Game.Composition`) plus `UnityEngine.TestRunner` / `UnityEditor.TestRunner`
@@ -151,6 +151,13 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
     component inside the test body with the guard state pre-set via
     `SerializedObject` (`ZombieSpawnerSpawnTests.RecreateSpawner`). Failing
     that, the wave fires first and "expect 0" assertions see the wave.
+14. **Keep test assemblies out of player builds.** The PlayMode asmdef is
+    all-platforms with the `UNITY_INCLUDE_TESTS` define constraint: it
+    compiles in the Editor (tests run normally) and is skipped entirely by
+    player builds. Marking it Editor-only instead makes the EditMode runner
+    sweep up the PlayMode assembly's `[Test]`s (the EditMode run balloons and
+    fails), and no constraint at all breaks the player compile
+    (`UnityTest` unresolved — UTF player support is off by default).
 
 ## Coverage notes
 

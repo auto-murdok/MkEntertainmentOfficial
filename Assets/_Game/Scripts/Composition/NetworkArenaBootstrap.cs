@@ -1,11 +1,13 @@
 using Unity.Netcode;
 using UnityEngine;
 
-// Milestone-1 networking bootstrap for the NetworkedCombatArena scene.
-// Auto-starts a host after the composition root (PlayerSpawner) has built the
-// local player rig, then spawns the already-composed character's NetworkObject
-// as this host's player object. NetworkTransform on the player prefab
-// replicates its root transform (server-authoritative) to connected clients.
+// Networking bootstrap for the NetworkedCombatArena scene.
+//
+// The player prefab is assigned to NetworkManager.PlayerPrefab, so NGO spawns
+// it automatically on every peer and NetworkedPlayerComposition composes the
+// local rig in OnNetworkSpawn. This component only decides the session role:
+// host by default, client when launched with a "-mlclient" command-line
+// argument (used by the standalone client build for milestone testing).
 //
 // Intentionally NOT part of the single-player arena: this component only
 // exists in the networked scene. NGO components on shared prefabs are dormant
@@ -25,68 +27,29 @@ public class NetworkArenaBootstrap : MonoBehaviour
             return; // already started (e.g. scene reloaded during a session)
         }
 
-        if (!networkManager.StartHost())
+        bool asClient = IsCommandLineClient();
+        bool started = asClient ? networkManager.StartClient() : networkManager.StartHost();
+        if (!started)
         {
-            Debug.LogError("[NetworkArenaBootstrap] StartHost failed — check the UnityTransport settings.");
+            Debug.LogError($"[NetworkArenaBootstrap] Start{(asClient ? "Client" : "Host")} failed — check the UnityTransport settings.");
             return;
         }
 
-        // The host's own connection is approved a few frames after StartHost
-        // returns; spawning as player object before that silently loses the
-        // player-object registration (IsPlayerObject stays false).
-        StartCoroutine(SpawnPlayerWhenConnected(networkManager));
+        Debug.Log($"[NetworkArenaBootstrap] Session started as {(asClient ? "client" : "host")}.");
     }
 
-    private System.Collections.IEnumerator SpawnPlayerWhenConnected(NetworkManager networkManager)
+    public static bool IsCommandLineClient()
     {
-        // Spawn strictly after the host's own connection is fully approved:
-        // spawning in the same frame as StartHost returns silently loses the
-        // player-object registration (IsPlayerObject stays false).
-        float deadline = Time.realtimeSinceStartup + 5f;
-        while (!networkManager.IsConnectedClient || !ContainsClientId(networkManager, networkManager.LocalClientId))
+        // Editor and player command line (lets an editor instance act as a
+        // dedicated client by launching it with -mlclient as well).
+        string[] arguments = System.Environment.GetCommandLineArgs();
+        for (int i = 0; i < arguments.Length; i++)
         {
-            if (Time.realtimeSinceStartup > deadline)
+            string argument = arguments[i].ToLowerInvariant();
+            if (argument == "-mlclient" || argument == "--mlclient" || argument == "-client" || argument == "--client")
             {
-                Debug.LogError("[NetworkArenaBootstrap] Host connection was never approved — player object not spawned.");
-                yield break;
+                return true;
             }
-            yield return null;
-        }
-
-        // PlayerSpawner.Awake has already instantiated and wired the player rig.
-        // Spawn its NetworkObject so remote clients instantiate the same prefab
-        // (resolved via the NetworkPrefabs list) and NetworkTransform streams it.
-        CharacterBrain brain = FindFirstObjectByType<CharacterBrain>();
-        if (brain == null)
-        {
-            Debug.LogError("[NetworkArenaBootstrap] No player character found — PlayerSpawner did not spawn one.");
-            yield break;
-        }
-
-        NetworkObject networkObject = brain.GetComponent<NetworkObject>();
-        if (networkObject == null)
-        {
-            Debug.LogError("[NetworkArenaBootstrap] The player prefab has no NetworkObject — add one (with NetworkTransform) to the prefab root.");
-            yield break;
-        }
-
-        if (networkObject.IsSpawned && !networkObject.IsPlayerObject)
-        {
-            networkObject.Despawn(false); // re-spawn with the player-object flag
-        }
-        if (!networkObject.IsSpawned)
-        {
-            networkObject.SpawnAsPlayerObject(networkManager.LocalClientId);
-        }
-
-        Debug.Log($"[NetworkArenaBootstrap] Host started; player network object spawned (IsSpawned={networkObject.IsSpawned}, IsPlayerObject={networkObject.IsPlayerObject}).");
-    }
-
-    private static bool ContainsClientId(NetworkManager networkManager, ulong clientId)
-    {
-        foreach (ulong id in networkManager.ConnectedClientsIds)
-        {
-            if (id == clientId) return true;
         }
         return false;
     }

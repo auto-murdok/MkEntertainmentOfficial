@@ -60,6 +60,15 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
         // Register with the InteractableRegistry, disable ragdoll, set layers, etc.
         base.Start();
 
+        // Remote networked players have no local input subject — their inputs
+        // happen on the owning peer and only their transform replicates here.
+        Unity.Netcode.NetworkObject networkObject = GetComponent<Unity.Netcode.NetworkObject>();
+        bool isRemotePlayer = networkObject != null && networkObject.IsSpawned && !networkObject.IsOwner;
+        if (isRemotePlayer)
+        {
+            return;
+        }
+
         // Re-resolve here: the spawner wires _subject after Awake has run.
         if (_playerInput == null && _subject != null)
         {

@@ -3652,6 +3652,7 @@ GameObject:
   - component: {fileID: 960482138848348853}
   - component: {fileID: 8585963653299074934}
   - component: {fileID: 778801460671730818}
+  - component: {fileID: 3226693790822501969}
   m_Layer: 6
   m_Name: FemaleCharacter
   m_TagString: Untagged
@@ -3941,6 +3942,23 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &3226693790822501969
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7637503201366498390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c4564e7c01df37489a20591c036db55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Composition::NetworkedPlayerComposition
+  ShowTopMostFoldoutHeaderGroup: 1
+  _inputHandlerPrefab: {fileID: 6789758743068948209, guid: cb604feacfd7d294cb01e34d509396b7,
+    type: 3}
+  _playerCorePrefab: {fileID: 1476150672927890709, guid: 4b4f471e9893ea543821945b67fb6799,
+    type: 3}
 --- !u!1 &7654349148853518093
 GameObject:
   m_ObjectHideFlags: 0

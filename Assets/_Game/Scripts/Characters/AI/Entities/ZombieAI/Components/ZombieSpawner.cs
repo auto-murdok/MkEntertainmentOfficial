@@ -122,6 +122,14 @@ public class ZombieSpawner : MonoBehaviour
 
     private void Start()
     {
+        // Zombies are not networked yet: on networked clients skip spawning
+        // entirely, or every peer would simulate its own private zombie horde.
+        // (NetworkManager.Singleton is null in single-player scenes/tests.)
+        Unity.Netcode.NetworkManager networkManager = Unity.Netcode.NetworkManager.Singleton;
+        if (networkManager != null && !networkManager.IsServer)
+        {
+            return;
+        }
         SpawnInitialWave();
     }
 
@@ -136,6 +144,12 @@ public class ZombieSpawner : MonoBehaviour
             }
         }
 
+        // Networked clients never spawn zombies (see Start).
+        Unity.Netcode.NetworkManager networkManager = Unity.Netcode.NetworkManager.Singleton;
+        if (networkManager != null && !networkManager.IsServer)
+        {
+            return;
+        }
 
         // Automated timer (spawns one zombie every 30 seconds)
         if (_autoSpawnEnabled && _zombieTypes.Count > 0 && _activeInstances.Count < _maxZombies)

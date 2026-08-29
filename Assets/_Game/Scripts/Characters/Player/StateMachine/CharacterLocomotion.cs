@@ -222,7 +222,10 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     {
         _context.attacker = attacker;
         _context.isBeingAttacked = true;
-        _context.animator.SetTrigger(AnimatorUtils.TakeBiteHash);
+        if (_context.animator != null)
+        {
+            _context.animator.SetTrigger(AnimatorUtils.TakeBiteHash);
+        }
     }
 
     public bool isBeingAttacked => _context.isBeingAttacked;
@@ -239,13 +242,21 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     private void onWeaponReloadStarted()
     {
         _context.isRunning = false;
-        _context.animator.SetBool(AnimatorUtils.IsReloadingHash, true);
+        // The weapon FSM keeps ticking on a ragdolled corpse after death,
+        // where the Animator is already destroyed — guard every access.
+        if (_context.animator != null)
+        {
+            _context.animator.SetBool(AnimatorUtils.IsReloadingHash, true);
+        }
         _context.isReloading = true;
     }
 
     private void onWeaponReloadFinished()
     {
-        _context.animator.SetBool(AnimatorUtils.IsReloadingHash, false);
+        if (_context.animator != null)
+        {
+            _context.animator.SetBool(AnimatorUtils.IsReloadingHash, false);
+        }
         _context.isReloading = false;
     }
 }

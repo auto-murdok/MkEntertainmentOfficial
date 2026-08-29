@@ -453,5 +453,44 @@ namespace Game.Tests.PlayMode
             Assert.AreEqual(HandgunState.Ready, _handgun.CurrentStateName);
             Assert.AreEqual(5, Context.clipSize);
         }
+
+        [UnityTest]
+        public IEnumerator WeaponFsm_AfterAnimatorDestroyed_DoesNotThrow()
+        {
+            // Death-path regression: on ragdoll the Animator is destroyed but
+            // the weapon FSM keeps ticking on the corpse. State enter/exit
+            // must not touch the dead Animator (MissingReferenceException).
+            _handgun.Prepare(5, 10);
+            CreateBulletSource();
+            yield return null;
+            Object.Destroy(_host.GetComponent<Animator>());
+            yield return null; // Unity fake-null from here on
+
+            _handgun.Shoot(new Vector3(0, 0, 5));
+            yield return null; // Shooting.EnterState (guarded CrossFade)
+            yield return new WaitForSeconds(0.1f); // rechamber -> ExitState (guarded CrossFade)
+
+            Assert.AreEqual(HandgunState.Ready, _handgun.CurrentStateName);
+            Assert.AreEqual(4, Context.clipSize);
+        }
+
+        [UnityTest]
+        public IEnumerator ReloadCycle_AfterAnimatorDestroyed_CompletesWithoutThrow()
+        {
+            // Same death path for the reload lifecycle: reload started, then
+            // the Animator dies, then the reload finishes.
+            _handgun.Prepare(5, 10);
+            Context.clipSize = 0; // empty clip, reload pending
+            yield return null;
+            Object.Destroy(_host.GetComponent<Animator>());
+            yield return null;
+
+            _handgun.TriggerReload();
+            yield return new WaitForSeconds(2.2f);
+
+            Assert.AreEqual(HandgunState.Ready, _handgun.CurrentStateName);
+            Assert.AreEqual(5, Context.clipSize);
+            Assert.AreEqual(5, Context.reserveAmmo);
+        }
     }
 }

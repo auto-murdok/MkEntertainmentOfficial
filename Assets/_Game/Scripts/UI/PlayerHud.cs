@@ -19,6 +19,7 @@ public class PlayerHud : MonoBehaviour
     private const int TickerLineCount = 4;
     private const float LowHealthFraction = 0.3f;
     private const float HealthFillMaxWidth = 206f;
+    private const float DeathFadeSeconds = 1.2f;
 
     private static readonly Color PanelColor = new Color(0f, 0f, 0f, 0.45f);
     private static readonly Color BarBackColor = new Color(0f, 0f, 0f, 0.6f);
@@ -35,6 +36,8 @@ public class PlayerHud : MonoBehaviour
     private Handgun _handgun; // resolved lazily: the weapon is equipped in the locomotion's Awake
 
     private CanvasGroup _tickerGroup;
+    private CanvasGroup _rootGroup;
+    private bool _deathFadeStarted;
     private TMP_Text _tickerText;
     private TMP_Text _fpsText;
     private TMP_Text _healthLabel;
@@ -58,17 +61,49 @@ public class PlayerHud : MonoBehaviour
         if (_brain != null)
         {
             _brain.Damaged += HandleDamaged;
+            _brain.Died += HandlePlayerDied;
             _subscribedDamaged = true;
         }
     }
 
     private void OnDestroy()
     {
-        if (_subscribedDamaged && _brain != null)
+        if (_brain != null)
         {
-            _brain.Damaged -= HandleDamaged;
-            _subscribedDamaged = false;
+            if (_subscribedDamaged)
+            {
+                _brain.Damaged -= HandleDamaged;
+                _subscribedDamaged = false;
+            }
+            _brain.Died -= HandlePlayerDied;
         }
+    }
+
+    // Death flow: fade the gameplay HUD out so the game-over overlay owns the
+    // screen (no dead player's HUD superposed on the death screen).
+    private void HandlePlayerDied()
+    {
+        if (_deathFadeStarted || _rootGroup == null)
+        {
+            return;
+        }
+        _deathFadeStarted = true;
+        StartCoroutine(FadeOutOnDeath());
+    }
+
+    private System.Collections.IEnumerator FadeOutOnDeath()
+    {
+        float elapsed = 0f;
+        float start = _rootGroup.alpha;
+        while (elapsed < DeathFadeSeconds)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            _rootGroup.alpha = Mathf.Lerp(start, 0f, elapsed / DeathFadeSeconds);
+            yield return null;
+        }
+        _rootGroup.alpha = 0f;
+        // Fully retired: stop refreshing and interacting.
+        enabled = false;
     }
 
     // Player hit feedback: the vignette pulses and decays smoothly afterwards.
@@ -84,6 +119,7 @@ public class PlayerHud : MonoBehaviour
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 100;
         StretchFull(canvas.transform as RectTransform);
+        _rootGroup = canvas.gameObject.AddComponent<CanvasGroup>();
 
         // --- Health (bottom-left) ---
         RectTransform healthPanel = CreatePanel(canvas.transform, "HealthPanel",

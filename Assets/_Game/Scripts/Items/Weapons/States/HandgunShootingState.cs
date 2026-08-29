@@ -30,7 +30,12 @@ public class HandgunShootingState : State<HandgunState, HandgunContext>
     {
         _rechamberingTime = character._context.fireRate;
         Handgun fireArm = (Handgun)character;
-        character._context.animator.CrossFade(ShootAnimationHash, 0f);
+        // The weapon FSM keeps ticking after player death with a destroyed
+        // Animator — guard the cross-fade.
+        if (character._context.animator != null)
+        {
+            character._context.animator.CrossFade(ShootAnimationHash, 0f);
+        }
 
         // Recoil (and its onShoot event) only fires when a projectile was
         // actually launched — never on a dry fire.
@@ -53,7 +58,10 @@ public class HandgunShootingState : State<HandgunState, HandgunContext>
     public void ExitState(StateMachine<HandgunState, HandgunContext> character)
     {
         character._context.isTriggerPressed = false;
-        character._context.animator.CrossFade(IdleAnimationHash, 0f);
+        if (character._context.animator != null)
+        {
+            character._context.animator.CrossFade(IdleAnimationHash, 0f);
+        }
     }
 
     public void UpdateState(StateMachine<HandgunState, HandgunContext> character)

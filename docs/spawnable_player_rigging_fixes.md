@@ -75,8 +75,7 @@ the field public and injecting it from the spawner.
 ```csharp
 1. Instantiate(_inputHandlerPrefab)            // InputHandler + PlayerInput
 2. Instantiate(_playerCorePrefab)              // PlayerUI, AimTarget cube,
-                                               // PlayerAimCamera, PlayerFollowCamera,
-                                               // PrefabManager, InteractableManager
+                                               // PlayerAimCamera, PlayerFollowCamera
 3. Instantiate(_spawnablePlayer)               // SpawnableFemaleCharacter
 4. brain._subject            = inputHandler    // input -> CharacterBrain observer
 5. locomotion._aimTarget     = playerCore/"AimTarget" child (cube, NOT PlayerCoreUI._aimTarget)

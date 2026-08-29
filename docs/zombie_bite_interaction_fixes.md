@@ -1,5 +1,17 @@
 # Zombie Bite — Investigation & Fixes (2026-08-29)
 
+> **⚠️ Partially superseded by the SO architecture migration.** The
+> `InteractableManager` scene singleton described below has since been replaced
+> by the **`InteractableRegistry` ScriptableObject** (`Core/Interactables/`,
+> shared asset `Assets/_Game/Data/Registries/InteractableRegistry.asset`).
+> Everything below that names `InteractableManager` is a historical record:
+> the bite path now goes through `registry.Interact(...)` (`ZombieHand`,
+> `ZombieBehavior.TryTriggerAttack` via `brain.registry`) and actors register
+> through `ActorBrainBase.Start` + the `_registry` serialized field. The two
+> permanent lessons (singleton guards must `Destroy(this)`, never the
+> GameObject; magic-method hiding of non-virtual `Start`) are codified in
+> `AGENTS.md`.
+
 Record of why the spawned player never triggered a zombie bite, the full
 investigation, and all fixes applied. Verified working end-to-end in Play Mode
 (manual verification by user + live state probes).
@@ -31,10 +43,10 @@ With `Instance == null`, all three contact points quietly early-outed:
 
 ```
 ZombieHand.OnTriggerStay ─┐
-                          ├─► InteractableManager.Interact(playerId, zombieId)
-ZombieBehavior            │
-  .TryTriggerAttack ──────┘        (both sides registered in a
-                                    Dictionary<int, IInteractable>)
+                          ├─► InteractableRegistry.Interact(playerId, zombieId)
+ZombieBehavior            │        *(at the time: InteractableManager.Interact;
+  .TryTriggerAttack ──────┘         both sides registered in a
+                                    Dictionary<int, IInteractable>)*
                                           │
                     NotifyExternalInteraction → both directions:
                       • ZombieBrain.OnExternalInteraction
@@ -48,7 +60,8 @@ ZombieBehavior            │
 
 Key files:
 
-- `Assets/_Game/Scripts/Core/Interactables/InteractableManager.cs`
+- `Assets/_Game/Scripts/Core/Interactables/InteractableRegistry.cs`
+  *(supersedes the since-deleted `InteractableManager.cs`)*
 - `Assets/_Game/Scripts/Characters/ActorBrainBase.cs` (registration)
 - `Assets/_Game/Scripts/Characters/AI/Entities/ZombieAI/ReactiveTriggers/ZombieHand.cs`
 - `Assets/_Game/Scripts/Characters/AI/Entities/ZombieAI/ZombieBehavior.cs` (`TryTriggerAttack`)
@@ -145,6 +158,9 @@ protected override void Start()
 else
 {
     Debug.LogError($"[{name}] No InteractableManager in the scene — actor cannot be bitten/targeted. ...");
+    // Current wording (post-SO migration): "No InteractableRegistry asset
+    // assigned — actor cannot be bitten/targeted. Assign the shared
+    // InteractableRegistry asset in the actor prefab."
 }
 ```
 

@@ -89,14 +89,9 @@ namespace Game.Tests.EditMode
             Assert.AreEqual(0f, TargetPitch, 0.01f);
         }
 
-        [Test]
-        public void HandleCameraRotation_ControllerAboveThreshold_Rotates()
-        {
-            _context.isCurrentDeviceMouse = false;
-            _context.lookInput = new Vector2(1f, 0f);
-            _utils.HandleCameraRotation(_context, _cine);
-            Assert.Greater(TargetYaw, 0f);
-        }
+        // NOTE: the "controller above threshold rotates" case lives in
+        // PlayMode (CameraUtilsPlayTests) — controller look scales input by
+        // Time.deltaTime, which is 0 in EditMode tests.
 
         [Test]
         public void HandleCameraRotation_NoInput_KeepsRotation()

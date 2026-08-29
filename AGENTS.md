@@ -170,13 +170,15 @@ unity pipeline upgrade
   - `Core/Observer/`: Generic `Subject<TAction, TValue>` / `IObserver` pattern. `Subject.AddObserver` does **not** dedupe — guard subscriptions with a flag when both `OnEnable` and `Start` can subscribe.
   - Singleton duplicate guards must `Destroy(this)` (the component), **never** `Destroy(gameObject)` — killing the GameObject takes siblings with it and `OnDestroy` then nulls the singleton (see `docs/zombie_bite_interaction_fixes.md`).
   - Unity magic methods (`Start`, `Awake`, …) are **not virtual**: a private `Start` in a derived class hides the base one, silently skipping base setup (e.g. `ActorBrainBase.Start` registration). Make the base `protected virtual` and call `base.Start()` from overrides.
-  - `Core/UI/`: Character UI controller/elements.
-  - `Items/`: ItemCatalog (SO asset), weapons, firearm events and gun contexts.
+  - `Core/UI/`: Character UI controller/elements, `PlayerHud` (visible gameplay HUD: HP, ammo, combat ticker), `DebugHud` (hidden F3 diagnostics overlay), `MainMenuController` (menu canvas + start/quit flow).
+  - `Core/GameState/`: `GameStateManager` — game flow (Playing → GameOver): consumes `PlayerDiedChannel`, shows the game-over screen, disables spawning via `SpawningEnabledChannel`, reloads the main menu.
+  - `Items/`: ItemCatalog (SO asset), weapons, firearm events and gun contexts, `AmmoPickup` (zombie ammo drops / reserve refill).
 - **ScriptableObject architecture (modularity):** entities never reach out to scene objects or static singletons.
   - `InteractableRegistry` (SO, RuntimeSet pattern): every actor prefab references the shared asset (`Assets/_Game/Data/Registries/InteractableRegistry.asset`) and self-registers/unregisters; bite interactions go through `registry.Interact(...)`.
   - `ItemCatalog` (SO): `CharacterLocomotion` references `Assets/_Game/Data/Items/ItemCatalog_Default.asset` directly — no PrefabManager singleton.
   - **Event channels (SO):** `VoidEventChannel` / `BoolEventChannel` (`Core/Events/`) decouple producers from consumers — player death (`PlayerDiedChannel.asset`) and the spawning toggle (`SpawningEnabledChannel.asset`). The composition root (`PlayerSpawner`) injects channel refs; consumers subscribe via their channel property (setter subscribes immediately + unsubscribes the old one; `OnDisable` cleans up).
   - `GameStateManager` is a plain component created and wired by the composition root (no static `Instance`).
+  - **Game flow:** scenes are `MainMenu` and the arena. `GameStateManager` consumes `PlayerDiedChannel` → GameOver (game-over UI, cursor release, time freeze), raises `SpawningEnabledChannel` so `ZombieSpawner` stops, and reloads the menu; `MainMenuController` fades and loads the arena scene.
 - **Player spawning architecture (composition root):**
   - Scenes contain **only** map + MainCamera (CinemachineBrain + `MousePosition` child) + baked NavMesh Surface + `PlayerSpawner`.
   - `PlayerSpawner.Awake` instantiates `SpawnableFemaleCharacter`, `InputHandler`, and `PlayerCoreComponents` prefabs and wires ALL cross-references on the **instances** (never on prefab assets — mutating a prefab asset at runtime corrupts it for every future spawn).
@@ -187,6 +189,7 @@ unity pipeline upgrade
   - **AIM FIRST:** the weapon's rest pose points **down**. Shooting without aiming fires along the muzzle's rest forward — bullets go into the ground. This is intended; the aim direction (`HandgunContext.aimDirection` toward `CharacterLocomotion._aimTarget`) is only meaningful while the crosshair is active. Details + debug workflow: `docs/shooting_engine_notes.md`.
   - Bullets are pooled (`ObjectPool<BulletProjectile>`), teleported via `Rigidbody.position` (never transform-only on re-activated bodies), use `ContinuousSpeculative` CCD, and score exactly one damage event per flight (`_hasHit` / `_isReleased` guards). Pooled bodies are **posed before activation** and `OnCollisionEnter` rejects stale contacts behind the bullet's velocity (see `BulletProjectile.Launch` + `docs/testing.md` §5) — re-firing must never score a phantom hit on the previous target.
   - `DebugHud` (F3 toggle, attached by `PlayerSpawner`) shows player HP, FSM states, clip/reserve, live bullets and the `CombatLog` ring buffer — the fastest way to diagnose combat issues.
+  - **Ammo economy is finite:** `Weapon._reserveAmmo` (default 45) feeds the handgun context on `Prepare`; `AmmoPickup` grants reserve and zombies drop it (`ZombieData.ammoDropPrefab` → `ZombieBrain`); dry fire never consumes a clip round. `HandgunContext.reserveAmmo` still defaults to `int.MaxValue` (= infinite) as the struct default — gameplay always overrides it via `Weapon`.
 - **Conventions:**
   - Follow standard C# naming conventions (PascalCase for public methods/properties, camelCase / `_camelCase` for private fields).
   - Always maintain corresponding `.meta` files when creating, moving, or deleting C# scripts and assets.
@@ -196,7 +199,7 @@ unity pipeline upgrade
 
 ## 🧪 Testing (Unity Test Framework — keep the suite green)
 
-The project has a regression suite in `Assets/_Game/Tests/` (EditMode + PlayMode assemblies, 170 tests). **Run it after every behaviour change** and **add/extend tests for any new gameplay logic** — see `docs/testing.md` for the full guide, coverage map and gotchas.
+The project has a regression suite in `Assets/_Game/Tests/` (EditMode + PlayMode assemblies, 204 tests: 86 EditMode + 118 PlayMode). **Run it after every behaviour change** and **add/extend tests for any new gameplay logic** — see `docs/testing.md` for the full guide, coverage map and gotchas.
 
 ```bash
 # via unity-cli while the Editor is open (poll test_status until "completed")

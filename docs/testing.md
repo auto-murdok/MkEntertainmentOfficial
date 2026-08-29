@@ -25,7 +25,7 @@ unity command test_status          # poll until "completed"
 
 Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
 
-## What is covered (197 tests, all green)
+## What is covered (204 tests: 86 EditMode + 118 PlayMode, all green)
 
 - **Core**
   - `CombatLog` — ring buffer capacity/overflow, `CopyRecent` truncation, `BeginSource`
@@ -70,8 +70,10 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
   - `PlayerData` / `ZombieData` — health-regen defaults positive, default obstacle
     mask constant, hand-attack defaults non-zero.
   - `AnimatorUtils` — parameter hashes, `DampFactor` exponential math, null-animator safety.
-  - `CameraUtils` — mouse vs controller thresholds, yaw accumulation/wrapping, pitch
-    clamping, sensitivity scaling.
+  - `CameraUtils` — mouse vs controller thresholds, yaw accumulation/wrapping,
+    pitch clamping, sensitivity scaling. The controller **above-threshold
+    rotation** case is a PlayMode test (`CameraUtilsPlayTests`) because
+    controller look scales input by `Time.deltaTime`, which is 0 in EditMode.
   - `AIDetectionUtils` — explicit full-cone field-of-view angles (half-cone edges,
     invalid-range fallback to default cone), obstacle linecast, null origin;
     nearest-survivor selection over real colliders (`AIDetectionPlayTests`).
@@ -83,6 +85,12 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
     cooldown armed, hand-trigger redirect, duplicate interactions suppressed,
     own-bite race regression.
   - `LayerUtils` — recursive layer assignment incl. inactive children, unknown-layer warning.
+- **Game flow** — `GameStateManager` (PlayMode): death → GameOver via the
+  `PlayerDiedChannel`, idempotent `SetGameOver`, cursor release, time freeze
+  after the collapse window, spawner stop via `SpawningEnabledChannel`,
+  game-over overlay canvas; `ZombieSpawner` spawning toggle.
+  `MainMenuController` (PlayMode): overlay canvas build (idempotent),
+  start-game event raised once with double-start guard, quit/transition event.
 - **UI** — `CharacterUIContext` factories, `CharacterUIElement`, `UpdateUI` notification.
 
 ## Conventions & hard-won lessons (read before writing tests)
@@ -98,10 +106,12 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
    PlayMode teardowns for anything involved with statics (`Instance`) — deferred
    `Destroy` leaks a fake-alive static across fixtures and instance IDs get reused,
    corrupting dictionary-keyed registries.
-3. **`Time.deltaTime` is real editor time in EditMode**, and animator value reads
+3. **`Time.deltaTime` is unreliable in EditMode** (it is 0 in a plain `[Test]` —
+    editor frames are not ticked), and animator value reads
    (`GetFloat`/`GetLayerWeight`) are unreliable without a controller — assert the math
-   (`DampFactor`) and no-throw paths in EditMode; assert animator values only in
-   PlayMode.
+   (`DampFactor`) and no-throw paths in EditMode; anything deltaTime-dependent
+   (e.g. controller look in `CameraUtils` → `CameraUtilsPlayTests`) or
+   animator-value assertions go in PlayMode.
 4. **PlayMode tests run in the currently open scene.** Never assume an empty scene:
    spawn physics objects in clear airspace and give each physics test its own "lane"
    (this suite uses y=500…900) so tests cannot shoot each other.

@@ -1,12 +1,12 @@
 # Spawnable Player — Scene Requirements
 
 The player is **never** placed in a scene. `PlayerSpawner` (composition root,
-see `Assets/_Game/Prefabs/Characters/Survivor/PlayerSpawner.cs`) spawns and
+see `Assets/_Game/Scripts/Composition/PlayerSpawner.cs`) spawns and
 wires every player-related object at runtime:
 
 - `Assets/_Game/Prefabs/Characters/Survivor/SpawnableFemaleCharacter.prefab`
 - `Assets/_Game/Prefabs/InputHandler.prefab`
-- `Assets/_Game/Prefabs/UI/PlayerCoreComponents.prefab` (UI, AimTarget cube, both Cinemachine cameras, PrefabManager, InteractableManager)
+- `Assets/_Game/Prefabs/UI/PlayerCoreComponents.prefab` (UI, AimTarget cube, both Cinemachine cameras)
 
 A scene must therefore contain **only**: map, MainCamera (CinemachineBrain +
 `MousePosition` child), a baked NavMesh, and a `PlayerSpawner`.

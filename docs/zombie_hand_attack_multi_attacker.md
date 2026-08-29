@@ -19,8 +19,10 @@ Verified end-to-end in Play Mode (forced live scenario + full test suite).
   recognize a pin held by **itself** as its own bite in progress.
 - `ZombieBehavior.TryTriggerAttack` was still calling `InteractableManager.Instance`
   — a type that **no longer exists** in the project (removed by the SO
-  architecture migration, see `zombie_bite_interaction_fixes.md`). The bite
-  path now goes through `brain.registry.Interact(...)` like `ZombieHand`.
+  architecture migration; see `AGENTS.md` "ScriptableObject architecture" —
+  note `zombie_bite_interaction_fixes.md` predates it and still describes the
+  deleted singleton). The bite path now goes through
+  `brain.registry.Interact(...)` like `ZombieHand`.
 - The `RHandAttack` animator transition shipped with `hasExitTime = 1`
   (exit time 0.94) — on a looping blend tree this delays the swing by up to a
   full locomotion cycle. Fixed to `hasExitTime = 0` via the live-Editor

@@ -60,9 +60,12 @@ Related wiring (do not break):
   rechambering time in `HandgunShootingState` (no hardcoded cadence).
 - Projectile damage lives on the **`Projectile.prefab`** (`BulletProjectile._damage`).
   Do not re-introduce a per-shot damage override from `Weapon`.
-- `HandgunContext.reserveAmmo` is `int.MaxValue` (= infinite) until Ammo
-  pickups are wired into an inventory; `HandgunReloadingState` already pulls
-  from the reserve correctly.
+- `HandgunContext.reserveAmmo` defaults to `int.MaxValue` (= infinite) in the
+  struct, but the shipped **ammo economy is finite**: `Weapon._reserveAmmo`
+  (default 45) feeds the context on `Prepare`, `AmmoPickup` grants reserve to
+  the carrier, and zombies drop it via `ZombieData.ammoDropPrefab`
+  (`ZombieBrain`). `HandgunReloadingState` pulls from the reserve correctly,
+  and dry fire never consumes a clip round.
 
 ## Input semantics
 
@@ -76,7 +79,10 @@ canceled). `CharacterBrain.OnNotify` gates `Shoot` and `Reload` on
 
 `DebugHud` (in `Game.UI`) is attached to the player instance by
 `PlayerSpawner.Awake`. It builds its own screen-space overlay canvas (no prefab
-or scene authoring needed) and is toggled with **F3**.
+or scene authoring needed) and is toggled with **F3**. It is **hidden by
+default** — `PlayerHud` (also attached by `PlayerSpawner`, same place) is the
+visible gameplay HUD (HP, ammo readout, combat ticker); F3 opens the full
+diagnostics overlay below.
 
 Shown, refreshed at 10 Hz with the allocation-free
 `TMP_SetText(StringBuilder)` path:
@@ -91,17 +97,20 @@ Shown, refreshed at 10 Hz with the allocation-free
 ### CombatLog (`Game.Core`)
 
 Static fixed-capacity (8) ring buffer of formatted entries; the HUD copies it
-into a preallocated buffer.
+into a preallocated buffer. Entries are **kind-tagged**
+(`EntryKind.Debug` / `Impact` / `Damage`): the player-facing `PlayerHud`
+ticker filters out diagnostic noise (bullet launches, scenery hits are
+`Debug`-kind), while the F3 overlay renders everything.
 
 - Damage reports flow through exactly one choke point:
   `ActorBrainBase.ApplyDamage` → `CombatLog.ReportDamage` (victim + remaining
   HP). The attacker label comes from a scoped
   `CombatLog.BeginSource("Bullet" | "ZombieBite")` around the `TakeDamage`
   call.
-- Non-damaging physics events are reported as impacts, e.g. a bullet hitting
-  scenery: `Bullet hit Plane [Default] at (x, y, z) — no IDamageable`. This is
-  the fastest way to diagnose "bullets do nothing" — the log shows exactly what
-  every bullet collided with and where.
+- Non-damaging physics events are reported as impacts (visible in the F3
+  overlay only), e.g. a bullet hitting scenery: `Bullet hit Plane [Default] at
+  (x, y, z) — no IDamageable`. This is the fastest way to diagnose "bullets do
+  nothing" — the log shows exactly what every bullet collided with and where.
 
 ### Debug workflow for shooting issues
 

@@ -178,6 +178,10 @@ unity pipeline upgrade
   - Unity **strips prefab → scene references** on save. Any scene object a prefab needs must be re-injected at spawn time. See `docs/spawnable_player_requirements.md`.
   - **Animation Rigging:** `RigBuilder` builds its graph during `Instantiate`. After changing constraint data (e.g. `MultiAimConstraint.sourceObjects`) at runtime, call `rigBuilder.Clear(); rigBuilder.Build();` or the constraints silently ignore the new data. Details: `docs/spawnable_player_rigging_fixes.md`.
   - `PlayerCoreUI._aimTarget` is the **Crossair UI toggle**, not the world aim point; the world aim point is the `AimTarget` child of `PlayerCoreComponents`.
+- **Shooting engine:**
+  - **AIM FIRST:** the weapon's rest pose points **down**. Shooting without aiming fires along the muzzle's rest forward — bullets go into the ground. This is intended; the aim direction (`HandgunContext.aimDirection` toward `CharacterLocomotion._aimTarget`) is only meaningful while the crosshair is active. Details + debug workflow: `docs/shooting_engine_notes.md`.
+  - Bullets are pooled (`ObjectPool<BulletProjectile>`), teleported via `Rigidbody.position` (never transform-only on re-activated bodies), use `ContinuousSpeculative` CCD, and score exactly one damage event per flight (`_hasHit` / `_isReleased` guards).
+  - `DebugHud` (F3 toggle, attached by `PlayerSpawner`) shows player HP, FSM states, clip/reserve, live bullets and the `CombatLog` ring buffer — the fastest way to diagnose combat issues.
 - **Conventions:**
   - Follow standard C# naming conventions (PascalCase for public methods/properties, camelCase / `_camelCase` for private fields).
   - Always maintain corresponding `.meta` files when creating, moving, or deleting C# scripts and assets.

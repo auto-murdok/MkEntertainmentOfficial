@@ -95,9 +95,17 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IObserver<InputHandlerA
 
     protected override void OnRagdollEnabled()
     {
+        // RigBuilder depends on the Animator — it must be destroyed BEFORE the
+        // base teardown removes the Animator, or Unity refuses ("Can't remove
+        // Animator because RigBuilder depends on it").
+        Destroy(GetComponent<RigBuilder>());
+
         base.OnRagdollEnabled();
 
-        Destroy(GetComponent<RigBuilder>());
+        // A dead body must not keep processing gameplay input (a corpse that
+        // still moves/aims would fight the game-over overlay).
+        Unsubscribe();
+
         Destroy(GetComponent<BoneRenderer>());
         Destroy(GetComponent<CharacterUIController>());
         Destroy(_locomotion);

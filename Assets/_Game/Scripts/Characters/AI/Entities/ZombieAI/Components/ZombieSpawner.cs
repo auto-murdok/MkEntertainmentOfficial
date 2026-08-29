@@ -32,6 +32,11 @@ public class ZombieSpawner : MonoBehaviour
 
     public IReadOnlyList<ZombieBrain> activeZombies => _activeZombies;
 
+    public bool spawningEnabled => _autoSpawnEnabled;
+
+    // Game-flow hook: the GameStateManager switches spawning off on game over.
+    public void SetSpawningEnabled(bool enabled) => _autoSpawnEnabled = enabled;
+
     private void Awake()
     {
         if (_spawnPoints == null || _spawnPoints.Length == 0)
@@ -87,7 +92,11 @@ public class ZombieSpawner : MonoBehaviour
             return null;
         }
 
-        GetSpawnPlacement(out Vector3 spawnPosition, out Quaternion spawnRotation);
+        if (!TryGetSpawnPlacement(out Vector3 spawnPosition, out Quaternion spawnRotation))
+        {
+            Debug.LogWarning($"[{name}] Spawn skipped: no NavMesh within 5m of the chosen spawn point.");
+            return null;
+        }
 
         GameObject instance = Instantiate(entry.prefab, spawnPosition, spawnRotation);
         instance.name = $"{entry.label}_{instance.GetInstanceID()}";
@@ -121,7 +130,7 @@ public class ZombieSpawner : MonoBehaviour
         Debug.Log($"[{name}] Cleared all spawned zombies.");
     }
 
-    private void GetSpawnPlacement(out Vector3 spawnPosition, out Quaternion spawnRotation)
+    private bool TryGetSpawnPlacement(out Vector3 spawnPosition, out Quaternion spawnRotation)
     {
         Vector3 basePosition = transform.position;
         spawnRotation = Quaternion.identity;
@@ -142,14 +151,15 @@ public class ZombieSpawner : MonoBehaviour
             spawnRotation = Quaternion.Euler(0, UnityEngine.Random.Range(0f, 360f), 0);
         }
 
-        // Sample on NavMesh
+        // Sample on NavMesh — failing loudly beats spawning off-mesh zombies
+        // that would idle forever.
         if (NavMesh.SamplePosition(basePosition, out NavMeshHit hit, 5f, NavMesh.AllAreas))
         {
             spawnPosition = hit.position;
+            return true;
         }
-        else
-        {
-            spawnPosition = basePosition;
-        }
+
+        spawnPosition = basePosition;
+        return false;
     }
 }

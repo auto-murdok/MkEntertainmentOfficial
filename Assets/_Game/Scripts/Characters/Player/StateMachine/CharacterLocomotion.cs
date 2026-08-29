@@ -142,10 +142,19 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     private void EquipWeapon(string weaponName)
     {
-        if (PrefabManager.Instance == null) return;
+        if (PrefabManager.Instance == null)
+        {
+            Debug.LogWarning($"[{name}] PrefabManager not present — no weapon equipped. " +
+                             "Spawn the PlayerCoreComponents prefab (it carries the PrefabManager).");
+            return;
+        }
 
         Item prefab = PrefabManager.Instance.GetItemPrefab(weaponName);
-        if (prefab == null || _rightHandWeaponHolder == null) return;
+        if (prefab == null || _rightHandWeaponHolder == null)
+        {
+            Debug.LogWarning($"[{name}] Weapon '{weaponName}' not equipped (prefab missing from PrefabManager or right-hand holder unset).");
+            return;
+        }
 
         _equippedWeapon = (Weapon)Instantiate(prefab, _rightHandWeaponHolder);
 

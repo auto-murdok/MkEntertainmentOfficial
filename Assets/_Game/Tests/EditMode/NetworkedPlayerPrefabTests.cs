@@ -37,5 +37,21 @@ namespace Game.Tests.EditMode
             Assert.IsNotNull(prefab.GetComponent<NetworkedPlayerComposition>(),
                 "Player prefab must carry NetworkedPlayerComposition (owner-side rig composition on spawn).");
         }
+
+        [Test]
+        public void PlayerPrefab_NetworkAnimator_IsOwnerAuthoritativeAndWired()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
+            Assert.IsNotNull(prefab, $"Player prefab missing at {PlayerPrefabPath}.");
+
+            var networkAnimator = prefab.GetComponent<Unity.Netcode.Components.NetworkAnimator>();
+            Assert.IsNotNull(networkAnimator, "Player prefab must carry a NetworkAnimator (animation sync).");
+
+            var so = new SerializedObject(networkAnimator);
+            Assert.AreEqual(1, so.FindProperty("AuthorityMode").enumValueIndex,
+                "NetworkAnimator must be owner-authoritative to match the owner-authoritative NetworkTransform.");
+            Assert.IsNotNull(so.FindProperty("m_Animator").objectReferenceValue,
+                "NetworkAnimator must reference the character's Animator.");
+        }
     }
 }

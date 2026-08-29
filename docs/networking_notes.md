@@ -14,6 +14,7 @@ first client; start sessions from code via `NetworkManager.Singleton`.
 | `NetworkManager` GO | networked scene | `NetworkManager` + `UnityTransport` (127.0.0.1:7777 default). **`NetworkConfig.NetworkTransport` must reference the transport** — script-added components are NOT auto-wired, and `StartHost` without it errors + NREs. `NetworkConfig.PlayerPrefab` = `FemaleCharacter.prefab` → NGO auto-spawns it on every peer. |
 | `NetworkPrefabs_Arena.asset` | `Assets/_Game/Data/Network/` | `NetworkPrefabsList` registering `FemaleCharacter.prefab`. Assigned into `NetworkConfig.Prefabs.NetworkPrefabsLists` (NGO 2.13 renamed the single-list field). |
 | `NetworkObject` + `NetworkTransform` | `FemaleCharacter.prefab` root | **Owner-authoritative** transform replication (`AuthorityMode = Owner`): each peer commits its own player's pose — required for client movement (see lesson 8). Dormant while no `NetworkManager` runs — the single-player arena is unaffected. |
+| `NetworkAnimator` | `FemaleCharacter.prefab` root | **Owner-authoritative** animation sync (`AuthorityMode = Owner`, Animator assigned). Replicates all Animator params/states continuously; late joiners get the full current state on spawn. Triggers are the exception — see lesson 9. |
 | `NetworkedPlayerComposition` | `Scripts/Composition/`, on the player prefab | `NetworkBehaviour`: the **owner** composes the local rig (input handler, core components/UI, aim target, cameras, HUDs) in `OnNetworkSpawn` via the shared `PlayerRigging` helper; remote players do nothing. |
 | `NetworkArenaBootstrap` | `Scripts/Composition/`, on the NetworkManager GO | Auto-`StartHost()`; starts a **client** instead when launched with `-mlclient`/`-client` (`Environment.GetCommandLineArgs`). |
 | `ClientLaunchRedirect` | MainMenu scene | Jumps straight to `NetworkedCombatArena` on `-mlclient` launches (player builds boot scene 0). |
@@ -48,6 +49,27 @@ first client; start sessions from code via `NetworkManager.Singleton`.
    server simulates (future zombies), owner authority for anything a peer
    controls. Verified live: host view shows `serverAuth=False`,
    host player `canCommit=True`, remote (client) player `canCommit=False`.
+9. **Animation sync gold standard: `NetworkAnimator` + root-motion rule.**
+   - `NetworkAnimator` on the player prefab with `AuthorityMode = Owner`
+     (matching the owner-auth transform): all Animator parameters and states
+     replicate continuously, and late joiners receive the full current state
+     on spawn (`OnSynchronize`). `SetBool`/`SetFloat`/`SetInteger` need **no**
+     code changes — the authority-side values are picked up automatically.
+   - **Triggers are the exception:** `Animator.SetTrigger` never replicates —
+     trigger-capable code must call `NetworkAnimator.SetTrigger`, and that is
+     an error on non-owners. `CharacterLocomotion.SetAnimatorTrigger(hash)`
+     routes accordingly (networked owner → NetworkAnimator, otherwise the raw
+     animator); all player trigger call sites go through it (currently only
+     `TakeBite`). Zombies are host-local for now; when networked they need
+     the same routing under **server** authority.
+   - **Root motion must apply only on the owner.** Remote copies play the
+     replicated animation state for the visuals, but their pose comes from
+     the `NetworkTransform` — leaving `applyRootMotion = true` on a remote
+     copy double-applies motion and drifts. `NetworkedPlayerComposition`
+     sets `animator.applyRootMotion = IsOwner` on spawn.
+   - Verified live: both peers see the other player run with the correct
+     animation; structure probe: `NA.AuthorityMode=Owner`, animator wired,
+     remote copy `applyRootMotion=False`.
 4. **NGO 2.13 prefab config surface:** `NetworkPrefabsList` uses
    `PrefabList`/`Add()` (no `List` field), and lives at serialized path
    `NetworkConfig.Prefabs.NetworkPrefabsLists` (an array of list assets).

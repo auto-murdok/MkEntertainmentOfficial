@@ -25,7 +25,7 @@ unity command test_status          # poll until "completed"
 
 Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
 
-## What is covered (213 tests: 88 EditMode + 125 PlayMode, all green)
+## What is covered (214 tests: 89 EditMode + 125 PlayMode, all green)
 
 - **Core**
   - `CombatLog` — ring buffer capacity/overflow, `CopyRecent` truncation, `BeginSource`
@@ -43,7 +43,8 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
   - `NetworkedPlayerPrefabTests` — the player prefab's networking contract:
     `NetworkTransform` is **owner-authoritative** (server authority makes
     client movement snap back — see `docs/networking_notes.md` lesson 8),
-    plus `NetworkObject` + `NetworkedPlayerComposition` presence.
+    `NetworkAnimator` is owner-authoritative with the Animator wired
+    (lesson 9), plus `NetworkObject` + `NetworkedPlayerComposition` presence.
   - `VoidEventChannel` / `BoolEventChannel` (SO) — Raise/subscriber notification,
     unsubscribe semantics, no-throw with no subscribers, bool payload fan-out.
   - `ArchitectureConformanceTests` — reflection fitness function: no game type may

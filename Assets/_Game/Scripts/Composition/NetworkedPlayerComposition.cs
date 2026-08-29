@@ -19,7 +19,15 @@ public class NetworkedPlayerComposition : NetworkBehaviour
     {
         if (!IsOwner)
         {
-            return; // remote player: nothing local to compose
+            // Remote player: the pose arrives via the owner-authoritative
+            // NetworkTransform, so root motion must NOT also drive the
+            // transform here (double application / drift). The animator still
+            // plays the replicated state for the visuals.
+            if (TryGetComponent<Animator>(out Animator animator))
+            {
+                animator.applyRootMotion = false;
+            }
+            return;
         }
 
         InputHandler inputHandler = Instantiate(_inputHandlerPrefab).GetComponent<InputHandler>();

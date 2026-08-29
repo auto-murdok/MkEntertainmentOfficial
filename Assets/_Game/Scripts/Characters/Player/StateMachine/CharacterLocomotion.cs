@@ -41,12 +41,17 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     [Header("Data")]
     [SerializeField] private PlayerData _playerData;
 
+    // Networked animation sync (docs/networking_notes.md): triggers must be
+    // routed through the NetworkAnimator on the owning peer to replicate.
+    private Unity.Netcode.Components.NetworkAnimator _networkAnimator;
+
     private CinemachineContext _cinemachineProps;
 
     private void Awake()
     {
         Cursor.lockState = CursorLockMode.Locked;
 
+        _networkAnimator = GetComponent<Unity.Netcode.Components.NetworkAnimator>();
         PopulateStates();
         InitializeCinemachineContext();
         InitializeAnimatorAndAgent();
@@ -222,9 +227,26 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     {
         _context.attacker = attacker;
         _context.isBeingAttacked = true;
-        if (_context.animator != null)
+        SetAnimatorTrigger(AnimatorUtils.TakeBiteHash);
+    }
+
+    // Animator triggers are not synced by value like bools/floats/integers:
+    // on a networked owner they must be raised through NetworkAnimator.SetTrigger
+    // to replicate (and NetworkAnimator.SetTrigger is an error on non-owners,
+    // so single-player/un-owned paths fall back to the raw animator).
+    public void SetAnimatorTrigger(int triggerHash)
+    {
+        if (_context.animator == null)
         {
-            _context.animator.SetTrigger(AnimatorUtils.TakeBiteHash);
+            return;
+        }
+        if (_networkAnimator != null && _networkAnimator.IsSpawned && _networkAnimator.IsOwner)
+        {
+            _networkAnimator.SetTrigger(triggerHash);
+        }
+        else
+        {
+            _context.animator.SetTrigger(triggerHash);
         }
     }
 

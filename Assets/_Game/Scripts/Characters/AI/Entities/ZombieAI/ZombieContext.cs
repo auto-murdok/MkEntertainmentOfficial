@@ -23,4 +23,25 @@ public class ZombieContext : ActorBlackboard
     public bool isHandAttacking;
     public bool isPreparing;
     public float attackCooldownTimer;
+
+    // Networking: triggers must go through the NetworkAnimator on the zombie's
+    // authority (the host/server) to replicate; everything else falls back to
+    // the raw animator (single-player, tests, non-authority copies).
+    public Unity.Netcode.Components.NetworkAnimator networkAnimator;
+
+    public void SetAnimatorTrigger(int triggerHash)
+    {
+        if (animator == null)
+        {
+            return;
+        }
+        if (networkAnimator != null && networkAnimator.IsSpawned && networkAnimator.IsServer)
+        {
+            networkAnimator.SetTrigger(triggerHash);
+        }
+        else
+        {
+            animator.SetTrigger(triggerHash);
+        }
+    }
 }

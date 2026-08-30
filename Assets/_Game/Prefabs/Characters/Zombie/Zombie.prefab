@@ -2267,6 +2267,26 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 2478054529971633035}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: af9e72a1e4931314bb67a3da58f7ee69,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 227561666844162413}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: af9e72a1e4931314bb67a3da58f7ee69,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3577485205653889721}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: af9e72a1e4931314bb67a3da58f7ee69,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6372249189957188113}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: af9e72a1e4931314bb67a3da58f7ee69,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8372143109016655130}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: af9e72a1e4931314bb67a3da58f7ee69,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8888857208856663617}
     - targetCorrespondingSourceObject: {fileID: 1082271958561512970, guid: af9e72a1e4931314bb67a3da58f7ee69,
         type: 3}
       insertIndex: -1
@@ -2509,6 +2529,12 @@ CharacterJoint:
 --- !u!4 &1968384599784447751 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -3321919801592875672, guid: af9e72a1e4931314bb67a3da58f7ee69,
+    type: 3}
+  m_PrefabInstance: {fileID: 5383825580564687471}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &2007942972782974974 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: af9e72a1e4931314bb67a3da58f7ee69,
     type: 3}
   m_PrefabInstance: {fileID: 5383825580564687471}
   m_PrefabAsset: {fileID: 0}
@@ -3120,9 +3146,9 @@ MonoBehaviour:
   _detectionLayerMask:
     serializedVersion: 2
     m_Bits: 64
-  _ignoreLayerMask:
+  _obstacleLayerMask:
     serializedVersion: 2
-    m_Bits: 55
+    m_Bits: 133
   _detectionMaxDistance: 5
 --- !u!114 &2529430297000675816
 MonoBehaviour:
@@ -3153,6 +3179,155 @@ MonoBehaviour:
   _visionHook: {fileID: 1968384599784447751}
   _victimHook: {fileID: 5243757988457741416}
   _attackHandHook: {fileID: 5981514905471407527}
+--- !u!114 &227561666844162413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5077343515872401214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 0
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &3577485205653889721
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5077343515872401214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkTransform
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkTransformExpanded: 0
+  AutoOwnerAuthorityTickOffset: 1
+  PositionInterpolationType: 0
+  RotationInterpolationType: 0
+  ScaleInterpolationType: 0
+  PositionLerpSmoothing: 1
+  PositionMaxInterpolationTime: 0.1
+  RotationLerpSmoothing: 1
+  RotationMaxInterpolationTime: 0.1
+  ScaleLerpSmoothing: 1
+  ScaleMaxInterpolationTime: 0.1
+  AuthorityMode: 0
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
+  SyncPositionX: 1
+  SyncPositionY: 1
+  SyncPositionZ: 1
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
+  SyncScaleX: 1
+  SyncScaleY: 1
+  SyncScaleZ: 1
+  PositionThreshold: 0.001
+  RotAngleThreshold: 0.01
+  ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 0
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 0
+  InLocalSpace: 0
+  SwitchTransformSpaceWhenParented: 0
+  Interpolate: 1
+  SlerpPosition: 0
+--- !u!114 &6372249189957188113
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5077343515872401214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d0727d5ae3244e3b569694d3912374, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkAnimator
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkAnimatorExpanded: 0
+  AuthorityMode: 0
+  m_Animator: {fileID: 2007942972782974974}
+  TransitionStateInfoList:
+  - IsCrossFadeExit: 0
+    Layer: 0
+    OriginatingState: -453240694
+    DestinationState: -1777269169
+    TransitionDuration: 0.25
+    TriggerNameHash: 567580192
+    TransitionIndex: 0
+  - IsCrossFadeExit: 0
+    Layer: 0
+    OriginatingState: -453240694
+    DestinationState: -178121258
+    TransitionDuration: 0.25
+    TriggerNameHash: -971615125
+    TransitionIndex: 1
+  AnimatorParameterEntries:
+    ParameterEntries:
+    - name: Horizontal
+      NameHash: 475924382
+      Synchronize: 1
+      ParameterType: 1
+    - name: Vertical
+      NameHash: 1358960330
+      Synchronize: 1
+      ParameterType: 1
+    - name: Bite
+      NameHash: 567580192
+      Synchronize: 1
+      ParameterType: 9
+    - name: RHandAttack
+      NameHash: -971615125
+      Synchronize: 1
+      ParameterType: 9
+  AnimatorParametersExpanded: 0
+--- !u!114 &8372143109016655130
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5077343515872401214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c59196f553dd1e0458797a00fe7132b8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Characters::NetworkedHealth
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &8888857208856663617
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5077343515872401214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0375f45760aa7834baa3f6189bef4c62, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Characters::NetworkedZombieController
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &5235455099423254569 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -9070493210130169274, guid: af9e72a1e4931314bb67a3da58f7ee69,

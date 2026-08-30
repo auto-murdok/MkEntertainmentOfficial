@@ -41,7 +41,7 @@ public class ZombieHandAttackState : State<ZombieStates, ZombieContext>
 
         if (context.animator != null)
         {
-            context.animator.SetTrigger(AnimatorUtils.RHandAttackHash);
+            context.SetAnimatorTrigger(AnimatorUtils.RHandAttackHash);
         }
 
         LookAtVictim(character, context);

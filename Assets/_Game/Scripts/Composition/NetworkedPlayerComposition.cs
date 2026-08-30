@@ -25,6 +25,10 @@ public class NetworkedPlayerComposition : NetworkBehaviour
     [SerializeField] private GameObject _inputHandlerPrefab;
     [SerializeField] private GameObject _playerCorePrefab;
 
+    [Header("Game-flow (SO asset refs persist on the prefab)")]
+    [Tooltip("Raised on the peer that owns this player when it dies, so the local game-over screen fires on clients too.")]
+    [SerializeField] private VoidEventChannel _playerDiedChannel;
+
     // Owner-write: the player decides its own aim pose; everyone reads it.
     private readonly NetworkVariable<bool> _isAiming = new NetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -57,6 +61,15 @@ public class NetworkedPlayerComposition : NetworkBehaviour
         InputHandler inputHandler = Instantiate(_inputHandlerPrefab).GetComponent<InputHandler>();
         GameObject playerCore = Instantiate(_playerCorePrefab);
         PlayerRigging.WireLocalRig(gameObject, inputHandler, playerCore);
+
+        // Client game-flow: this peer owns the player, so its death must fire
+        // the local game-over screen. (PlayerSpawner wires this in the
+        // single-player arena; the networked path wires it here — wire exactly
+        // once per peer.)
+        if (_playerDiedChannel != null)
+        {
+            GetComponent<CharacterBrain>().Died += _playerDiedChannel.Raise;
+        }
 
         Debug.Log($"[NetworkedPlayerComposition] Local rig composed for {(IsHost ? "host" : "client")} player object (OwnerId={OwnerClientId}).");
     }

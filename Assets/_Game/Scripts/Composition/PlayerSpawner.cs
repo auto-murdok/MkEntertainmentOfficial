@@ -34,8 +34,12 @@ public class PlayerSpawner : MonoBehaviour
         // NetworkManager.PlayerPrefab on every peer, and the owner composes the
         // local rig in NetworkedPlayerComposition.OnNetworkSpawn. Composing here
         // as well would double-spawn the rig (locally + over the network).
+        // Game-flow still needs the channel wiring on every peer so a client's
+        // own death triggers its local game-over screen.
         if (FindFirstObjectByType<Unity.Netcode.NetworkManager>() != null)
         {
+            gameStateManager.playerDiedChannel = _playerDiedChannel;
+            gameStateManager.spawningEnabledChannel = _spawningEnabledChannel;
             return;
         }
 

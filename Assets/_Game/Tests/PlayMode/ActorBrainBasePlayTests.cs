@@ -101,6 +101,58 @@ namespace Game.Tests.PlayMode
         }
 
         [Test]
+        public void MirrorHitPoints_ServerDamage_RoutesThroughDamagePipeline()
+        {
+            float damagedAmount = 0f;
+            int damagedCount = 0;
+            _brain.Damaged += amount => { damagedAmount = amount; damagedCount++; };
+
+            _brain.MirrorHitPoints(70f);
+
+            Assert.AreEqual(70f, _brain.remainingHitPoints);
+            Assert.AreEqual(1, damagedCount);
+            Assert.AreEqual(30f, damagedAmount, 0.01f);
+            Assert.IsTrue(_brain.IsAlive);
+        }
+
+        [Test]
+        public void MirrorHitPoints_ServerHeal_AppliedSilently()
+        {
+            _brain.CallApplyDamage(50f);
+            int damagedCount = 0;
+            _brain.Damaged += _ => damagedCount++;
+
+            _brain.MirrorHitPoints(100f);
+
+            Assert.AreEqual(100f, _brain.remainingHitPoints);
+            Assert.AreEqual(0, damagedCount, "Server-side heals must not re-raise the Damaged event.");
+        }
+
+        [Test]
+        public void MirrorHitPoints_ZeroHitPoints_KillsActor()
+        {
+            bool died = false;
+            _brain.Died += () => died = true;
+
+            _brain.MirrorHitPoints(0f);
+
+            Assert.AreEqual(0f, _brain.remainingHitPoints);
+            Assert.IsFalse(_brain.IsAlive);
+            Assert.IsTrue(died);
+        }
+
+        [Test]
+        public void MirrorHitPoints_OnDeadActor_IsNoOp()
+        {
+            _brain.MirrorHitPoints(0f);
+            Assert.IsFalse(_brain.IsAlive);
+
+            _brain.MirrorHitPoints(50f);
+
+            Assert.AreEqual(0f, _brain.remainingHitPoints, "Dead actors must not accept mirrored HP.");
+        }
+
+        [Test]
         public void TakeDamage_ReportsToCombatLog()
         {
             _brain.CallApplyDamage(30f);

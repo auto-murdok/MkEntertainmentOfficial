@@ -25,7 +25,7 @@ unity command test_status          # poll until "completed"
 
 Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
 
-## What is covered (215 tests: 90 EditMode + 125 PlayMode, all green)
+## What is covered (221 tests: 92 EditMode + 129 PlayMode, all green)
 
 - **Core**
   - `CombatLog` — ring buffer capacity/overflow, `CopyRecent` truncation, `BeginSource`
@@ -73,7 +73,13 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
   - `ActorBrainBase` — damage/death flag, CombatLog reporting, death hook → ragdoll →
     interactable deregistration, `DestroyActorCore`, id/position/victimHook,
     delayed health regeneration (delay gate, heal after delay, cap, dead/full-health
-    no-ops, non-positive rate).
+    no-ops, non-positive rate), `MirrorHitPoints` (server-replicated HP: drops
+    route through the damage pipeline, heals silent, dead-actor no-op).
+  - `NetworkedZombiePrefabTests` — the zombie prefab's networking contract:
+    `NetworkTransform`/`NetworkAnimator` stay **server-authoritative**
+    (host-simulated AI), `NetworkAnimator` wired, `NetworkedHealth` +
+    `NetworkedZombieController` present, and `Zombie.prefab` registered in the
+    NetworkPrefabs list (unregistered prefabs break client-side spawning).
   - `PlayerData` / `ZombieData` — health-regen defaults positive, default obstacle
     mask constant, hand-attack defaults non-zero.
   - `AnimatorUtils` — parameter hashes, `DampFactor` exponential math, null-animator safety.

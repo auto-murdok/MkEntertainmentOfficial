@@ -66,6 +66,27 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
     // IDamageable: attacker-supplied damage, centralized through ApplyDamage.
     public void TakeDamage(float amount) => ApplyDamage(amount);
 
+    // Networking: apply a server-replicated hit-point value on non-server
+    // peers (see NetworkedHealth). Drops route through ApplyDamage so the
+    // normal pipeline (CombatLog, Damaged, death) runs locally; rises (server
+    // regen) are applied silently. No-ops on the server — it is the authority.
+    public void MirrorHitPoints(float serverHitPoints)
+    {
+        if (Context == null || !Context.isAlive)
+        {
+            return;
+        }
+
+        if (serverHitPoints < _hitPoints)
+        {
+            ApplyDamage(_hitPoints - serverHitPoints);
+        }
+        else if (serverHitPoints > _hitPoints)
+        {
+            _hitPoints = serverHitPoints;
+        }
+    }
+
     // Passive health regeneration — call once per Update from the derived brain
     // with the entity's data config. Heals at `rate` HP/second once `regenDelay`
     // seconds have passed since the last hit, capped at max. Dead actors and
@@ -91,6 +112,16 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
 
     protected void DestroyActorCore()
     {
+        // NetworkAnimator polls the Animator from NGO's network update loop and
+        // only deregisters on despawn/destroy (its handler ignores the enabled
+        // flag) — destroying it here prevents MissingReferenceException spam
+        // once the ragdoll destroys the Animator below. Must be destroyed
+        // BEFORE the Animator itself.
+        var networkAnimator = GetComponent<Unity.Netcode.Components.NetworkAnimator>();
+        if (networkAnimator != null)
+        {
+            Destroy(networkAnimator);
+        }
         var agent = GetComponent<NavMeshAgent>();
         if (agent != null) Destroy(agent);
         var anim = GetComponent<Animator>();

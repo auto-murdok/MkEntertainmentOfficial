@@ -198,6 +198,20 @@ public class ZombieSpawner : MonoBehaviour
             behavior.SetZombieData(entry.data);
         }
 
+        // Networked arena: the spawner only runs on the server, which owns the
+        // zombie simulation — clients receive the spawned instance (the zombie
+        // prefab is registered in the NetworkPrefabs list). Single-player and
+        // tests have no NetworkManager and keep the plain local behaviour.
+        Unity.Netcode.NetworkManager networkManager = Unity.Netcode.NetworkManager.Singleton;
+        if (networkManager != null)
+        {
+            Unity.Netcode.NetworkObject networkObject = instance.GetComponent<Unity.Netcode.NetworkObject>();
+            if (networkObject != null && !networkObject.IsSpawned)
+            {
+                networkObject.Spawn(true); // destroyWithScene — zombies belong to the arena
+            }
+        }
+
         _activeInstances.Add(instance);
 
         return instance;

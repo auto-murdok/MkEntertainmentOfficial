@@ -67,7 +67,7 @@ public class ZombieBrain : ActorBrainBase, IZombie
 
         _behavior.SetInteractable(target);
         _behavior.SetIsBiting(true);
-        _animator.SetTrigger(AnimatorUtils.BiteHash);
+        _behavior._context.SetAnimatorTrigger(AnimatorUtils.BiteHash);
         transform.LookAt(target.position);
 
         // Gold-standard, attacker-driven damage: the zombie applies its own bite

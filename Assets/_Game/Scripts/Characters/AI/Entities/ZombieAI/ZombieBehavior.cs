@@ -45,6 +45,7 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
         _context.agent = GetComponent<NavMeshAgent>();
         _context.animator = GetComponent<Animator>();
         _context.brain = GetComponent<ZombieBrain>();
+        _context.networkAnimator = GetComponent<Unity.Netcode.Components.NetworkAnimator>();
         _context.hands = GetComponentsInChildren<ZombieHand>(true);
         _sockets = GetComponentInChildren<ZombieSockets>();
 

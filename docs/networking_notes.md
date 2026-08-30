@@ -94,6 +94,47 @@ first client; start sessions from code via `NetworkManager.Singleton`.
      (`AnimatorUtils.IsReloadingHash`), components cached at spawn (no
      per-frame `GetComponent`), allocation-free per-frame damp writers
      (mirrors the FSM's own writers), NetworkVariable written only on change.
+10. **Ragdoll teardown must destroy the `NetworkAnimator` (not disable it).**
+    `ActorBrainBase.DestroyActorCore` destroys the Animator during ragdoll,
+    but `NetworkAnimator`'s state-change handler polls the Animator from NGO's
+    network update loop and **only deregisters on despawn/destroy**
+    (`SpawnCleanup`) — the handler ignores the component's enabled flag.
+    Disabling it spams `MissingReferenceException` forever. Fix: `Destroy`
+    the `NetworkAnimator` BEFORE the Animator in `DestroyActorCore` (players
+    are never despawned, so this is the only cleanup path they get).
+
+## Milestone 3 — server-simulated zombies + replicated health
+
+Gold standard (NGO docs / Boss Room / Bitesize Spaceshooter): AI is
+**server-authoritative** — the host simulates, clients receive; health is a
+**server-write `NetworkVariable`**; spawnable prefabs must be registered in
+the NetworkPrefabs list.
+
+| Piece | Location | Notes |
+|---|---|---|
+| Zombie prefab networking | `Zombie.prefab` root | `NetworkObject` + `NetworkTransform` (**server-auth — default**) + `NetworkAnimator` (**server-auth**, Animator wired) + `NetworkedHealth` + `NetworkedZombieController`. Registered in `NetworkPrefabs_Arena.asset`. |
+| `NetworkedZombieController` | `Scripts/Characters/` | Disables `ZombieBehavior` + `NavMeshAgent` on networked clients (they cannot fight the replication). On death (server): `NetworkObject.Despawn(false)` — clients remove the zombie, the host keeps the GameObject so the local ragdoll + corpse timer play out. |
+| `NetworkedHealth` | `Scripts/Characters/`, on player + zombie prefabs | Server-write `NetworkVariable<float>`. The server mirrors its local brain pipeline into the variable (`Update` change-check); non-server peers push the replicated value into their brain via `ActorBrainBase.MirrorHitPoints` — drops route through `ApplyDamage` (CombatLog, `Damaged`, death/ragdoll all run locally), rises are silent. |
+| `ActorBrainBase.MirrorHitPoints` | `Scripts/Characters/ActorBrainBase.cs` | Server→peer HP mirror; guarded no-op on dead actors and on the server. |
+| Zombie trigger routing | `ZombieContext.SetAnimatorTrigger` | Same rule as the player (lesson 9): bite/hand-attack triggers go through `NetworkAnimator.SetTrigger` on the authority (host = server); raw animator elsewhere (single-player, tests). |
+| Client game-over | `NetworkedPlayerComposition` (+ `PlayerSpawner` networked path) | `PlayerSpawner` now wires the GameStateManager channels on every peer; the owner composition subscribes its player's `Died` to `PlayerDiedChannel` (SO asset refs survive on the prefab) so a client's own death fires its local game-over screen. |
+
+**Verified live (host + built client):** zombies spawn on the host and
+replicate to the client (server-owned, server-auth NT, client-side FSM
+disabled); a zombie bite on the host mirrors to the client's HP
+(100 → 40 observed); both a player death and a zombie death complete with no
+console errors after the lesson-10 fix.
+
+**Known limitations (next milestones):**
+- Zombie ragdolls are host-only visuals — clients see the zombie despawn at
+  death.
+- Ammo drops are host-local objects — not yet networked (clients can't pick
+  them up).
+- Player shooting/bullets are still peer-local: a client's bullets damage
+  only its local zombie copies. Next step: server-authoritative damage for
+  bullets (ServerRpc from the owner, or a networked projectile pipeline).
+- Regen timing drifts slightly between peers (each peer runs its own regen);
+  the server's value wins on the next damage event.
    - Verified live: both peers see the other player run with the correct
      animation; structure probe: `NA.AuthorityMode=Owner`, animator wired,
      remote copy `applyRootMotion=False`.

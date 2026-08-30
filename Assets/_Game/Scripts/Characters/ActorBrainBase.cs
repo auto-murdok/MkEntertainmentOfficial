@@ -79,7 +79,14 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
 
         if (serverHitPoints < _hitPoints)
         {
-            ApplyDamage(_hitPoints - serverHitPoints);
+            float amount = _hitPoints - serverHitPoints;
+            ApplyDamage(amount);
+            if (Context != null && !Context.isAlive)
+            {
+                // Rare, observable marker: a peer just learned from the server
+                // that its actor died (client log is otherwise a black box).
+                Debug.Log($"[{name}] Death mirrored from the server ({amount:F0} damage applied locally).");
+            }
         }
         else if (serverHitPoints > _hitPoints)
         {

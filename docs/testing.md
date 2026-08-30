@@ -25,7 +25,7 @@ unity command test_status          # poll until "completed"
 
 Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
 
-## What is covered (221 tests: 92 EditMode + 129 PlayMode, all green)
+## What is covered (222 tests: 93 EditMode + 129 PlayMode, all green)
 
 Note: the networked bite relay (`IPlayerBiteRelay`), bite-state mirror and
 `isPreparing` replication are session-dependent (real `NetworkManager` +
@@ -50,8 +50,9 @@ fake NGO ownership/spawn state.
     `NetworkTransform` is **owner-authoritative** (server authority makes
     client movement snap back — see `docs/networking_notes.md` lesson 8),
     `NetworkAnimator` is owner-authoritative with the Animator wired
-    (lesson 9), and `BuildRemoteRig` wires every `MultiAimConstraint` to the
-    local `RemoteAimTarget` (idempotent) — plus `NetworkObject` +
+    (lesson 9), `BuildRemoteRig` wires every `MultiAimConstraint` to the
+    local `RemoteAimTarget` (idempotent), `NetworkedHealth` is present
+    (missing it makes player HP/death never replicate), plus `NetworkObject` +
     `NetworkedPlayerComposition` presence.
   - `VoidEventChannel` / `BoolEventChannel` (SO) — Raise/subscriber notification,
     unsubscribe semantics, no-throw with no subscribers, bool payload fan-out.

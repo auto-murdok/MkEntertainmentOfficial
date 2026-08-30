@@ -114,7 +114,7 @@ the NetworkPrefabs list.
 |---|---|---|
 | Zombie prefab networking | `Zombie.prefab` root | `NetworkObject` + `NetworkTransform` (**server-auth — default**) + `NetworkAnimator` (**server-auth**, Animator wired) + `NetworkedHealth` + `NetworkedZombieController`. Registered in `NetworkPrefabs_Arena.asset`. |
 | `NetworkedZombieController` | `Scripts/Characters/` | Disables `ZombieBehavior` + `NavMeshAgent` on networked clients (they cannot fight the replication). On death (server): `NetworkObject.Despawn(false)` — clients remove the zombie, the host keeps the GameObject so the local ragdoll + corpse timer play out. |
-| `NetworkedHealth` | `Scripts/Characters/`, on player + zombie prefabs | Server-write `NetworkVariable<float>`. The server mirrors its local brain pipeline into the variable (`Update` change-check); non-server peers push the replicated value into their brain via `ActorBrainBase.MirrorHitPoints` — drops route through `ApplyDamage` (CombatLog, `Damaged`, death/ragdoll all run locally), rises are silent. |
+| `NetworkedHealth` | `Scripts/Characters/`, on **both** player and zombie prefabs | Server-write `NetworkVariable<float>`. The server mirrors its local brain pipeline into the variable (`Update` change-check); non-server peers push the replicated value into their brain via `ActorBrainBase.MirrorHitPoints` — drops route through `ApplyDamage` (CombatLog, `Damaged`, death/ragdoll all run locally), rises are silent. Missing on either prefab means that actor's HP/death silently never replicates (regression-tested on both). |
 | `ActorBrainBase.MirrorHitPoints` | `Scripts/Characters/ActorBrainBase.cs` | Server→peer HP mirror; guarded no-op on dead actors and on the server. |
 | Zombie trigger routing | `ZombieContext.SetAnimatorTrigger` | Same rule as the player (lesson 9): bite/hand-attack triggers go through `NetworkAnimator.SetTrigger` on the authority (host = server); raw animator elsewhere (single-player, tests). |
 | Client game-over | `NetworkedPlayerComposition` (+ `PlayerSpawner` networked path) | `PlayerSpawner` now wires the GameStateManager channels on every peer; the owner composition subscribes its player's `Died` to `PlayerDiedChannel` (SO asset refs survive on the prefab) so a client's own death fires its local game-over screen. |
@@ -127,6 +127,18 @@ replicate to the client (server-owned, server-auth NT, client-side FSM
 disabled); a zombie bite on the host mirrors to the client's HP
 (100 → 40 observed); both a player death and a zombie death complete with no
 console errors after the lesson-10 fix.
+
+**Player-death replication verification:** with `NetworkedHealth` on the
+player prefab, a server-applied kill of the client's player replicates and
+the client mirrors its own death — the client log shows
+`Death mirrored from the server (100 damage applied locally)` and both peers
+agree on HP 0 (the client then ragdolls and fires its local game-over via the
+wired `PlayerDiedChannel`).
+⚠️ **Gotcha:** `NetworkedHealth` was initially added to the zombie prefab
+only — the player prefab shipped without it, so player HP/death silently
+never replicated (the "client keeps playing while everyone else sees a
+corpse" bug). `NetworkedPlayerPrefabTests.PlayerPrefab_CarriesNetworkedHealth`
+now guards this.
 
 **Bite relay verification (host + built client):** warping zombies in front
 of the client player (facing it — the vision cone check rejects victims

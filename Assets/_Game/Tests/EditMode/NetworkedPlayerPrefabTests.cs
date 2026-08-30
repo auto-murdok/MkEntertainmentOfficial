@@ -39,6 +39,17 @@ namespace Game.Tests.EditMode
         }
 
         [Test]
+        public void PlayerPrefab_CarriesNetworkedHealth()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
+            Assert.IsNotNull(prefab, $"Player prefab missing at {PlayerPrefabPath}.");
+
+            Assert.IsNotNull(prefab.GetComponent<NetworkedHealth>(),
+                "Player prefab must carry NetworkedHealth — without it, HP/death never replicate " +
+                "and a player's death is invisible to the other peers.");
+        }
+
+        [Test]
         public void PlayerPrefab_NetworkAnimator_IsOwnerAuthoritativeAndWired()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);

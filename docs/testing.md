@@ -27,6 +27,12 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
 
 ## What is covered (221 tests: 92 EditMode + 129 PlayMode, all green)
 
+Note: the networked bite relay (`IPlayerBiteRelay`), bite-state mirror and
+`isPreparing` replication are session-dependent (real `NetworkManager` +
+spawned objects) and are verified by two-instance play sessions
+(`docs/networking_notes.md`), not unit tests — testing.md's seams cannot
+fake NGO ownership/spawn state.
+
 - **Core**
   - `CombatLog` — ring buffer capacity/overflow, `CopyRecent` truncation, `BeginSource`
     scoping & nesting, damage/impact formatting, destroyed-victim placeholder.

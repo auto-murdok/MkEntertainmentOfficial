@@ -118,12 +118,24 @@ the NetworkPrefabs list.
 | `ActorBrainBase.MirrorHitPoints` | `Scripts/Characters/ActorBrainBase.cs` | Server→peer HP mirror; guarded no-op on dead actors and on the server. |
 | Zombie trigger routing | `ZombieContext.SetAnimatorTrigger` | Same rule as the player (lesson 9): bite/hand-attack triggers go through `NetworkAnimator.SetTrigger` on the authority (host = server); raw animator elsewhere (single-player, tests). |
 | Client game-over | `NetworkedPlayerComposition` (+ `PlayerSpawner` networked path) | `PlayerSpawner` now wires the GameStateManager channels on every peer; the owner composition subscribes its player's `Died` to `PlayerDiedChannel` (SO asset refs survive on the prefab) so a client's own death fires its local game-over screen. |
+| **Bite relay** | `IPlayerBiteRelay` (`Game.Characters`) ← `NetworkedPlayerComposition` | The bite interaction lands wherever the zombie AI runs (the host), but the victim-side take-bite FSM belongs to the victim's **owner**. Remote copies relay via a targeted ClientRpc (`NetworkObjectReference` of the attacker) and the owner runs its normal pipeline — its `TakeBite` trigger then replicates through the owner's `NetworkAnimator`, and the pin/push-off plays correctly for everyone. The interface exists because Game.Characters cannot reference Game.Composition (dependency direction). |
+| **Bite-state mirror** | owner-write `NetworkVariable<bool> _isBitten` + `NetworkVariable<ulong> _biterObjectId` | The owner publishes its take-bite state back (`MirrorBiteStateToOwner`), and `CharacterBrain.canBeBitten`/`currentBiter` read the mirror on remote copies — keeping the multi-attacker logic (`CanVictimBeBitten`: own bite continues vs hand-attack fallback) correct. A corpse publishes "not bitten" (death destroys the FSM). |
+| **`isPreparing` replication** | `NetworkedZombieController` server-write `NetworkVariable<bool>` | `CharacterTakeBiteState` pins the victim only while `attacker.isPreparing` — and the client-side zombie FSM is disabled, so the grab/prepare flag must be replicated for the pin phase to engage on the victim's owner. `ZombieBrain.isPreparing` branches on it. |
 
 **Verified live (host + built client):** zombies spawn on the host and
 replicate to the client (server-owned, server-auth NT, client-side FSM
 disabled); a zombie bite on the host mirrors to the client's HP
 (100 → 40 observed); both a player death and a zombie death complete with no
 console errors after the lesson-10 fix.
+
+**Bite relay verification (host + built client):** warping zombies in front
+of the client player (facing it — the vision cone check rejects victims
+behind the zombie) produces a server-side bite; the host view shows the
+victim's owner-mirrored state (`MirroredIsBitten=True`, biter resolved,
+`canBeBitten=False` for other attackers) while the runner's
+`biting=True preparing=True` replicates; the take-bite cycle completes on the
+owner. Gotcha when testing: warping a zombie beside/behind a player does
+nothing — it must end up inside the zombie's detection cone.
 
 **Known limitations (next milestones):**
 - Zombie ragdolls are host-only visuals — clients see the zombie despawn at
@@ -135,6 +147,13 @@ console errors after the lesson-10 fix.
   bullets (ServerRpc from the owner, or a networked projectile pipeline).
 - Regen timing drifts slightly between peers (each peer runs its own regen);
   the server's value wins on the next damage event.
+- Same-frame double bites across the network lose the synchronous
+  "victim pinned by self" guarantee (the relay adds owner RTT): two zombies
+  triggering in the exact same frame can both relay a bite; the owner's
+  guard accepts only the first, but the second zombie still applies its
+  bite damage on the host. The zombie `isBiting` guard + cooldown make this
+  rare; if it ever matters, add a server-side bite-claim flag set
+  synchronously in `CharacterBrain.OnExternalInteraction` before relaying.
    - Verified live: both peers see the other player run with the correct
      animation; structure probe: `NA.AuthorityMode=Owner`, animator wired,
      remote copy `applyRootMotion=False`.

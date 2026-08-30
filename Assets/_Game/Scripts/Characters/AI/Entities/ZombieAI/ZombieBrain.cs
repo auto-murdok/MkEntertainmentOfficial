@@ -6,9 +6,22 @@ public class ZombieBrain : ActorBrainBase, IZombie
 {
     private ZombieBehavior _behavior;
     private Animator _animator;
+    private NetworkedZombieController _zombieNet;
 
     public override Transform victimHook => _behavior.victimHook;
-    public override bool isPreparing => _behavior != null && _behavior._context != null && _behavior._context.isPreparing;
+    public override bool isPreparing
+    {
+        get
+        {
+            // Remote copies have their FSM disabled — the grab/prepare flag
+            // arrives via the server-write NetworkVariable instead.
+            if (_zombieNet != null && _zombieNet.SimulatesRemotely)
+            {
+                return _zombieNet.MirroredIsPreparing;
+            }
+            return _behavior != null && _behavior._context != null && _behavior._context.isPreparing;
+        }
+    }
     public bool isBiting => _behavior != null && _behavior._context != null && _behavior._context.isBiting;
     public bool isHandAttacking => _behavior != null && _behavior._context != null && _behavior._context.isHandAttacking;
 
@@ -28,6 +41,7 @@ public class ZombieBrain : ActorBrainBase, IZombie
     {
         _behavior = GetComponent<ZombieBehavior>();
         _animator = GetComponent<Animator>();
+        _zombieNet = GetComponent<NetworkedZombieController>();
 
         Assert.IsNotNull(_behavior, $"{gameObject.name} needs a ZombieBehavior attached to it");
         Assert.IsNotNull(_animator, $"{gameObject.name} needs an Animator attached to it");

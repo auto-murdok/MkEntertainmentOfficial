@@ -10,6 +10,7 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
 
     private CharacterLocomotion _locomotion;
     private PlayerInput _playerInput;
+    private IPlayerBiteRelay _biteRelay;
     private bool _subscribed;
 
     [Header("Stats")]
@@ -23,12 +24,38 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
 
     // A bite is an exclusive grab: while already pinned by one zombie's bite,
     // other attackers must fall back to non-grab attacks (right-hand swing).
-    public bool canBeBitten => _locomotion == null || !_locomotion.isBeingAttacked;
-    public IInteractable currentBiter => _locomotion != null ? _locomotion.currentAttacker : null;
+    // Remote copies read the owner-mirrored bite state — the take-bite FSM
+    // runs on the victim's owner, not here.
+    public bool canBeBitten
+    {
+        get
+        {
+            if (_biteRelay != null && !_biteRelay.SimulatesLocally)
+            {
+                return !_biteRelay.MirroredIsBitten;
+            }
+            return _locomotion == null || !_locomotion.isBeingAttacked;
+        }
+    }
+
+    public IInteractable currentBiter
+    {
+        get
+        {
+            if (_biteRelay != null && !_biteRelay.SimulatesLocally)
+            {
+                return _biteRelay.MirroredBiter;
+            }
+            return _locomotion != null ? _locomotion.currentAttacker : null;
+        }
+    }
 
     private void Awake()
     {
         _locomotion = GetComponent<CharacterLocomotion>();
+        // Networking seam (null in the single-player arena): remote copies
+        // relay bite interactions to the victim's owner instead of simulating.
+        _biteRelay = GetComponent<IPlayerBiteRelay>();
         // The subject is wired by the spawner after instantiation, so it may
         // legitimately be null here; validation happens in Start.
         _playerInput = _subject != null ? _subject.GetComponent<PlayerInput>() : null;
@@ -169,6 +196,16 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
 
     public override void OnExternalInteraction(IInteractable attacker)
     {
+        // Networking: the bite interaction lands wherever the zombie AI runs
+        // (the host), but the victim-side take-bite FSM belongs to the
+        // victim's owner. Remote copies relay instead of simulating — running
+        // the FSM here would fight the owner-authoritative transform.
+        if (_biteRelay != null && !_biteRelay.SimulatesLocally)
+        {
+            _biteRelay.RelayBiteFromServer(attacker);
+            return;
+        }
+
         // Ignore duplicate interactions while a take-bite is already in progress so
         // the TakeBite trigger is not re-fired (which would replay the animation).
         if (_locomotion != null && _locomotion.isBeingAttacked)

@@ -14,8 +14,21 @@ using UnityEngine.AI;
 // corpse cleanup timer runs as in single-player.
 public class NetworkedZombieController : NetworkBehaviour
 {
+    // Server-write mirror of the zombie FSM's grab/prepare phase: the victim's
+    // owner reads it to know when to lock position to the bite socket
+    // (CharacterTakeBiteState pins only while attacker.isPreparing).
+    private readonly NetworkVariable<bool> _isPreparing = new NetworkVariable<bool>(
+        false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    private ZombieBehavior _behavior;
+
+    public bool SimulatesRemotely => IsSpawned && !IsServer;
+
+    public bool MirroredIsPreparing => _isPreparing.Value;
+
     public override void OnNetworkSpawn()
     {
+        _behavior = GetComponent<ZombieBehavior>();
         ActorBrainBase brain = GetComponent<ActorBrainBase>();
         if (brain != null)
         {
@@ -34,6 +47,16 @@ public class NetworkedZombieController : NetworkBehaviour
         if (brain != null)
         {
             brain.Died -= OnDied;
+        }
+    }
+
+    private void Update()
+    {
+        // Server: push the FSM's prepare flag into the replicated variable
+        // (NGO only sends on actual writes).
+        if (IsServer && _behavior != null && _behavior._context != null && _isPreparing.Value != _behavior._context.isPreparing)
+        {
+            _isPreparing.Value = _behavior._context.isPreparing;
         }
     }
 

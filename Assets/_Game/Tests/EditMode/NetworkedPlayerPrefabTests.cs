@@ -53,5 +53,47 @@ namespace Game.Tests.EditMode
             Assert.IsNotNull(so.FindProperty("m_Animator").objectReferenceValue,
                 "NetworkAnimator must reference the character's Animator.");
         }
+
+        [Test]
+        public void BuildRemoteRig_WiresAllConstraintSourcesToALocalTarget()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
+            Assert.IsNotNull(prefab, $"Player prefab missing at {PlayerPrefabPath}.");
+
+            // Remote copies spawn with NULL constraint sources (prefab scene-ref
+            // stripping); BuildRemoteRig must wire every MultiAimConstraint to
+            // the local forward target and rebuild the RigBuilder graph.
+            GameObject instance = Object.Instantiate(prefab);
+            try
+            {
+                var composition = instance.GetComponent<NetworkedPlayerComposition>();
+                Assert.IsNotNull(composition, "Player prefab must carry NetworkedPlayerComposition.");
+
+                composition.BuildRemoteRig();
+
+                Transform remoteTarget = instance.transform.Find("RemoteAimTarget");
+                Assert.IsNotNull(remoteTarget, "RemoteAimTarget was not created.");
+
+                var constraints = instance.GetComponentsInChildren<UnityEngine.Animations.Rigging.MultiAimConstraint>(true);
+                Assert.Greater(constraints.Length, 0, "Player prefab should ship with MultiAimConstraints.");
+                foreach (var constraint in constraints)
+                {
+                    Assert.AreEqual(1, constraint.data.sourceObjects.Count,
+                        "Every aim constraint must have exactly one source after BuildRemoteRig.");
+                    Assert.IsTrue(constraint.data.sourceObjects[0].transform == remoteTarget,
+                        "Constraint sources must point at the RemoteAimTarget.");
+                    Assert.AreEqual(1f, constraint.data.sourceObjects[0].weight);
+                }
+
+                // Idempotency: a second run must not stack duplicate targets.
+                composition.BuildRemoteRig();
+                Assert.AreEqual(1, instance.transform.Find("RemoteAimTarget") == null ? 0 : 1,
+                    "BuildRemoteRig must reuse the existing RemoteAimTarget.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(instance);
+            }
+        }
     }
 }

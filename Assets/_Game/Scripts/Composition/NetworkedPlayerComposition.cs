@@ -18,6 +18,8 @@ public class NetworkedPlayerComposition : NetworkBehaviour
 {
     private const int AimAnimatorLayerIndex = 1;
     private const float AimLayerWeightSpeed = 20f;
+    private const float RemoteAimTargetHeight = 1.5f;   // chest height
+    private const float RemoteAimTargetDistance = 8f;   // ahead of the character
 
     [Header("Local-only rig prefabs (instantiated on the owner)")]
     [SerializeField] private GameObject _inputHandlerPrefab;
@@ -66,7 +68,11 @@ public class NetworkedPlayerComposition : NetworkBehaviour
     // and rebuild the graph — RigBuilder bakes during Instantiate, so sources
     // wired after that are ignored until Clear()+Build() (see
     // docs/spawnable_player_rigging_fixes.md).
-    private void BuildRemoteRig()
+    //
+    // Public test seam (same convention as MainMenuController.BuildUI): every
+    // non-owner spawn path must call this or remote rigged aim silently
+    // degrades to null-source constraints.
+    public void BuildRemoteRig()
     {
         var rigBuilder = GetComponent<RigBuilder>();
         if (rigBuilder == null)
@@ -74,9 +80,15 @@ public class NetworkedPlayerComposition : NetworkBehaviour
             return;
         }
 
-        Transform remoteAimTarget = new GameObject("RemoteAimTarget").transform;
-        remoteAimTarget.SetParent(transform, false);
-        remoteAimTarget.localPosition = new Vector3(0f, 1.5f, 8f); // chest height, ahead
+        // Idempotent: re-running (re-spawn paths) reuses the existing target
+        // instead of stacking duplicate children.
+        Transform remoteAimTarget = transform.Find("RemoteAimTarget");
+        if (remoteAimTarget == null)
+        {
+            remoteAimTarget = new GameObject("RemoteAimTarget").transform;
+            remoteAimTarget.SetParent(transform, false);
+            remoteAimTarget.localPosition = new Vector3(0f, RemoteAimTargetHeight, RemoteAimTargetDistance);
+        }
 
         foreach (MultiAimConstraint constraint in GetComponentsInChildren<MultiAimConstraint>())
         {

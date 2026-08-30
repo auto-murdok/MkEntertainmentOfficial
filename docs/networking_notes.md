@@ -67,6 +67,33 @@ first client; start sessions from code via `NetworkManager.Singleton`.
      the `NetworkTransform` — leaving `applyRootMotion = true` on a remote
      copy double-applies motion and drifts. `NetworkedPlayerComposition`
      sets `animator.applyRootMotion = IsOwner` on spawn.
+   - **Remote copies must rebuild the rig graph.** The rig constraints spawn
+     with the prefab's NULL scene refs, so remote rigged aim would track
+     nothing. `NetworkedPlayerComposition.BuildRemoteRig()` (idempotent,
+     called on every non-owner `OnNetworkSpawn` — host and clients alike)
+     wires all `MultiAimConstraint`s to a local forward-mounted
+     `RemoteAimTarget` (chest height, 8 m ahead — it rotates with the
+     replicated transform, so remote aim tracks where the character faces)
+     and re-runs `rigBuilder.Clear()+Build()`. Regression-tested in
+     `NetworkedPlayerPrefabTests.BuildRemoteRig_WiresAllConstraintSourcesToALocalTarget`.
+     Known approximation: the remote aim pose tracks the character's facing,
+     not the owner's exact crosshair — if exact crosshair direction is ever
+     needed, replicate the aim point with a `NetworkVariable<Vector3>` and
+     point `RemoteAimTarget` at it.
+   - **Remote copies run a reduced runtime (anti-pattern guard):** the
+     gameplay FSM (`CharacterLocomotion`) is disabled on non-owners — its
+     idle-state visual writers damp the replicated aim layer/rig weights back
+     down, which is why remote aim died after ~1 s before this fix. Remote
+     visuals are owned by NetworkAnimator (states/params) + the
+     `NetworkVariable<bool> _isAiming` mirror (owner writes via
+     `locomotion.isAiming`, remote applies the same damped layer/rig writers
+     as `CharacterAimState`, including the replicated `isReloading` param).
+     Verified live: aim holds indefinitely on the non-owner view (user-
+     confirmed) — rig weight rises 0→1 and stays.
+   - Anti-pattern audit of the runtime loop: pre-hashed animator params
+     (`AnimatorUtils.IsReloadingHash`), components cached at spawn (no
+     per-frame `GetComponent`), allocation-free per-frame damp writers
+     (mirrors the FSM's own writers), NetworkVariable written only on change.
    - Verified live: both peers see the other player run with the correct
      animation; structure probe: `NA.AuthorityMode=Owner`, animator wired,
      remote copy `applyRootMotion=False`.

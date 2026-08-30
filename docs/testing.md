@@ -25,7 +25,7 @@ unity command test_status          # poll until "completed"
 
 Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
 
-## What is covered (214 tests: 89 EditMode + 125 PlayMode, all green)
+## What is covered (215 tests: 90 EditMode + 125 PlayMode, all green)
 
 - **Core**
   - `CombatLog` — ring buffer capacity/overflow, `CopyRecent` truncation, `BeginSource`
@@ -44,7 +44,9 @@ Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
     `NetworkTransform` is **owner-authoritative** (server authority makes
     client movement snap back — see `docs/networking_notes.md` lesson 8),
     `NetworkAnimator` is owner-authoritative with the Animator wired
-    (lesson 9), plus `NetworkObject` + `NetworkedPlayerComposition` presence.
+    (lesson 9), and `BuildRemoteRig` wires every `MultiAimConstraint` to the
+    local `RemoteAimTarget` (idempotent) — plus `NetworkObject` +
+    `NetworkedPlayerComposition` presence.
   - `VoidEventChannel` / `BoolEventChannel` (SO) — Raise/subscriber notification,
     unsubscribe semantics, no-throw with no subscribers, bool payload fan-out.
   - `ArchitectureConformanceTests` — reflection fitness function: no game type may

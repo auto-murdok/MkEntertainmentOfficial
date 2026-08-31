@@ -27,6 +27,10 @@ public class NetworkArenaBootstrap : MonoBehaviour
             return; // already started (e.g. scene reloaded during a session)
         }
 
+        // Spawn-position approval must be installed before the session starts
+        // (the host's own connection goes through it as well).
+        networkManager.ConnectionApprovalCallback = ApproveConnection;
+
         // Role resolution: an explicit menu choice wins; otherwise the command
         // line decides (-mlclient joins, anything else hosts).
         NetworkSessionMode mode = NetworkSession.desiredMode;
@@ -53,6 +57,16 @@ public class NetworkArenaBootstrap : MonoBehaviour
         }
 
         Debug.Log($"[NetworkArenaBootstrap] Session started as {(asClient ? "client" : "host")} (mode={mode}, {NetworkSession.ServerAddress}:{NetworkSession.ServerPort}).");
+    }
+
+    // NGO gold-standard connection approval: auto-create the player object and
+    // pin its creation pose to the spawn point this component sits at.
+    internal void ApproveConnection(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
+    {
+        response.Approved = true;
+        response.CreatePlayerObject = true;
+        response.Position = transform.position;
+        response.Rotation = transform.rotation;
     }
 
     public static bool IsCommandLineClient()

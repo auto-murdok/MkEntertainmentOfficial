@@ -62,7 +62,6 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
             Died?.Invoke();
         }
     }
-
     // IDamageable: attacker-supplied damage, centralized through ApplyDamage.
     public void TakeDamage(float amount) => ApplyDamage(amount);
 
@@ -86,6 +85,10 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
                 // Rare, observable marker: a peer just learned from the server
                 // that its actor died (client log is otherwise a black box).
                 Debug.Log($"[{name}] Death mirrored from the server ({amount:F0} damage applied locally).");
+                // FSM-less copies (remote players, client-side zombies) have no
+                // Dead state to fire context.onDeath — run the ragdoll +
+                // teardown directly (idempotent with the FSM path).
+                RunDeathTeardown();
             }
         }
         else if (serverHitPoints > _hitPoints)
@@ -108,18 +111,33 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
     }
 
     // --- Ragdoll / death lifecycle ---
+    private bool _deathTeardownRun;
     protected void SetupDeathHook() => Context.onDeath = HandleDeath;
-    private void HandleDeath() => RagdollUtils.EnableRagdoll(transform, OnRagdollEnabled);
+    private void HandleDeath()
+    {
+        if (_deathTeardownRun)
+        {
+            return; // the FSM path and the network mirror can both reach this
+        }
+        _deathTeardownRun = true;
+        RagdollUtils.EnableRagdoll(transform, OnRagdollEnabled);
+    }
 
     // Networking: remote copies run no FSM (it would fight replication), so
-    // the Dead state never fires context.onDeath there. A peer that mirrors a
-    // death (NetworkedHealth) calls this to run the ragdoll + teardown
+    // the Dead state never fires context.onDeath there. Mirrored deaths
+    // (ActorBrainBase.MirrorHitPoints) call this to run the ragdoll + teardown
     // directly. The owner/authority path still goes through the FSM.
     public void RunDeathTeardown() => HandleDeath();
 
     protected virtual void OnRagdollEnabled()
     {
         _registry?.Unregister(this);
+        // Corpse stealth: the AI scan (AIDetectionUtils) is layer-based — a
+        // corpse left on the LocalPlayer layer stays scannable forever, so
+        // zombies would keep chasing/biting it. Move it off the detection
+        // layer; the registry unregistration above already stops
+        // registry-driven interactions.
+        LayerUtils.SetLayer(transform, "Default");
         DestroyActorCore(); // NavMeshAgent + Animator are torn down for every actor
     }
 

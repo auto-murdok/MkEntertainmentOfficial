@@ -10,7 +10,7 @@ public class ZombieData : ScriptableObject
     [Header("Health & Damage")]
     [SerializeField] private float _maxHitPoints = 100f;
     [SerializeField] private float _biteDamage = 30f;
-    [SerializeField] private float _corpseDestroyDelay = 5f;
+    [SerializeField] private float _corpseDestroyDelay = 10f;
 
     [Header("Detection & Senses")]
     [SerializeField] private float _detectionMaxDistance = 5f;

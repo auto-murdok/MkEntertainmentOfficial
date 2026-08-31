@@ -11,6 +11,8 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
     private CharacterLocomotion _locomotion;
     private PlayerInput _playerInput;
     private IPlayerBiteRelay _biteRelay;
+    private UnityEngine.InputSystem.InputAction _runAction;
+    private UnityEngine.InputSystem.InputAction _aimAction;
     private bool _subscribed;
 
     [Header("Stats")]
@@ -80,6 +82,36 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
         {
             RegenerateHitPoints(data.healthRegenRate, _maxHitPoints, data.healthRegenDelay);
         }
+
+        ReconcileHeldActions();
+    }
+
+    // Sprint and aim are HELD states, but they were set from one-shot input
+    // events — a missed release event (overlay, focus change, hitch) left the
+    // flag latched and the player sprinted forever. Re-evaluate both from the
+    // live action state every frame: a disabled PlayerInput (pause/game-over
+    // gate) reports not-pressed, so overlays also clear them automatically.
+    private void ReconcileHeldActions()
+    {
+        if (_locomotion == null || _playerInput == null || !_playerInput.enabled)
+        {
+            return;
+        }
+
+        if (_runAction == null)
+        {
+            _runAction = _playerInput.actions != null ? _playerInput.actions.FindAction("Run", false) : null;
+            _aimAction = _playerInput.actions != null ? _playerInput.actions.FindAction("Aim", false) : null;
+        }
+
+        if (_runAction != null)
+        {
+            _locomotion.setIsRunning(_runAction.IsPressed());
+        }
+        if (_aimAction != null)
+        {
+            _locomotion.setIsAiming(_aimAction.IsPressed());
+        }
     }
 
     protected override void Start()
@@ -112,6 +144,13 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
 
     public void OnNotify(InputHandlerActions action, InputValue inputValue)
     {
+        // Dead players: the ragdoll teardown destroyed the locomotion FSM —
+        // stale gameplay input (or input re-enabled after death) must not NRE.
+        if (_locomotion == null)
+        {
+            return;
+        }
+
         switch (action)
         {
             case InputHandlerActions.Move:

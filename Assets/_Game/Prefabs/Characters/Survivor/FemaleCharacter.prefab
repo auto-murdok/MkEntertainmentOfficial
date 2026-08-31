@@ -3655,6 +3655,7 @@ GameObject:
   - component: {fileID: 3226693790822501969}
   - component: {fileID: 135451146790745709}
   - component: {fileID: 6763533979837517273}
+  - component: {fileID: 4320653987908449626}
   m_Layer: 6
   m_Name: FemaleCharacter
   m_TagString: Untagged
@@ -4017,6 +4018,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c59196f553dd1e0458797a00fe7132b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game.Characters::NetworkedHealth
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &4320653987908449626
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7637503201366498390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93c4cc7b1ff8c064aaf3717ff60379b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Items::NetworkedDamageRelay
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &7654349148853518093
 GameObject:

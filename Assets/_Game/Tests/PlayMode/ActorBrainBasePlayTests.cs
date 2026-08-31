@@ -152,6 +152,23 @@ namespace Game.Tests.PlayMode
             Assert.AreEqual(0f, _brain.remainingHitPoints, "Dead actors must not accept mirrored HP.");
         }
 
+        [UnityTest]
+        public IEnumerator MirroredDeath_MovesActorOffTheDetectionLayer()
+        {
+            // Corpse stealth: zombies scan by layer — a corpse left on the
+            // LocalPlayer layer stays scannable forever.
+            _brain.CallSetupDeathHook();
+            LayerUtils.SetLayer(_host.transform, LayerUtils.LocalPlayerLayerName);
+            int localPlayerLayer = LayerMask.NameToLayer(LayerUtils.LocalPlayerLayerName);
+            Assert.AreEqual(localPlayerLayer, _host.layer, "Precondition: actor starts on the LocalPlayer layer.");
+
+            _brain.MirrorHitPoints(0f);
+            yield return null;
+
+            Assert.AreNotEqual(localPlayerLayer, _host.layer,
+                "A dead actor must be moved off the LocalPlayer layer so zombie vision cannot scan it.");
+        }
+
         [Test]
         public void TakeDamage_ReportsToCombatLog()
         {

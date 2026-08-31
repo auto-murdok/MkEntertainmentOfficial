@@ -50,6 +50,16 @@ namespace Game.Tests.EditMode
         }
 
         [Test]
+        public void PlayerPrefab_CarriesNetworkedDamageRelay()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
+            Assert.IsNotNull(prefab, $"Player prefab missing at {PlayerPrefabPath}.");
+
+            Assert.IsNotNull(prefab.GetComponent<NetworkedDamageRelay>(),
+                "Player prefab must carry NetworkedDamageRelay (server-authoritative damage).");
+        }
+
+        [Test]
         public void PlayerPrefab_NetworkAnimator_IsOwnerAuthoritativeAndWired()
         {
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);

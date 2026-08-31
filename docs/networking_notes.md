@@ -132,6 +132,19 @@ first client; start sessions from code via `NetworkManager.Singleton`.
     a small random-direction impulse to the pelvis so the corpse always
     topples.
 
+## Milestone 4 — overlay input gating + stuck-sprint fix
+
+| Piece | Location | Notes |
+|---|---|---|
+| `IPlayerInputGate` / `PlayerInputGate` | `Core/Interfaces/` + `Composition/` (on the composition root, injected into pause menu + GameStateManager) | Disables the `PlayerInput` and zeroes held locomotion values while an overlay (pause/game-over) owns the screen. Lives on the composition root so it exists in both the single-player and networked paths (in the networked path the player is NGO-spawned after `Awake`). |
+| Held-action reconciliation | `CharacterBrain.ReconcileHeldActions` (per frame) | Sprint and aim are HELD states but were set from one-shot events — a missed release (overlay, focus change, hitch) latched `isRunning` ("sprints all the time after first sprint"). The brain now re-evaluates both from the live action state (`Run.IsPressed()` / `Aim.IsPressed()`) every frame: a missed release self-heals, and a disabled `PlayerInput` (paused) reports not-pressed so overlays clear them automatically. |
+| Dead-player input guard | `CharacterBrain.OnNotify` | The ragdoll teardown destroys the locomotion FSM — stale or re-enabled input must not NRE; `OnNotify` early-outs when `_locomotion` is gone. |
+
+**Gotcha (testing):** simulating Input System devices against a real
+`PlayerInput` in PlayMode tests (`InputSystem.AddDevice` +
+`QueueStateEvent`) hung the test runner — input-path behavior is verified by
+play sessions, not unit tests.
+
 ## Milestone 3 — server-simulated zombies + replicated health
 
 Gold standard (NGO docs / Boss Room / Bitesize Spaceshooter): AI is
@@ -150,12 +163,26 @@ the NetworkPrefabs list.
 | **Bite relay** | `IPlayerBiteRelay` (`Game.Characters`) ← `NetworkedPlayerComposition` | The bite interaction lands wherever the zombie AI runs (the host), but the victim-side take-bite FSM belongs to the victim's **owner**. Remote copies relay via a targeted ClientRpc (`NetworkObjectReference` of the attacker) and the owner runs its normal pipeline — its `TakeBite` trigger then replicates through the owner's `NetworkAnimator`, and the pin/push-off plays correctly for everyone. The interface exists because Game.Characters cannot reference Game.Composition (dependency direction). |
 | **Bite-state mirror** | owner-write `NetworkVariable<bool> _isBitten` + `NetworkVariable<ulong> _biterObjectId` | The owner publishes its take-bite state back (`MirrorBiteStateToOwner`), and `CharacterBrain.canBeBitten`/`currentBiter` read the mirror on remote copies — keeping the multi-attacker logic (`CanVictimBeBitten`: own bite continues vs hand-attack fallback) correct. A corpse publishes "not bitten" (death destroys the FSM). |
 | **`isPreparing` replication** | `NetworkedZombieController` server-write `NetworkVariable<bool>` | `CharacterTakeBiteState` pins the victim only while `attacker.isPreparing` — and the client-side zombie FSM is disabled, so the grab/prepare flag must be replicated for the pin phase to engage on the victim's owner. `ZombieBrain.isPreparing` branches on it. |
+| **Server-authoritative bullets** | `NetworkedDamage` + `NetworkedDamageRelay` (`Scripts/Items/Weapons/`, on player + zombie prefabs) | A hit is detected on the shooter's peer (bullet physics) but applied on the **server** via `ReportDamageServerRpc` (`RequireOwnership=false`); `NetworkedHealth` replicates the result. Single-player (no session) applies locally. Without this, a client's bullets only damaged its local zombie copies and the host's zombies never died. BulletProjectile calls `NetworkedDamage.Apply`; it no longer applies damage locally in networked sessions (the client's copy HP updates via the health mirror, RTT-delayed). |
 
 **Verified live (host + built client):** zombies spawn on the host and
 replicate to the client (server-owned, server-auth NT, client-side FSM
 disabled); a zombie bite on the host mirrors to the client's HP
 (100 → 40 observed); both a player death and a zombie death complete with no
 console errors after the lesson-10 fix.
+
+**Zombie corpse lifetime:** dead zombies are no longer despawned instantly —
+the server-side `NetworkObject` stays spawned for the whole
+`ZombieData.corpseDestroyDelay` (now 10 s, was 5 s) and each peer's
+own mirrored death runs its local ragdoll, so clients see the corpse
+topple and linger ~10 s before the host's `Destroy` auto-despawns it
+everywhere. Verified live: corpses on the ground at t+5 s, gone at t+12 s.
+
+**Corpse stealth:** `ActorBrainBase.OnRagdollEnabled` moves the dead actor
+off the `LocalPlayer` layer onto `Default` — the AI vision scan
+(`AIDetectionUtils`) is layer-based, so corpses are no longer scannable and
+zombies stop chasing/biting them (the registry unregistration already stopped
+registry-driven interactions).
 
 **Player-death replication verification:** with `NetworkedHealth` on the
 player prefab, a server-applied kill of the client's player replicates and
@@ -185,15 +212,17 @@ owner. Gotcha when testing: warping a zombie beside/behind a player does
 nothing — it must end up inside the zombie's detection cone.
 
 **Known limitations (next milestones):**
-- Zombie ragdolls are host-only visuals — clients see the zombie despawn at
-  death.
+- Zombie/ragdoll limb physics is peer-local: each peer's corpse collapses
+  from the same death independently, so limb poses differ slightly between
+  windows (root pose stays consistent via the NetworkTransform).
 - Ammo drops are host-local objects — not yet networked (clients can't pick
   them up).
-- Player shooting/bullets are still peer-local: a client's bullets damage
-  only its local zombie copies. Next step: server-authoritative damage for
-  bullets (ServerRpc from the owner, or a networked projectile pipeline).
 - Regen timing drifts slightly between peers (each peer runs its own regen);
   the server's value wins on the next damage event.
+- Client-side hit feedback is RTT-delayed: a client's bullets no longer kill
+  its local zombie copies instantly — the damage travels to the server and
+  the result (HP/death) mirrors back. If instant feedback is ever needed,
+  add client-side prediction for the hit marker only (never for HP).
 - Same-frame double bites across the network lose the synchronous
   "victim pinned by self" guarantee (the relay adds owner RTT): two zombies
   triggering in the exact same frame can both relay a bite; the owner's

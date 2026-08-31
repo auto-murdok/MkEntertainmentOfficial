@@ -28,7 +28,7 @@ public class ZombieBrain : ActorBrainBase, IZombie
     // Default Fallback Stats (used if ZombieData is not assigned on ZombieBehavior)
     private const float DefaultMaxHitPoints = 100f;
     private const float DefaultBiteDamage = 30f;
-    private const float DefaultCorpseDestroyDelay = 5f;
+    private const float DefaultCorpseDestroyDelay = 10f;
 
     public float maxHitPoints => _behavior != null && _behavior.zombieData != null ? _behavior.zombieData.maxHitPoints : DefaultMaxHitPoints;
     public ZombieData zombieData => _behavior != null ? _behavior.zombieData : null;

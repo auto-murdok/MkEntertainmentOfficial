@@ -79,16 +79,11 @@ public class NetworkedPlayerComposition : NetworkBehaviour, IPlayerBiteRelay
             // NetworkTransform, so root motion must NOT also drive the
             // transform here (double application / drift). The gameplay FSM
             // is disabled — the owner's FSM + NetworkAnimator own the visuals.
+            // Mirrored deaths run the ragdoll via ActorBrainBase.MirrorHitPoints.
             _locomotion.enabled = false;
             if (_animator != null)
             {
                 _animator.applyRootMotion = false;
-            }
-            // The disabled FSM can never enter the Dead state, so mirrored
-            // deaths drive the ragdoll + teardown directly.
-            if (_brain != null)
-            {
-                _brain.Died += OnMirroredDeath;
             }
             BuildRemoteRig();
             return;
@@ -202,20 +197,8 @@ public class NetworkedPlayerComposition : NetworkBehaviour, IPlayerBiteRelay
 
     public override void OnNetworkDespawn()
     {
-        if (_brain != null)
-        {
-            _brain.Died -= OnMirroredDeath;
-        }
-    }
-
-    // Remote copies: the FSM is disabled, so a mirrored death must run the
-    // ragdoll + teardown directly (the owner's FSM path does this for itself).
-    private void OnMirroredDeath()
-    {
-        if (_brain != null)
-        {
-            _brain.RunDeathTeardown();
-        }
+        // NetworkedHealth unsubscribes its own handlers; the bite relay uses
+        // ClientRpc (no per-object subscriptions to clean up).
     }
 
     // ── IPlayerBiteRelay ────────────────────────────────────────────────────

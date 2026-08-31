@@ -21,8 +21,18 @@ public class PlayerSpawner : MonoBehaviour
         // Game-flow: the state manager lives on the composition root so the
         // arena scene needs no extra setup object.
         GameStateManager gameStateManager = gameObject.AddComponent<GameStateManager>();
-        // Esc / gamepad-Start system menu (disconnect/exit) for both arenas.
+
+        // Overlay input gating (pause menu / game-over screen) — attached here
+        // so it exists in BOTH the single-player and networked paths (in the
+        // networked path the player object is NGO-spawned after this Awake).
         gameObject.AddComponent<PauseMenuController>();
+        IPlayerInputGate inputGate = gameObject.AddComponent<PlayerInputGate>();
+        PauseMenuController pauseMenu = gameObject.GetComponent<PauseMenuController>();
+        if (pauseMenu != null)
+        {
+            pauseMenu.inputGate = inputGate;
+        }
+        gameStateManager.inputGate = inputGate;
 
         ZombieSpawner zombieSpawner = FindFirstObjectByType<ZombieSpawner>();
         if (zombieSpawner != null)

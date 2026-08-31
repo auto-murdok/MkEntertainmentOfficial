@@ -37,6 +37,8 @@ namespace Game.Tests.EditMode
                 "Zombie prefab must carry NetworkedHealth (damage replication).");
             Assert.IsNotNull(prefab.GetComponent<NetworkedZombieController>(),
                 "Zombie prefab must carry NetworkedZombieController (client simulation gate + death despawn).");
+            Assert.IsNotNull(prefab.GetComponent<NetworkedDamageRelay>(),
+                "Zombie prefab must carry NetworkedDamageRelay (server-authoritative bullet damage).");
         }
 
         [Test]

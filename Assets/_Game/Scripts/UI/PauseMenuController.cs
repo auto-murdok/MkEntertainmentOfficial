@@ -31,6 +31,10 @@ public class PauseMenuController : MonoBehaviour
     public bool isOpen { get; private set; }
     public bool isQuitting { get; private set; }
 
+    // Injected by the composition root (PlayerSpawner): gates gameplay input
+    // while the overlay owns the screen.
+    public IPlayerInputGate inputGate { get; set; }
+
     private CanvasGroup _group;
     private bool _built;
 
@@ -107,6 +111,11 @@ public class PauseMenuController : MonoBehaviour
             return; // leaving to the menu — the overlay stays closed
         }
         isOpen = open;
+
+        // While an overlay owns the screen the player must not respond to
+        // gameplay input or mouse movement.
+        inputGate?.SetInputEnabled(!open);
+
         _group.alpha = open ? 1f : 0f;
         _group.interactable = open;
         _group.blocksRaycasts = open;

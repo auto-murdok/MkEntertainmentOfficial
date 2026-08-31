@@ -25,15 +25,19 @@ unity command test_status          # poll until "completed"
 
 Via the editor UI: `Window > General > Test Runner` (EditMode / PlayMode tabs).
 
-## What is covered (222 tests: 93 EditMode + 129 PlayMode, all green)
+## What is covered (224 tests: 94 EditMode + 130 PlayMode, all green)
 
 Note: the networked bite relay (`IPlayerBiteRelay`), bite-state mirror and
 `isPreparing` replication are session-dependent (real `NetworkManager` +
 spawned objects) and are verified by two-instance play sessions
 (`docs/networking_notes.md`), not unit tests — testing.md's seams cannot
-fake NGO ownership/spawn state. `GameStateManagerPlayTests` still covers the
-time-freeze behavior (`freezeTimeOnGameOver` defaults true; `PlayerSpawner`
-sets it false in networked scenes — verified by two-instance sessions).
+fake NGO ownership/spawn state. Same for the overlay input gating
+(`PlayerInputGate`): simulating Input System devices against a real
+`PlayerInput` in PlayMode tests hung the runner (see
+`docs/networking_notes.md`, milestone 4 gotcha). `GameStateManagerPlayTests`
+still covers the time-freeze behavior (`freezeTimeOnGameOver` defaults true;
+`PlayerSpawner` sets it false in networked scenes — verified by two-instance
+sessions).
 
 - **Core**
   - `CombatLog` — ring buffer capacity/overflow, `CopyRecent` truncation, `BeginSource`
@@ -83,12 +87,15 @@ sets it false in networked scenes — verified by two-instance sessions).
     interactable deregistration, `DestroyActorCore`, id/position/victimHook,
     delayed health regeneration (delay gate, heal after delay, cap, dead/full-health
     no-ops, non-positive rate), `MirrorHitPoints` (server-replicated HP: drops
-    route through the damage pipeline, heals silent, dead-actor no-op).
+    route through the damage pipeline, heals silent, dead-actor no-op, and a
+    mirrored kill runs the ragdoll teardown + moves the corpse off the
+    LocalPlayer layer so zombie vision cannot scan it).
   - `NetworkedZombiePrefabTests` — the zombie prefab's networking contract:
     `NetworkTransform`/`NetworkAnimator` stay **server-authoritative**
     (host-simulated AI), `NetworkAnimator` wired, `NetworkedHealth` +
-    `NetworkedZombieController` present, and `Zombie.prefab` registered in the
-    NetworkPrefabs list (unregistered prefabs break client-side spawning).
+    `NetworkedZombieController` + `NetworkedDamageRelay` present, and
+    `Zombie.prefab` registered in the NetworkPrefabs list (unregistered
+    prefabs break client-side spawning).
   - `PlayerData` / `ZombieData` — health-regen defaults positive, default obstacle
     mask constant, hand-attack defaults non-zero.
   - `AnimatorUtils` — parameter hashes, `DampFactor` exponential math, null-animator safety.

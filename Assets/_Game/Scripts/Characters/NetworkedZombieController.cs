@@ -29,24 +29,10 @@ public class NetworkedZombieController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         _behavior = GetComponent<ZombieBehavior>();
-        ActorBrainBase brain = GetComponent<ActorBrainBase>();
-        if (brain != null)
-        {
-            brain.Died += OnDied;
-        }
 
         if (!IsServer)
         {
             DisableLocalSimulation();
-        }
-    }
-
-    public override void OnNetworkDespawn()
-    {
-        ActorBrainBase brain = GetComponent<ActorBrainBase>();
-        if (brain != null)
-        {
-            brain.Died -= OnDied;
         }
     }
 
@@ -67,14 +53,6 @@ public class NetworkedZombieController : NetworkBehaviour
         if (agent != null)
         {
             agent.enabled = false;
-        }
-    }
-
-    private void OnDied()
-    {
-        if (IsServer && NetworkObject.IsSpawned)
-        {
-            NetworkObject.Despawn(false);
         }
     }
 }

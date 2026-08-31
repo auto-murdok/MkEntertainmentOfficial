@@ -152,9 +152,12 @@ public class BulletProjectile : MonoBehaviour
         IDamageable damageable = other.gameObject.GetComponentInParent<IDamageable>();
         if (damageable != null)
         {
-            using (CombatLog.BeginSource("Bullet"))
+            // Server-authoritative routing: applied on the server when
+            // networked (see NetworkedDamage), locally in single-player.
+            Component hitComponent = damageable as Component;
+            if (hitComponent != null)
             {
-                damageable.TakeDamage(_damage);
+                NetworkedDamage.Apply(hitComponent, _damage);
             }
         }
         else

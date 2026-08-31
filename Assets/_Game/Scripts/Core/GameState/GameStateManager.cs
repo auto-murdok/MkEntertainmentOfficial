@@ -36,6 +36,10 @@ public class GameStateManager : MonoBehaviour
     // standing ragdoll pose to every other peer (see docs/networking_notes.md).
     public bool freezeTimeOnGameOver { get; set; } = true;
 
+    // Input gate (injected by the composition root): game-over disables
+    // gameplay input so the dead player cannot act beneath the overlay.
+    public IPlayerInputGate inputGate { get; set; }
+
     // SO event channels injected by the composition root (PlayerSpawner): the
     // manager consumes the player-died channel and raises the spawning-toggle
     // channel, so Core never references entity types or spawners directly.
@@ -102,6 +106,10 @@ public class GameStateManager : MonoBehaviour
         // gets a short collapse window before FreezeAfterCollapse() freezes time.
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+
+        // The game-over screen owns the input: the dead player must not
+        // respond to movement, mouse movement or clicks beneath the overlay.
+        inputGate?.SetInputEnabled(false);
 
         _spawningEnabledChannel?.Raise(false);
 

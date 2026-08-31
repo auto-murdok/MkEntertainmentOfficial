@@ -45,18 +45,19 @@ Export via `UnrealEditor.exe MyProject.uproject -ExecutePythonScript=.../export_
 
 ## 1) FBX Import
 
-Both FBXs require UE cm → m:
+Guns require UE cm → m, but visual scale is 10× doc baseline for readability:
 
 ```yaml
 materials:
   materialImportMode: 0   # None — no auto-materials
 meshes:
-  globalScale: 0.01       # was 1 → 100× too large
-  useFileScale: 1
+  globalScale: 1.0        # was 0.01 doc / 0.1 interim → now 10× for on-screen readability (useFileScale:1)
 animationType: None (shell) / Generic
 ```
 
-Verified via `Get-Content *.fbx.meta | Select-String globalScale,materialImportMode`. Applied live with `ModelImporter.SaveAndReimport()`.
+All gun FBXs (`SM_Gun_Pistol.fbx` `47c9a88...`, `Ammo_Bullets/SM_Gun_AssaultRifle/Shotgun.fbx`) now `1.0`; extents `pistol 0.094 (~18.8 cm)`, `rifle 0.56 (56 cm)`. ShootPoint stays `0.15,0.02,0` (≈5.6 cm beyond tip) — not scaled further. Prefab root `scale 1`.
+
+Verified via `Get-Content *.fbx.meta | Select-String globalScale,materialImportMode` + live `verify_gun_smoke.cs` extents check. Applied live with `ModelImporter.SaveAndReimport()`.
 
 ## 2) Texture Import
 
@@ -104,7 +105,7 @@ _Floats: _Metallic 1, _Smoothness 0.85, _BumpScale 1, _OcclusionStrength 1, _Wor
 ```
 
 **M_Muzzle_Additive** (FX folder): `Universal Render Pipeline/Particles/Unlit`, `_BaseMap: T_Muzzle_Pistol_01_3x3`, HDR tint `(1,0.55,0.12)`, `_Surface: Transparent`, `SrcAlpha/One` (additive), `ZWrite 0`.
-**M_Smoke_Alpha**: same shader, `_BaseMap: T_SmokePuff_01`, gray `(0.55,0.55,0.55,0.7)`, `SrcAlpha/OneMinusSrcAlpha`.
+**M_Smoke_Alpha**: same shader, `_BaseMap: T_SmokePuff_01`, gray `(0.65,0.65,0.65,0.65)` → `Transparent Alpha` `SrcAlpha/OneMinusSrcAlpha` `Cull Off` `ZWrite Off` (was `0.55/0.7` plain).
 
 All created via `eval_file` + `AssetDatabase.CreateAsset`.
 
@@ -121,7 +122,8 @@ Created **live** via `unity command eval_file` (no YAML hand-edit):
 **SM_GunShells_HandGun.prefab** (`d2326e...`):
 - Root `SM_GunShells_HandGun` — `Transform`, `Rigidbody (mass 0.01, angularDamping 0.05, gravity, continuous)`, `BoxCollider (0.02,0.02,0.05)`, `ShellCasing (9a0e3b...)`, child `SM_GunShells_HandGun` mesh instance (FBX `d37c33...` with material override `M_Shell_Brass`)
 
-**MuzzleFlash.prefab** / **MuzzleSmoke.prefab**: Billboard `ParticleSystem` prefabs (`Duration 0.06/0.5`, `Burst 1/3`, `Size 0.3/0.15`, `Speed 0/0.5`, `ColorOverLifetime fade`, `Shape disabled`, `TextureSheetAnimation 3×3 whole-sheet` on flash). Muzzle flash lives as `Muzzle`, smoke as `Muzzle/MuzzleSmoke` inside the pistol.
+**MuzzleFlash.prefab** (`0c1341...`): Billboard `ParticleSystem` `Duration 0.06`, `Burst 1`, `Size 0.3`, `Speed 0`, `ColorOverLifetime fade`, `Shape disabled`, `TextureSheetAnimation 3×3 WholeSheet` (9 frames).
+**MuzzleSmoke.prefab** (`648e91...`): Billboard `World space` `Duration 0.8 / Life 0.7 / Speed 1.2 / Size 0.35`, `Burst 3`, `max 6`, `Cone angle 15 radius 0.02`, `Size over Lifetime 0.4→1.8`, `Color over Lifetime gray 0.65 alpha 0.6→0`, `Renderer sortingFudge -10`. Was `Local / 0.5/0.15/0.5 / rate 10` — invisible at gun scale.
 
 ## 5) Weapon Code — `WeaponEffects` + `ShellCasing`
 

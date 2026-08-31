@@ -84,6 +84,12 @@ public class NetworkedPlayerComposition : NetworkBehaviour, IPlayerBiteRelay
             {
                 _animator.applyRootMotion = false;
             }
+            // The disabled FSM can never enter the Dead state, so mirrored
+            // deaths drive the ragdoll + teardown directly.
+            if (_brain != null)
+            {
+                _brain.Died += OnMirroredDeath;
+            }
             BuildRemoteRig();
             return;
         }
@@ -191,6 +197,24 @@ public class NetworkedPlayerComposition : NetworkBehaviour, IPlayerBiteRelay
         if (_biterObjectId.Value != biterId)
         {
             _biterObjectId.Value = biterId;
+        }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (_brain != null)
+        {
+            _brain.Died -= OnMirroredDeath;
+        }
+    }
+
+    // Remote copies: the FSM is disabled, so a mirrored death must run the
+    // ragdoll + teardown directly (the owner's FSM path does this for itself).
+    private void OnMirroredDeath()
+    {
+        if (_brain != null)
+        {
+            _brain.RunDeathTeardown();
         }
     }
 

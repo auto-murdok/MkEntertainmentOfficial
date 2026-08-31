@@ -31,7 +31,9 @@ Note: the networked bite relay (`IPlayerBiteRelay`), bite-state mirror and
 `isPreparing` replication are session-dependent (real `NetworkManager` +
 spawned objects) and are verified by two-instance play sessions
 (`docs/networking_notes.md`), not unit tests — testing.md's seams cannot
-fake NGO ownership/spawn state.
+fake NGO ownership/spawn state. `GameStateManagerPlayTests` still covers the
+time-freeze behavior (`freezeTimeOnGameOver` defaults true; `PlayerSpawner`
+sets it false in networked scenes — verified by two-instance sessions).
 
 - **Core**
   - `CombatLog` — ring buffer capacity/overflow, `CopyRecent` truncation, `BeginSource`

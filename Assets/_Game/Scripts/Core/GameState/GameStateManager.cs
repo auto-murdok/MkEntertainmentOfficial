@@ -31,6 +31,11 @@ public class GameStateManager : MonoBehaviour
 
     public event Action<GameState> OnGameStateChanged;
 
+    // Set false by the composition root in networked scenes: freezing global
+    // time there would halt this peer's simulation and stream a frozen
+    // standing ragdoll pose to every other peer (see docs/networking_notes.md).
+    public bool freezeTimeOnGameOver { get; set; } = true;
+
     // SO event channels injected by the composition root (PlayerSpawner): the
     // manager consumes the player-died channel and raises the spawning-toggle
     // channel, so Core never references entity types or spawners directly.
@@ -110,8 +115,11 @@ public class GameStateManager : MonoBehaviour
     private System.Collections.IEnumerator FreezeAfterCollapse()
     {
         yield return new WaitForSeconds(CollapseBeforeFreezeSeconds);
-        // Physics/animators/nav agents freeze here; the corpse is already down.
-        Time.timeScale = 0f;
+        if (freezeTimeOnGameOver)
+        {
+            // Physics/animators/nav agents freeze here; the corpse is already down.
+            Time.timeScale = 0f;
+        }
     }
 
     // Unscaled: Time.timeScale drops to 0 while the overlay fades in.

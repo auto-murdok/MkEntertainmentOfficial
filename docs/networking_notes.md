@@ -102,6 +102,29 @@ first client; start sessions from code via `NetworkManager.Singleton`.
     Disabling it spams `MissingReferenceException` forever. Fix: `Destroy`
     the `NetworkAnimator` BEFORE the Animator in `DestroyActorCore` (players
     are never despawned, so this is the only cleanup path they get).
+11. **Mirrored deaths must drive the ragdoll directly.** Remote copies run no
+    FSM (`NetworkedPlayerComposition` disables it), so NGO's `Dead` state
+    never fires `context.onDeath` there — a mirrored death set HP=0 and
+    `isAlive=false` but the corpse never ragdolled ("corpse stood frozen" on
+    the other peer). Fix: on non-owner spawn the composition subscribes
+    `_brain.Died += OnMirroredDeath` → `ActorBrainBase.RunDeathTeardown()`
+    (public wrapper around the ragdoll + teardown path). The owner/authority
+    still goes through the FSM.
+12. **Never freeze global `Time.timeScale` on one peer's game over.**
+    `GameStateManager.SetGameOver` used to freeze time after a short collapse
+    window in every mode. On a networked peer that halts its own ragdoll
+    mid-collapse (and all later mirrored deaths play with physics frozen →
+    standing corpses) while the session continues elsewhere. The freeze is
+    now gated behind `GameStateManager.freezeTimeOnGameOver`, set false by
+    `PlayerSpawner` in networked scenes, true (unchanged behavior) in the
+    single-player arena.
+13. **A balanced standing skeleton is a physics "tower" — wake + topple it.**
+    `RagdollUtils.EnableRagdoll` only flipped `isKinematic`; a death in an
+    upright pose left gravity in equilibrium (leg colliders supporting the
+    body), all rigidbodies asleep → the corpse froze upright on *every* peer,
+    single-player included. `EnableRagdoll` now wakes all bodies and applies
+    a small random-direction impulse to the pelvis so the corpse always
+    topples.
 
 ## Milestone 3 — server-simulated zombies + replicated health
 
@@ -139,6 +162,12 @@ only — the player prefab shipped without it, so player HP/death silently
 never replicated (the "client keeps playing while everyone else sees a
 corpse" bug). `NetworkedPlayerPrefabTests.PlayerPrefab_CarriesNetworkedHealth`
 now guards this.
+⚠️ **Ragdoll visibility needed three fixes (lessons 11–13):** mirrored deaths
+must call `RunDeathTeardown` on FSM-less remote copies; networked game-overs
+must not freeze `Time.timeScale`; and `EnableRagdoll` must wake + topple the
+balanced standing skeleton. Verified live: server-side kills of BOTH players
+collapse both corpses on the host view (hips world-Y 0.97 → ~0.2) and the
+client log shows both mirrored deaths.
 
 **Bite relay verification (host + built client):** warping zombies in front
 of the client player (facing it — the vision cone check rejects victims

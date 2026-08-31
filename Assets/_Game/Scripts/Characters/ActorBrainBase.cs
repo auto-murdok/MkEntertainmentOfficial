@@ -111,6 +111,12 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
     protected void SetupDeathHook() => Context.onDeath = HandleDeath;
     private void HandleDeath() => RagdollUtils.EnableRagdoll(transform, OnRagdollEnabled);
 
+    // Networking: remote copies run no FSM (it would fight replication), so
+    // the Dead state never fires context.onDeath there. A peer that mirrors a
+    // death (NetworkedHealth) calls this to run the ragdoll + teardown
+    // directly. The owner/authority path still goes through the FSM.
+    public void RunDeathTeardown() => HandleDeath();
+
     protected virtual void OnRagdollEnabled()
     {
         _registry?.Unregister(this);

@@ -40,6 +40,10 @@ public class PlayerSpawner : MonoBehaviour
         {
             gameStateManager.playerDiedChannel = _playerDiedChannel;
             gameStateManager.spawningEnabledChannel = _spawningEnabledChannel;
+            // Never freeze global time on one peer's game over: it would halt
+            // this peer's ragdoll mid-collapse and stream the frozen standing
+            // pose to everyone else.
+            gameStateManager.freezeTimeOnGameOver = false;
             return;
         }
 

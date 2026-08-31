@@ -51,7 +51,19 @@ public class Weapon : Item, IAmmoReceiver, IWeapon
 
     public void RegisterEvents(FirearmEvents events)
     {
-        _firearm.RegisterEvents(events);
+        WeaponEffects effects = GetComponent<WeaponEffects>();
+        if (effects == null)
+        {
+            _firearm.RegisterEvents(events);
+            return;
+        }
+
+        _firearm.RegisterEvents(new FirearmEvents
+        {
+            onShoot = events.onShoot + effects.PlayShootEffects,
+            onReloadStarted = events.onReloadStarted,
+            onReloadFinished = events.onReloadFinished,
+        });
     }
 
     public void TriggerShoot(Vector3 aimPosition)

@@ -41,9 +41,9 @@ GameObject:
   m_Component:
   - component: {fileID: 3776313907484577635}
   - component: {fileID: 273776390029689732}
-  - component: {fileID: 7984075420907601830}
   - component: {fileID: 5784423109619740749}
   - component: {fileID: 6514896284551906677}
+  - component: {fileID: 1846380068989163953}
   m_Layer: 0
   m_Name: SM_Gun_Pistol
   m_TagString: Untagged
@@ -92,23 +92,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &7984075420907601830
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7339226693088377594}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2670f2ff01cac50479242adee7d41b84, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Game.Items::Handgun
-  currentStateEnum: 0
-  debugStateMachine: 0
-  _bulletPrefab: {fileID: 5308359563814912344, guid: 143653b7346966c42b1d846804cc04c7,
-    type: 3}
-  _shootPoint: {fileID: 3154645146115989675}
 --- !u!114 &5784423109619740749
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -125,6 +108,7 @@ MonoBehaviour:
   _fireRate: 0.2
   _recoilForce: 5
   _clipSize: 12
+  _definition: {fileID: 11400000, guid: 778644bd4539cad43ac79043229835e2, type: 2}
   _reserveAmmo: 36
 --- !u!114 &6514896284551906677
 MonoBehaviour:
@@ -148,6 +132,21 @@ MonoBehaviour:
   _shellLife: 3
   _ejectionVelocity: {x: 2, y: 1, z: -0.5}
   _ejectionTorque: {x: 4, y: 7, z: 3}
+--- !u!114 &1846380068989163953
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7339226693088377594}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83f9a4ea0a9d4a1fa6ac011ad802146f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Items::HitscanWeapon
+  _definition: {fileID: 11400000, guid: 778644bd4539cad43ac79043229835e2, type: 2}
+  _shootPoint: {fileID: 3154645146115989675}
+  _tracerPrefab: {fileID: 0}
 --- !u!1 &8978253737283930477
 GameObject:
   m_ObjectHideFlags: 0

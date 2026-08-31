@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f025972589d4ef8b5a9709c9759cb38, type: 3}
+  m_Name: Weapon_Shotgun_12G
+  m_EditorClassIdentifier: Game.Items::WeaponDefinition
+  _id: SM_Gun_Shotgun
+  _damage: 12
+  _range: 40
+  _fireRate: 0.55
+  _baseSpreadDegrees: 3.5
+  _pelletCount: 8
+  _fireMode: 3
+  _burstCount: 3
+  _ammoType: 2
+  _clipSize: 6
+  _defaultReserve: 18
+  _reloadDuration: 2.8
+  _recoilForce: 9
+  _bloomPerShot: 1.2
+  _bloomRecovery: 3
+  _tracerPrefab: {fileID: 0}

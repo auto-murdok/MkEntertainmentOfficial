@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateContext>
 {
-    private const string EquippedWeaponPrefabName = "FakeGun";
+    private const string EquippedWeaponPrefabName = "SM_Gun_Pistol";
     private const string KeyboardAndMouseScheme = "Keyboard&Mouse";
 
     [Header("Inverse Kinematics")]

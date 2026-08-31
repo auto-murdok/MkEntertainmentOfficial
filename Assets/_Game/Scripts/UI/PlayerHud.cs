@@ -32,8 +32,8 @@ public class PlayerHud : MonoBehaviour
     private readonly StringBuilder _tickerBuilder = new StringBuilder(256);
     private readonly string[] _tickerLines = new string[TickerLineCount];
 
-    private CharacterBrain _brain;
-    private Handgun _handgun; // resolved lazily: the weapon is equipped in the locomotion's Awake
+    private IHealthSource _healthSource;
+    private IWeapon _weapon; // resolved lazily: the weapon is equipped in the locomotion's Awake
 
     private CanvasGroup _tickerGroup;
     private CanvasGroup _rootGroup;
@@ -55,27 +55,27 @@ public class PlayerHud : MonoBehaviour
 
     private void Awake()
     {
-        _brain = GetComponent<CharacterBrain>();
+        _healthSource = GetComponent<IHealthSource>();
         BuildUi();
 
-        if (_brain != null)
+        if (_healthSource != null)
         {
-            _brain.Damaged += HandleDamaged;
-            _brain.Died += HandlePlayerDied;
+            _healthSource.Damaged += HandleDamaged;
+            _healthSource.Died += HandlePlayerDied;
             _subscribedDamaged = true;
         }
     }
 
     private void OnDestroy()
     {
-        if (_brain != null)
+        if (_healthSource != null)
         {
             if (_subscribedDamaged)
             {
-                _brain.Damaged -= HandleDamaged;
+                _healthSource.Damaged -= HandleDamaged;
                 _subscribedDamaged = false;
             }
-            _brain.Died -= HandlePlayerDied;
+            _healthSource.Died -= HandlePlayerDied;
         }
     }
 
@@ -195,9 +195,12 @@ public class PlayerHud : MonoBehaviour
 
         _fps = Mathf.Lerp(_fps, 1f / Mathf.Max(Time.unscaledDeltaTime, 0.0001f), 0.15f);
 
-        if (_handgun == null)
+        if (_weapon == null)
         {
-            _handgun = GetComponentInChildren<Handgun>(true);
+            foreach (var c in GetComponentsInChildren<Component>(true))
+            {
+                if (c is IWeapon w) { _weapon = w; break; }
+            }
         }
 
         RefreshHealth();
@@ -207,13 +210,13 @@ public class PlayerHud : MonoBehaviour
 
     private void RefreshHealth()
     {
-        if (_brain == null || _healthLabel == null)
+        if (_healthSource == null || _healthLabel == null)
         {
             return;
         }
 
-        float fraction = _brain.maxHitPoints > 0f
-            ? Mathf.Clamp01(_brain.remainingHitPoints / _brain.maxHitPoints)
+        float fraction = _healthSource.maxHitPoints > 0f
+            ? Mathf.Clamp01(_healthSource.remainingHitPoints / _healthSource.maxHitPoints)
             : 0f;
 
         // Smoothly animated fill; the label snaps to the real value.
@@ -230,7 +233,7 @@ public class PlayerHud : MonoBehaviour
         float pulse = low ? 0.7f + 0.3f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 6f)) : 1f;
         _healthLabel.color = new Color(healthColor.r, healthColor.g, healthColor.b, pulse);
         // TMP's formatted SetText does not support "F0" — format explicitly.
-        _healthLabel.text = _brain.remainingHitPoints.ToString("F0");
+        _healthLabel.text = _healthSource.remainingHitPoints.ToString("F0");
     }
 
     private void RefreshAmmo()
@@ -240,32 +243,34 @@ public class PlayerHud : MonoBehaviour
             return;
         }
 
-        if (_handgun == null)
+        if (_weapon == null)
         {
             _ammoText.SetText("—");
             return;
         }
 
-        HandgunContext gun = _handgun._context;
-        string reserve = gun.reserveAmmo == int.MaxValue ? "INF" : gun.reserveAmmo.ToString();
+        int clip = _weapon.clipSize;
+        int maxClip = _weapon.maxClipSize;
+        int reserve = _weapon.reserveAmmo;
+        string reserveStr = reserve == int.MaxValue ? "INF" : reserve.ToString();
 
-        if (gun.clipSize <= 0 && gun.reserveAmmo <= 0)
+        if (clip <= 0 && reserve <= 0)
         {
             _ammoText.color = HealthLowColor;
             _ammoText.SetText("NO AMMO");
             return;
         }
 
-        if (gun.clipSize <= 0)
+        if (clip <= 0)
         {
             _ammoText.color = HealthMidColor;
-            _ammoText.SetText("RELOAD [R]\n<size=16>RESERVE " + reserve + "</size>");
+            _ammoText.SetText("RELOAD [R]\n<size=16>RESERVE " + reserveStr + "</size>");
             return;
         }
 
-        bool lowClip = gun.clipSize <= Mathf.Max(1, gun.maxClipSize / 4);
+        bool lowClip = clip <= Mathf.Max(1, maxClip / 4);
         _ammoText.color = lowClip ? HealthMidColor : TextColor;
-        _ammoText.SetText("<size=40>" + gun.clipSize + "</size><size=20> / " + gun.maxClipSize + "</size>\n<size=16>RESERVE " + reserve + "</size>");
+        _ammoText.SetText("<size=40>" + clip + "</size><size=20> / " + maxClip + "</size>\n<size=16>RESERVE " + reserveStr + "</size>");
     }
 
     private void RefreshTicker()

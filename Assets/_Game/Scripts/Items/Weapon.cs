@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class Weapon : Item, IAmmoReceiver
+public class Weapon : Item, IAmmoReceiver, IWeapon
 {
     [Header("Settings")]
     [SerializeField] private float _fireRate = 0.2f;
@@ -9,8 +9,10 @@ public class Weapon : Item, IAmmoReceiver
     public float recoilForce { get { return _recoilForce; } }
     [SerializeField] private int _clipSize = 5;
     public int clipSize { get { return _clipSize; } }
+    public int maxClipSize => _clipSize;
     [Tooltip("Reserve ammo pool the reload pulls from. Refilled by ammo pickups.")]
     [SerializeField] private int _reserveAmmo = 45;
+    public int reserveAmmo => _firearm is Handgun h ? h.reserveAmmo : _reserveAmmo;
 
     // Internal
     private IFirearm _firearm;

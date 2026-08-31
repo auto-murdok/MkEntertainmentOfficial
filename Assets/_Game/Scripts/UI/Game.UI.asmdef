@@ -2,9 +2,9 @@
     "name": "Game.UI",
     "rootNamespace": "",
     "references": [
-        "Game.Core",
-        "Game.Characters",
-        "Game.Items",
+        "GUID:917dcd50484d7f044b4497dc988c40fa",
+        "GUID:1e2fc5f04f030e14c9a1bd3528eb89f5",
+        "GUID:21afac19c47a85c478c6c2cde2dcd180",
         "Unity.TextMeshPro",
         "Unity.InputSystem",
         "Unity.Netcode.Runtime"
@@ -14,7 +14,7 @@
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
-    "autoReferenced": true,
+    "autoReferenced": false,
     "defineConstraints": [],
     "versionDefines": [],
     "noEngineReferences": false

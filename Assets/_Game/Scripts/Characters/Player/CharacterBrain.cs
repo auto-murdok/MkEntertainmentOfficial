@@ -3,7 +3,7 @@ using UnityEngine.Animations.Rigging;
 using UnityEngine.Assertions;
 using UnityEngine.InputSystem;
 
-public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<InputHandlerActions, InputValue>
+public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IHealthSource, IObserver<InputHandlerActions, InputValue>
 {
     [Header("Connection Settings")]
     public Subject<InputHandlerActions, InputValue> _subject;

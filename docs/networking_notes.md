@@ -94,14 +94,20 @@ first client; start sessions from code via `NetworkManager.Singleton`.
      (`AnimatorUtils.IsReloadingHash`), components cached at spawn (no
      per-frame `GetComponent`), allocation-free per-frame damp writers
      (mirrors the FSM's own writers), NetworkVariable written only on change.
-10. **Ragdoll teardown must destroy the `NetworkAnimator` (not disable it).**
-    `ActorBrainBase.DestroyActorCore` destroys the Animator during ragdoll,
-    but `NetworkAnimator`'s state-change handler polls the Animator from NGO's
-    network update loop and **only deregisters on despawn/destroy**
-    (`SpawnCleanup`) — the handler ignores the component's enabled flag.
-    Disabling it spams `MissingReferenceException` forever. Fix: `Destroy`
-    the `NetworkAnimator` BEFORE the Animator in `DestroyActorCore` (players
-    are never despawned, so this is the only cleanup path they get).
+10. **Never destroy NetworkBehaviours (e.g. `NetworkAnimator`) on one peer
+    mid-session.** NGO requires identical NetworkBehaviour lists — same
+    components, same order — on every peer. The first death-teardown version
+    destroyed the zombie/player's `NetworkAnimator` (a `NetworkBehaviour`) to
+    stop its update-handler polling a destroyed Animator; that shifted the
+    RPC routing indices on the destroying peer (the bite relay moved from
+    index 2 to 1), producing `NetworkBehaviour index N was out of bounds` and
+    NREs inside `RpcMessageHelpers.Handle` for every later RPC. The teardown
+    must **disable** instead: `networkAnimator.enabled = false` +
+    `animator.enabled = false` (a disabled-but-alive Animator is safe for the
+    `NetworkAnimator`'s poll — the earlier `MissingReferenceException` spam
+    only happened because the Animator was *destroyed* while the handler kept
+    polling it). Plain MonoBehaviours (`CharacterLocomotion`, `RigBuilder`,
+    `ZombieBehavior`, …) are safe to destroy.
 11. **Mirrored deaths must drive the ragdoll directly.** Remote copies run no
     FSM (`NetworkedPlayerComposition` disables it), so NGO's `Dead` state
     never fires `context.onDeath` there — a mirrored death set HP=0 and

@@ -125,20 +125,22 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
 
     protected void DestroyActorCore()
     {
-        // NetworkAnimator polls the Animator from NGO's network update loop and
-        // only deregisters on despawn/destroy (its handler ignores the enabled
-        // flag) — destroying it here prevents MissingReferenceException spam
-        // once the ragdoll destroys the Animator below. Must be destroyed
-        // BEFORE the Animator itself.
+        // Networking: NEVER destroy NetworkBehaviours (NetworkAnimator) on one
+        // peer mid-session — NGO requires identical NetworkBehaviour lists on
+        // every peer, and destroying one shifts the RPC routing indices
+        // ("NetworkBehaviour index out of bounds" → NREs in RPC dispatch).
+        // Disable the Animator (and with it the NetworkAnimator) instead: a
+        // disabled-but-alive Animator is safe for the NetworkAnimator's poll,
+        // the ragdoll bones are freed, and the indices stay intact everywhere.
         var networkAnimator = GetComponent<Unity.Netcode.Components.NetworkAnimator>();
         if (networkAnimator != null)
         {
-            Destroy(networkAnimator);
+            networkAnimator.enabled = false;
         }
         var agent = GetComponent<NavMeshAgent>();
         if (agent != null) Destroy(agent);
         var anim = GetComponent<Animator>();
-        if (anim != null) Destroy(anim);
+        if (anim != null) anim.enabled = false;
     }
 
     // Entity-specific extras (layer setup, extra teardown, etc.)

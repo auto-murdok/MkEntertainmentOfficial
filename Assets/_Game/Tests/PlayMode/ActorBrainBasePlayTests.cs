@@ -307,14 +307,21 @@ namespace Game.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator DestroyActorCore_RemovesNavMeshAgentAndAnimator()
+        public IEnumerator DestroyActorCore_RemovesNavMeshAgentAndDisablesAnimator()
         {
             var agent = _host.AddComponent<UnityEngine.AI.NavMeshAgent>();
-            _host.AddComponent<Animator>();
+            var animator = _host.AddComponent<Animator>();
             _brain.CallDestroyActorCore();
             yield return null;
-            Assert.IsTrue(agent == null);
-            Assert.IsTrue(_host.GetComponent<Animator>() == null);
+
+            // The NavMeshAgent is a plain component and is destroyed; the
+            // Animator must stay ALIVE but disabled — destroying NetworkBehaviours
+            // (or components referenced by them) on one peer shifts NGO's RPC
+            // routing indices ("NetworkBehaviour index out of bounds").
+            Assert.IsTrue(agent == null, "The NavMeshAgent should be destroyed.");
+            Assert.IsTrue(_host.GetComponent<Animator>() != null,
+                "The Animator must not be destroyed (NGO index stability).");
+            Assert.IsFalse(animator.enabled, "The Animator must be disabled so it stops driving the ragdoll bones.");
         }
 
         [Test]

@@ -123,7 +123,7 @@ Created **live** via `unity command eval_file` (no YAML hand-edit):
 - Root `SM_GunShells_HandGun` — `Transform`, `Rigidbody (mass 0.01, angularDamping 0.05, gravity, continuous)`, `BoxCollider (0.02,0.02,0.05)`, `ShellCasing (9a0e3b...)`, child `SM_GunShells_HandGun` mesh instance (FBX `d37c33...` with material override `M_Shell_Brass`)
 
 **MuzzleFlash.prefab** (`0c1341...`): Billboard `ParticleSystem` `Duration 0.06`, `Burst 1`, `Size 0.3`, `Speed 0`, `ColorOverLifetime fade`, `Shape disabled`, `TextureSheetAnimation 3×3 WholeSheet 0→1 curve, cycles 1` (9 frames of `T_Muzzle_Pistol_01_3x3`). Tiling reset `1,1`.
-**MuzzleSmoke.prefab** (`648e91...`): Billboard `World space` `Duration 0.8 / Life 0.7 / Speed 1.2 / Size 0.35`, `Burst 3`, `max 6`, `Cone angle 15 radius 0.02`, `Size over Lifetime 0.4→1.8`, `Color over Lifetime gray 0.65 alpha 0.6→0`, `Tile 3×3 SingleRow Random` (each puff one random cell of `T_SmokePuff_01` if grid, else 1×1 fallback), `Renderer sortingFudge -10`. Was `Local / 0.5/0.15/0.5 / rate 10 + sheet disabled 1×1 → whole 3×3 matrix visible` — invisible + matrix bug.
+**MuzzleSmoke.prefab** (`648e91...`): **Preset A — Muzzle Smoke Puff** per `UnityFBX/Docs/Unity_Smoke_ParticleSystem_Guide.md:80` — Billboard `World` `Duration 0.6 / Life 0.6-1.0 random / Speed 0.5-1.2 / Size 0.12-0.22 random / Rotation 0-360 / Gravity -0.05`, `Burst 8-12 at 0`, `Sphere Radius 0.06`, `Velocity Y 0.6→0.1 World`, `Size 0.5→1.3`, `Color alpha 0.45→0`, `Noise Strength 0.35 freq 0.6 scroll 0.2 damping`, `Material M_Smoke_Puff (T_SmokePuff_01) sheet disabled (single sprite)`, `Renderer sortingFudge -10`. Was `World 0.8/0.7/1.2/0.35 Burst 3 3×3 SingleRow Random → cropped to 1/9 (now only 1-2 visible)` — matrix vs single-sprite confusion.
 
 ## 5) Weapon Code — `WeaponEffects` + `ShellCasing`
 
@@ -180,7 +180,7 @@ Live checks (`eval_file`):
 - `verify_shell.cs` — `M_Shell_Brass` URP Lit with all 4 maps, metallic 1 / smoothness 0.85, sRGB settings correct (basecolor sRGB, others linear, normal is NormalMap).
 - EditMode 108 + PlayMode 136 tests green after changes (`unity command run_tests --mode editmode/playmode --async_tests` + `test_status`, incl. `HitscanWeaponPlayTests`).
 
-## 8) Smoke Matrix Learnings (2026-08-31 fix: 5 sources)
+## 8) Smoke Matrix Learnings (2026-08-31 fix: 5+ sources, then Guide)
 
 Research (Context7 + Firecrawl, 5+ sources):
 - `unity3d_6000_0_manual:PartSysTexSheetAnimModule` — grid flipbook: `Tiles X×Y`, `SingleRow Random` (one random sprite per particle) vs `WholeSheet 0→1 curve` (animate all cells). **Matrix bug = sheet disabled (1×1) while BaseMap is 3×3 grid → UV 0-1 shows all 9 cells at once.**
@@ -189,7 +189,9 @@ Research (Context7 + Firecrawl, 5+ sources):
 - `unity3d_6000_0_manual:urp/particles-unlit-shader` — `Transparent` requires `Surface Transparent`, `Blend Alpha`, `ZWrite Off`, `Cull Off`, tiling `1,1` — otherwise sheet UVs are scaled incorrectly and whole sheet shows.
 - `gamedev.tv/urp-transparent-particle-effects` + `gamineai/particle-system-not-rendering` — invisible smoke also caused by `SimulationSpace World` vs `Local`, `maxParticles` too low, `rateOverTime` leaking, `sortingFudge`.
 
-Applied: `MuzzleSmoke` `1×1 disabled → 3×3 SingleRow Random` (so `T_SmokePuff_01` if grid shows one random puff, if single still shows one cell — safe), `MuzzleFlash` `WholeSheet` `frameOverTime Curve 0→1 cycles 1` (was `TwoConstants 0`), both materials tiling `1,1` reset, `M_Smoke_Alpha` already `World` (prev fix) `Cone 15` `Size 0.4→1.8`. Verified via `inspect_smoke_tex` + `verify_smoke_fix`.
+**Update per `UnityFBX/Docs/Unity_Smoke_ParticleSystem_Guide.md:80` (Preset A):** `T_SmokePuff_01` is single `2048×2048` (grid lines `0.06-0.23` vs muzzle `0.000` — no clean 3×3), so correct is **sheet disabled (1×1)** showing whole puff, **not** `3×3 SingleRow` (which crops to `1/9` → “only 1-2” visible). Previous `3×3 SingleRow Random` was therefore wrong for this texture. Fixed back to `disabled`, `Burst 8-12`, `Life 0.6-1.0`, `Size 0.12-0.22`, `Noise`, `World`. Verified via `read_smoke_grid2` + `inspect_smoke_tex`.
+
+Applied: `MuzzleSmoke` `3×3 SingleRow Random → disabled 1×1` (single puff, 8-12/shot), `MuzzleFlash` `WholeSheet 0→1` kept, both materials tiling `1,1` reset. `M_Smoke_Puff` now per Guide §2.2 (vs `M_Smoke_Alpha` generic).
 
 ## 9) End-to-End Flow
 

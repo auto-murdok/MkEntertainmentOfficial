@@ -24,8 +24,10 @@ public class Weapon : Item, IAmmoReceiver, IWeapon
         _firearm = GetComponent<IFirearm>();
         // Finite reserve from the weapon config; refilled by ammo pickups
         // (zombie drops). Reload math treats huge values as a de-facto
-        // infinite pool.
-        _firearm.Prepare(_clipSize, _reserveAmmo);
+        // infinite pool. CLI --infiniteAmmo overrides to int.MaxValue for
+        // automated runs where the agent should never run dry.
+        int reserve = GameCliArgs.InfiniteAmmo ? int.MaxValue : _reserveAmmo;
+        _firearm.Prepare(_clipSize, reserve);
 
         // Push the weapon's own config into the firearm so the firearm state
         // machine has a single source of truth for cadence (damage lives on

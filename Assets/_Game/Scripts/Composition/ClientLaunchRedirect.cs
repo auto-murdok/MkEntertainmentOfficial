@@ -8,6 +8,14 @@ public class ClientLaunchRedirect : MonoBehaviour
 {
     private void Start()
     {
+        // GameCliBootstrap already handles --scene redirects before any scene loads.
+        // This is the legacy fast-path: "-mlclient" with no explicit --scene still
+        // jumps straight into the networked arena. If a scene was explicitly
+        // requested, let the bootstrap own the redirect.
+        if (!string.IsNullOrEmpty(GameCliArgs.RequestedScene))
+        {
+            return;
+        }
         if (!NetworkArenaBootstrap.IsCommandLineClient())
         {
             return;

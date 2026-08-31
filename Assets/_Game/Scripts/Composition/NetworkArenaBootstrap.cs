@@ -43,10 +43,8 @@ public class NetworkArenaBootstrap : MonoBehaviour
 
         if (asClient)
         {
-            // Loopback for now — everything points at localhost until a real
-            // server/IP flow exists.
             networkManager.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>()
-                .SetConnectionData(NetworkSession.ServerAddress, NetworkSession.ServerPort);
+                .SetConnectionData(NetworkSession.EffectiveAddress, NetworkSession.EffectivePort);
         }
 
         bool started = asClient ? networkManager.StartClient() : networkManager.StartHost();
@@ -56,7 +54,7 @@ public class NetworkArenaBootstrap : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[NetworkArenaBootstrap] Session started as {(asClient ? "client" : "host")} (mode={mode}, {NetworkSession.ServerAddress}:{NetworkSession.ServerPort}).");
+        Debug.Log($"[NetworkArenaBootstrap] Session started as {(asClient ? "client" : "host")} (mode={mode}, {NetworkSession.EffectiveAddress}:{NetworkSession.EffectivePort}).");
     }
 
     // NGO gold-standard connection approval: auto-create the player object and
@@ -71,17 +69,13 @@ public class NetworkArenaBootstrap : MonoBehaviour
 
     public static bool IsCommandLineClient()
     {
-        // Editor and player command line (lets an editor instance act as a
-        // dedicated client by launching it with -mlclient as well).
-        string[] arguments = System.Environment.GetCommandLineArgs();
-        for (int i = 0; i < arguments.Length; i++)
+        // Delegates to the central CLI parser so --mode, --client, --mlclient
+        // and all spellings stay consistent in one place.
+        NetworkSessionMode? mode = GameCliArgs.NetworkingModeOverride;
+        if (mode.HasValue)
         {
-            string argument = arguments[i].ToLowerInvariant();
-            if (argument == "-mlclient" || argument == "--mlclient" || argument == "-client" || argument == "--client")
-            {
-                return true;
-            }
+            return mode.Value == NetworkSessionMode.Client;
         }
-        return false;
+        return GameCliArgs.IsLegacyClientFlag;
     }
 }

@@ -52,6 +52,14 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
             return;
         }
 
+        // CLI god mode (automated smoke tests): player actors ignore damage so
+        // the automated run can survive without scripting combat. Only player
+        // actors are protected — zombies stay killable.
+        if (GameCliArgs.GodMode && this is CharacterBrain)
+        {
+            return;
+        }
+
         _hitPoints = Mathf.Max(0f, _hitPoints - amount);
         _lastDamageTime = Time.time;
         CombatLog.ReportDamage(amount, _hitPoints, gameObject);

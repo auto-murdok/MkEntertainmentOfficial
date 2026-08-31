@@ -122,8 +122,8 @@ Created **live** via `unity command eval_file` (no YAML hand-edit):
 **SM_GunShells_HandGun.prefab** (`d2326e...`):
 - Root `SM_GunShells_HandGun` — `Transform`, `Rigidbody (mass 0.01, angularDamping 0.05, gravity, continuous)`, `BoxCollider (0.02,0.02,0.05)`, `ShellCasing (9a0e3b...)`, child `SM_GunShells_HandGun` mesh instance (FBX `d37c33...` with material override `M_Shell_Brass`)
 
-**MuzzleFlash.prefab** (`0c1341...`): Billboard `ParticleSystem` `Duration 0.06`, `Burst 1`, `Size 0.3`, `Speed 0`, `ColorOverLifetime fade`, `Shape disabled`, `TextureSheetAnimation 3×3 WholeSheet` (9 frames).
-**MuzzleSmoke.prefab** (`648e91...`): Billboard `World space` `Duration 0.8 / Life 0.7 / Speed 1.2 / Size 0.35`, `Burst 3`, `max 6`, `Cone angle 15 radius 0.02`, `Size over Lifetime 0.4→1.8`, `Color over Lifetime gray 0.65 alpha 0.6→0`, `Renderer sortingFudge -10`. Was `Local / 0.5/0.15/0.5 / rate 10` — invisible at gun scale.
+**MuzzleFlash.prefab** (`0c1341...`): Billboard `ParticleSystem` `Duration 0.06`, `Burst 1`, `Size 0.3`, `Speed 0`, `ColorOverLifetime fade`, `Shape disabled`, `TextureSheetAnimation 3×3 WholeSheet 0→1 curve, cycles 1` (9 frames of `T_Muzzle_Pistol_01_3x3`). Tiling reset `1,1`.
+**MuzzleSmoke.prefab** (`648e91...`): Billboard `World space` `Duration 0.8 / Life 0.7 / Speed 1.2 / Size 0.35`, `Burst 3`, `max 6`, `Cone angle 15 radius 0.02`, `Size over Lifetime 0.4→1.8`, `Color over Lifetime gray 0.65 alpha 0.6→0`, `Tile 3×3 SingleRow Random` (each puff one random cell of `T_SmokePuff_01` if grid, else 1×1 fallback), `Renderer sortingFudge -10`. Was `Local / 0.5/0.15/0.5 / rate 10 + sheet disabled 1×1 → whole 3×3 matrix visible` — invisible + matrix bug.
 
 ## 5) Weapon Code — `WeaponEffects` + `ShellCasing`
 
@@ -178,9 +178,20 @@ Get-Content SM_Gun_Pistol.prefab | Select-String "WeaponEffects|MuzzleSmoke|SM_G
 Live checks (`eval_file`):
 - `verify_pistol_setup.cs` — pistol, WeaponEffects, Muzzle, MuzzleSmoke, Eject, ShellPrefab/Casing, URP Lit, OcclusionMap, shell scale 0.01 all true.
 - `verify_shell.cs` — `M_Shell_Brass` URP Lit with all 4 maps, metallic 1 / smoothness 0.85, sRGB settings correct (basecolor sRGB, others linear, normal is NormalMap).
-- EditMode 108 + PlayMode 130 tests green after changes (`unity command run_tests --mode editmode/playmode --async_tests` + `test_status`).
+- EditMode 108 + PlayMode 136 tests green after changes (`unity command run_tests --mode editmode/playmode --async_tests` + `test_status`, incl. `HitscanWeaponPlayTests`).
 
-## 8) End-to-End Flow
+## 8) Smoke Matrix Learnings (2026-08-31 fix: 5 sources)
+
+Research (Context7 + Firecrawl, 5+ sources):
+- `unity3d_6000_0_manual:PartSysTexSheetAnimModule` — grid flipbook: `Tiles X×Y`, `SingleRow Random` (one random sprite per particle) vs `WholeSheet 0→1 curve` (animate all cells). **Matrix bug = sheet disabled (1×1) while BaseMap is 3×3 grid → UV 0-1 shows all 9 cells at once.**
+- `unity3d_6000_0_manual:particle-animation` — `SingleRow Random` eliminates repetition for debris/smoke; `Random Row` picks distinct puff per particle.
+- `discussions.unity.com/texture-sheet-animation-one-of-each-frame` — one-of-each requires `3×4` + `SingleRow` + `1 row` + duplicate texture.
+- `unity3d_6000_0_manual:urp/particles-unlit-shader` — `Transparent` requires `Surface Transparent`, `Blend Alpha`, `ZWrite Off`, `Cull Off`, tiling `1,1` — otherwise sheet UVs are scaled incorrectly and whole sheet shows.
+- `gamedev.tv/urp-transparent-particle-effects` + `gamineai/particle-system-not-rendering` — invisible smoke also caused by `SimulationSpace World` vs `Local`, `maxParticles` too low, `rateOverTime` leaking, `sortingFudge`.
+
+Applied: `MuzzleSmoke` `1×1 disabled → 3×3 SingleRow Random` (so `T_SmokePuff_01` if grid shows one random puff, if single still shows one cell — safe), `MuzzleFlash` `WholeSheet` `frameOverTime Curve 0→1 cycles 1` (was `TwoConstants 0`), both materials tiling `1,1` reset, `M_Smoke_Alpha` already `World` (prev fix) `Cone 15` `Size 0.4→1.8`. Verified via `inspect_smoke_tex` + `verify_smoke_fix`.
+
+## 9) End-to-End Flow
 
 `Input → CharacterLocomotion.HandleShoot → Weapon.TriggerShoot(aimPos) → Handgun.Shoot → HandgunShootingState.Enter (CrossFade fakeGun_shoot, ExecuteActualShoot pools BulletProjectile, clip--, onShoot) → onShoot → WeaponEffects.PlayShootEffects (muzzle + shell) + CharacterLocomotion.onWeaponShoot (recoil).` Shell casings live 3 s via pooled `ShellCasing`, then return to `ObjectPool`.
 

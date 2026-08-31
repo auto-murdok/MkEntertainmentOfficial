@@ -72,6 +72,49 @@ public static class UiTheme
         return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f));
     }
 
+    private static Sprite _damageVignetteSprite;
+    public static Sprite DamageVignetteSprite()
+    {
+        if (_damageVignetteSprite != null) return _damageVignetteSprite;
+        const int size = 256;
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        texture.wrapMode = TextureWrapMode.Clamp;
+        Vector2 center = new Vector2(size / 2f, size / 2f);
+        float maxDistance = Mathf.Sqrt(2f) * size / 2f;
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float distance = Vector2.Distance(new Vector2(x, y), center) / maxDistance;
+                float alpha = Mathf.SmoothStep(0.15f, 1f, Mathf.Clamp01(distance * 1.4f - 0.25f));
+                texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+            }
+        texture.Apply();
+        _damageVignetteSprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f));
+        return _damageVignetteSprite;
+    }
+
+    private static Sprite _circleSprite;
+    public static Sprite CircleSprite()
+    {
+        if (_circleSprite != null) return _circleSprite;
+        const int s = 64;
+        var tex = new Texture2D(s, s, TextureFormat.RGBA32, false);
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+        Vector2 ctr = new Vector2(s / 2f, s / 2f);
+        float rad = s / 2f - 1f;
+        for (int y = 0; y < s; y++)
+            for (int x = 0; x < s; x++)
+            {
+                float d = Vector2.Distance(new Vector2(x, y), ctr);
+                float a = 1f - Mathf.SmoothStep(rad - 1f, rad, d);
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+            }
+        tex.Apply();
+        _circleSprite = Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f));
+        return _circleSprite;
+    }
+
     public static Sprite PanelSprite()
     {
         const int size = 48;

@@ -31,17 +31,7 @@ public class ZombieContext : ActorBlackboard
 
     public void SetAnimatorTrigger(int triggerHash)
     {
-        if (animator == null)
-        {
-            return;
-        }
-        if (networkAnimator != null && networkAnimator.IsSpawned && networkAnimator.IsServer)
-        {
-            networkAnimator.SetTrigger(triggerHash);
-        }
-        else
-        {
-            animator.SetTrigger(triggerHash);
-        }
+        NetworkAnimatorUtils.TrySetTrigger(animator, networkAnimator,
+            networkAnimator != null && networkAnimator.IsServer, triggerHash);
     }
 }

@@ -118,6 +118,7 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
     {
         // Register with the InteractableRegistry, disable ragdoll, set layers, etc.
         base.Start();
+        LocalPlayerRegistry.Register(this);
 
         // Remote networked players have no local input subject — their inputs
         // happen on the owning peer and only their transform replicates here.
@@ -185,6 +186,11 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
                 RagdollUtils.EnableRagdoll(transform, OnRagdollEnabled);
                 break;
         }
+    }
+
+    protected override void OnActorDestroy()
+    {
+        LocalPlayerRegistry.Unregister(this);
     }
 
     protected override void OnRagdollEnabled()

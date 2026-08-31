@@ -28,7 +28,8 @@ public class ZombieData : ScriptableObject
     [Tooltip("NavMeshAgent radius used while roaming / chasing.")]
     [SerializeField] private float _defaultAgentRadius = 0.3f;
     [Tooltip("NavMeshAgent radius while biting (kept small so the zombie hugs the victim).")]
-    [SerializeField] private float _bittingAgentRadius = 0.1f;
+    [UnityEngine.Serialization.FormerlySerializedAs("_bittingAgentRadius")]
+    [SerializeField] private float _bitingAgentRadius = 0.1f;
 
     [Header("Hand Attack (victim already pinned by another zombie)")]
     [Tooltip("Damage of the standing right-hand swing, used when the victim is locked in another zombie's bite grab.")]
@@ -37,6 +38,10 @@ public class ZombieData : ScriptableObject
     [SerializeField] private float _handAttackRange = 1.6f;
     [Tooltip("Length of the right-hand swing in seconds. The hit lands at HitFraction of this (ZombieHandAttackState).")]
     [SerializeField] private float _handAttackDuration = 1.2f;
+    [Tooltip("Cooldown after a bite before the zombie may bite again.")]
+    [SerializeField] private float _biteCooldown = 1.2f;
+    [Tooltip("Cooldown after a hand attack before the zombie may attack again.")]
+    [SerializeField] private float _handAttackCooldown = 1.5f;
 
     [Header("Locomotion")]
     [SerializeField] private float _walkSpeed = 1.5f;
@@ -64,11 +69,15 @@ public class ZombieData : ScriptableObject
     public float biteRange => _biteRange;
     public float biteDuration => _biteDuration;
     public float defaultAgentRadius => _defaultAgentRadius;
-    public float bittingAgentRadius => _bittingAgentRadius;
+    public float bitingAgentRadius => _bitingAgentRadius;
+    [System.Obsolete("Typo alias — use bitingAgentRadius")]
+    public float bittingAgentRadius => _bitingAgentRadius;
     public float handAttackDamage => _handAttackDamage;
     public float handAttackRange => _handAttackRange;
     public float handAttackDuration => _handAttackDuration;
     public float walkSpeed => _walkSpeed;
     public float chaseSpeed => _chaseSpeed;
     public GameObject ammoDropPrefab => _ammoDropPrefab;
+    public float biteCooldown => _biteCooldown;
+    public float handAttackCooldown => _handAttackCooldown;
 }

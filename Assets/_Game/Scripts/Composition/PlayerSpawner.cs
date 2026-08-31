@@ -40,6 +40,14 @@ public class PlayerSpawner : MonoBehaviour
             zombieSpawner.spawningEnabledChannel = _spawningEnabledChannel;
         }
 
+        // Room-by-room dynamic map (minimap) — single instance on the
+        // composition root so it exists in both SP and networked arenas and
+        // before the player spawns (spawn room revealed immediately).
+        MinimapDiscovery minimapDiscovery = gameObject.GetComponent<MinimapDiscovery>();
+        if (minimapDiscovery == null) minimapDiscovery = gameObject.AddComponent<MinimapDiscovery>();
+        MinimapView minimapView = gameObject.GetComponent<MinimapView>();
+        if (minimapView == null) minimapView = gameObject.AddComponent<MinimapView>();
+
         // Networked scenes: the player prefab is NGO-spawned from
         // NetworkManager.PlayerPrefab on every peer, and the owner composes the
         // local rig in NetworkedPlayerComposition.OnNetworkSpawn. Composing here

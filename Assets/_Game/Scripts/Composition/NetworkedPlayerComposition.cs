@@ -16,7 +16,7 @@ using UnityEngine.Animations.Rigging;
 // NetworkVariable and applied with the same damped writers the FSM uses.
 public class NetworkedPlayerComposition : NetworkBehaviour, IPlayerBiteRelay
 {
-    private const int AimAnimatorLayerIndex = 1;
+    private const int AimAnimatorLayerIndex = AnimatorUtils.AimLayerIndex;
     private const float AimLayerWeightSpeed = 20f;
     private const float RemoteAimTargetHeight = 1.5f;   // chest height
     private const float RemoteAimTargetDistance = 8f;   // ahead of the character
@@ -97,9 +97,9 @@ public class NetworkedPlayerComposition : NetworkBehaviour, IPlayerBiteRelay
         // the local game-over screen. (PlayerSpawner wires this in the
         // single-player arena; the networked path wires it here — wire exactly
         // once per peer.)
-        if (_playerDiedChannel != null)
+        if (_playerDiedChannel != null && _brain != null)
         {
-            GetComponent<CharacterBrain>().Died += _playerDiedChannel.Raise;
+            _brain.Died += _playerDiedChannel.Raise;
         }
 
         Debug.Log($"[NetworkedPlayerComposition] Local rig composed for {(IsHost ? "host" : "client")} player object (OwnerId={OwnerClientId}).");
@@ -197,8 +197,10 @@ public class NetworkedPlayerComposition : NetworkBehaviour, IPlayerBiteRelay
 
     public override void OnNetworkDespawn()
     {
-        // NetworkedHealth unsubscribes its own handlers; the bite relay uses
-        // ClientRpc (no per-object subscriptions to clean up).
+        if (_brain != null && _playerDiedChannel != null)
+        {
+            _brain.Died -= _playerDiedChannel.Raise;
+        }
     }
 
     // ── IPlayerBiteRelay ────────────────────────────────────────────────────

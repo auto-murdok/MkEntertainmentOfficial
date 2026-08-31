@@ -6,8 +6,8 @@ public class HandgunShootingState : State<HandgunState, HandgunContext>
 {
     // Rechambering delay comes from the weapon's configured fire rate
     // (HandgunContext.fireRate), not a hardcoded constant.
-    private static readonly int ShootAnimationHash = Animator.StringToHash("fakeGun_shoot");
-    private static readonly int IdleAnimationHash = Animator.StringToHash("Idle");
+    private static readonly int ShootAnimationHash = AnimatorUtils.HandgunShootHash;
+    private static readonly int IdleAnimationHash = AnimatorUtils.HandgunIdleHash;
 
     private float _rechamberingTime;
 

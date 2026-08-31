@@ -32,7 +32,7 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         _initialPosition = character.transform.position;
         _initialRotation = character.transform.rotation;
         ZombieContext context = character._context;
-        float bittingRadius = context.data != null ? context.data.bittingAgentRadius : DefaultBitingRadius;
+        float bittingRadius = context.data != null ? context.data.bitingAgentRadius : DefaultBitingRadius;
         if (context.agent != null)
         {
             context.agent.radius = bittingRadius;
@@ -67,7 +67,8 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         context.isPreparing = false;
         // TUNING: delay before the zombie may bite again after a push-off. See also
         // ZombieData.biteRange (separation distance that clears recentlyBitten).
-        context.attackCooldownTimer = DefaultAttackCooldown;
+        float cd = context.data != null ? context.data.biteCooldown : DefaultAttackCooldown;
+        context.attackCooldownTimer = cd;
         context.interactable = null;
     }
 

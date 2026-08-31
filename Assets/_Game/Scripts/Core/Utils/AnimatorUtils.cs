@@ -1,13 +1,19 @@
 using UnityEngine;
 
-public class AnimatorUtils
+public static class AnimatorUtils
 {
+    public const int AimLayerIndex = 1;
+
     public static readonly int HorizontalHash = Animator.StringToHash("Horizontal");
     public static readonly int VerticalHash = Animator.StringToHash("Vertical");
     public static readonly int IsReloadingHash = Animator.StringToHash("isReloading");
     public static readonly int BiteHash = Animator.StringToHash("Bite");
     public static readonly int TakeBiteHash = Animator.StringToHash("TakeBite");
     public static readonly int RHandAttackHash = Animator.StringToHash("RHandAttack");
+
+    // Handgun weapon animator hashes
+    public static readonly int HandgunShootHash = Animator.StringToHash("fakeGun_shoot");
+    public static readonly int HandgunIdleHash = Animator.StringToHash("Idle");
 
     // Frame-rate-independent damping factor: Lerp(a, b, DampFactor(speed, dt))
     // converges at the same rate at any framerate, unlike Lerp(a, b, k * dt)

@@ -81,7 +81,8 @@ public class ZombieHandAttackState : State<ZombieStates, ZombieContext>
     public void ExitState(StateMachine<ZombieStates, ZombieContext> character)
     {
         ZombieContext context = character._context;
-        context.attackCooldownTimer = HandAttackCooldown;
+        float cd = context.data != null ? context.data.handAttackCooldown : HandAttackCooldown;
+        context.attackCooldownTimer = cd;
         context.interactable = null;
         context.isHandAttacking = false;
     }

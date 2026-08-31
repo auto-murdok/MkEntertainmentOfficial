@@ -1,16 +1,5 @@
-using System;
 using UnityEngine;
 
-/// <summary>
-/// Typed ScriptableObject event channel carrying a bool payload (e.g. the
-/// game-flow "spawning enabled" toggle broadcast to every spawning system).
-/// Producers call Raise(value), consumers subscribe to OnRaised — neither side
-/// knows the other.
-/// </summary>
+/// <summary>Legacy alias — kept for asset compatibility. New code can use <see cref="EventChannel{T}"/> with T=bool.</summary>
 [CreateAssetMenu(fileName = "BoolEventChannel", menuName = "Game/Events/Bool Event Channel")]
-public class BoolEventChannel : ScriptableObject
-{
-    public event Action<bool> OnRaised;
-
-    public void Raise(bool value) => OnRaised?.Invoke(value);
-}
+public class BoolEventChannel : EventChannel<bool> { }

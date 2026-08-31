@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class CharacterReloadingState : State<CharacterState, CharacterStateContext>
 {
-    private const int HandgunAimLayerIndex = 1;
+    private const int HandgunAimLayerIndex = AnimatorUtils.AimLayerIndex;
     private const float LayerWeightTarget = 1f;
     private const float LayerWeightSpeed = 20f;
 

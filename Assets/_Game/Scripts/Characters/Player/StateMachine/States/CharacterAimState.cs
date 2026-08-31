@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class CharacterAimState : State<CharacterState, CharacterStateContext>
 {
-    private const int AimAnimatorLayerIndex = 1;
+    private const int AimAnimatorLayerIndex = AnimatorUtils.AimLayerIndex;
     private const float AimLayerWeightTarget = 1f;
     private const float AimLayerWeightSpeed = 20f;
 

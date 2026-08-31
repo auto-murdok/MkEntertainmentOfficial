@@ -12,6 +12,7 @@ public class AICharacterController : MonoBehaviour, IObserver<AICharacterActions
     private NavMeshAgent _agent;
     private Animator _animator;
     private ICommandable _commandable;
+    private bool _subscribed;
 
     private void Awake()
     {
@@ -52,12 +53,20 @@ public class AICharacterController : MonoBehaviour, IObserver<AICharacterActions
 
     private void OnEnable()
     {
-        _actionsSubject.AddObserver(this);
+        if (_actionsSubject != null && !_subscribed)
+        {
+            _actionsSubject.AddObserver(this);
+            _subscribed = true;
+        }
     }
 
     void OnDisable()
     {
-        _actionsSubject.RemoveObserver(this);
+        if (_actionsSubject != null && _subscribed)
+        {
+            _actionsSubject.RemoveObserver(this);
+            _subscribed = false;
+        }
     }
 
     private void OnDrawGizmos()

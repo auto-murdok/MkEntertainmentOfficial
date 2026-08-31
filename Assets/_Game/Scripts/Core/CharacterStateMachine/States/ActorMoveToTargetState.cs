@@ -13,8 +13,8 @@ public class ActorMoveToTargetState<TKey, TContext> : State<TKey, TContext>
     private const float TurnSpeedDegreesPerSecond = 180f;
     private const float RootMotionSmoothing = 0.5f;
 
-    private static readonly int HorizontalHash = Animator.StringToHash("Horizontal");
-    private static readonly int VerticalHash = Animator.StringToHash("Vertical");
+    private static readonly int HorizontalHash = AnimatorUtils.HorizontalHash;
+    private static readonly int VerticalHash = AnimatorUtils.VerticalHash;
 
     private float _updateTimer;
 

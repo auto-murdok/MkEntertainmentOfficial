@@ -26,7 +26,7 @@ public class StateMachine<TStateKey, TContext> : MonoBehaviour
     private bool _hasPendingTransition;
     private TStateKey _pendingState;
 
-    void Start()
+    protected virtual void Start()
     {
         Assert.IsTrue(states.Count > 0, "Please set at least one state.");
         _currentState = states[currentStateEnum];

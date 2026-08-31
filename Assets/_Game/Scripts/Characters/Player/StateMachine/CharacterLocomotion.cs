@@ -7,7 +7,6 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 {
     private const string EquippedWeaponPrefabName = "FakeGun";
     private const string KeyboardAndMouseScheme = "Keyboard&Mouse";
-    private const int AimAnimatorLayerIndex = 1;
 
     [Header("Inverse Kinematics")]
     [SerializeField] private Rig _characterRig;
@@ -135,7 +134,7 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     {
         if (currentStateEnum != CharacterState.Aiming && currentStateEnum != CharacterState.Reloading)
         {
-            AnimatorUtils.SetLayerWeight(_context.animator, AimAnimatorLayerIndex, 0f, 10f);
+            AnimatorUtils.SetLayerWeight(_context.animator, AnimatorUtils.AimLayerIndex, 0f, 10f);
             RigUtils.HandleDecreaseRigWeight(_context.rig);
         }
     }
@@ -236,18 +235,8 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     // so single-player/un-owned paths fall back to the raw animator).
     public void SetAnimatorTrigger(int triggerHash)
     {
-        if (_context.animator == null)
-        {
-            return;
-        }
-        if (_networkAnimator != null && _networkAnimator.IsSpawned && _networkAnimator.IsOwner)
-        {
-            _networkAnimator.SetTrigger(triggerHash);
-        }
-        else
-        {
-            _context.animator.SetTrigger(triggerHash);
-        }
+        NetworkAnimatorUtils.TrySetTrigger(_context.animator, _networkAnimator,
+            _networkAnimator != null && _networkAnimator.IsOwner, triggerHash);
     }
 
     public bool isBeingAttacked => _context.isBeingAttacked;

@@ -5,10 +5,6 @@ using UnityEngine.InputSystem;
 
 public class InputHandler : Subject<InputHandlerActions, InputValue>
 {
-    private void OnValidate()
-    {
-        // do nothing
-    }
 
     public void OnMove(InputValue value)
     {

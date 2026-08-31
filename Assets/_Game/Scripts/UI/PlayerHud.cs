@@ -164,7 +164,7 @@ public class PlayerHud : MonoBehaviour
             0f, 0f, 0f, 0f, Color.white);
         StretchFull(vignette);
         UnityEngine.UI.Image vignetteImage = vignette.GetComponent<UnityEngine.UI.Image>();
-        vignetteImage.sprite = CreateVignetteSprite();
+        vignetteImage.sprite = UiTheme.DamageVignetteSprite();
         vignetteImage.color = new Color(0.55f, 0.05f, 0.05f, 1f);
         _vignetteGroup = vignette.gameObject.AddComponent<CanvasGroup>();
         _vignetteGroup.alpha = 0f;
@@ -388,35 +388,5 @@ public class PlayerHud : MonoBehaviour
         rect.anchorMax = Vector2.one;
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
-    }
-
-    // Radial dark-to-transparent falloff so the damage flash reads as a
-    // vignette rather than a flat red overlay. Generated once, shared.
-    private static Sprite _vignetteSprite;
-
-    private static Sprite CreateVignetteSprite()
-    {
-        if (_vignetteSprite != null)
-        {
-            return _vignetteSprite;
-        }
-
-        const int size = 256;
-        Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-        texture.wrapMode = TextureWrapMode.Clamp;
-        Vector2 center = new Vector2(size / 2f, size / 2f);
-        float maxDistance = Mathf.Sqrt(2f) * size / 2f;
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                float distance = Vector2.Distance(new Vector2(x, y), center) / maxDistance;
-                float alpha = Mathf.SmoothStep(0.15f, 1f, Mathf.Clamp01(distance * 1.4f - 0.25f));
-                texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
-            }
-        }
-        texture.Apply();
-        _vignetteSprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f));
-        return _vignetteSprite;
     }
 }

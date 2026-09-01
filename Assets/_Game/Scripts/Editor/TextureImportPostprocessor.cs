@@ -89,13 +89,32 @@ public class TextureImportPostprocessor : AssetPostprocessor
         {
             // BuildingKit (Unreal Kit) - walls/floors/prop sheets: 2048 for BC, 1024 for N/ORM/EM, streaming
             // Learnings: source TGA 2048-4096, cap to avoid VAT, streaming for arena, clamp for props
+            // Channel packing: BC sRGB true, N Normal sRGB false, ORM/EM linear sRGB false (URP Lit _MaskMap)
             bool isBC = path.Contains("_bc.");
+            bool isN = path.Contains("_n.");
+            bool isORM = path.Contains("_orm.");
+            bool isEM = path.Contains("_em.");
             importer.maxTextureSize = isBC ? 2048 : 1024;
             importer.mipmapEnabled = true;
             importer.streamingMipmaps = true;
             importer.streamingMipmapsPriority = 0;
             importer.isReadable = false;
             importer.textureCompression = TextureImporterCompression.Compressed;
+            if (isN)
+            {
+                importer.textureType = TextureImporterType.NormalMap;
+                importer.sRGBTexture = false;
+            }
+            else if (isORM || isEM)
+            {
+                importer.textureType = TextureImporterType.Default;
+                importer.sRGBTexture = false;
+            }
+            else if (isBC)
+            {
+                importer.textureType = TextureImporterType.Default;
+                importer.sRGBTexture = true;
+            }
         }
         else
         {

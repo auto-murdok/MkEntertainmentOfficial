@@ -163,18 +163,6 @@ public static class AssetAuditFix
             desiredWrap = TextureWrapMode.Repeat;
             desiredCompression = TextureImporterCompression.Compressed;
         }
-        else if (lower.Contains("/mansion_buildingkit/") || lower.Contains("/mansion/"))
-        {
-            bool isBC = lower.Contains("basecolor") || lower.Contains("_bc.");
-            bool isN = lower.Contains("normal") || lower.Contains("_n.");
-            // Mansion PNG: 0-byte placeholders keep 256, others 1024 BC / 512 N/ORM/AO
-            if (lower.Contains("t_base_")) desiredMax = 256;
-            else desiredMax = isBC ? 1024 : 512;
-            desiredMip = true;
-            desiredStreaming = true;
-            desiredWrap = TextureWrapMode.Repeat;
-            desiredCompression = TextureImporterCompression.Compressed;
-        }
 
         if (importer.maxTextureSize != desiredMax)
         {
@@ -234,7 +222,7 @@ public static class AssetAuditFix
         if (!standalone.overridden)
         {
             // Only override for characters/props where quality matters; leave UI sprites at default.
-            bool shouldOverride = lower.Contains("/characters/") || lower.Contains("/weapons/") || lower.Contains("/environment/") || lower.Contains("/buildingkit/") || lower.Contains("/mansion");
+            bool shouldOverride = lower.Contains("/characters/") || lower.Contains("/weapons/") || lower.Contains("/environment/") || lower.Contains("/buildingkit/");
             if (shouldOverride)
             {
                 var s = new TextureImporterPlatformSettings
@@ -257,7 +245,7 @@ public static class AssetAuditFix
         var android = importer.GetPlatformTextureSettings("Android");
         if (!android.overridden)
         {
-            bool shouldOverride = lower.Contains("/characters/") || lower.Contains("/weapons/") || lower.Contains("/environment/") || lower.Contains("/buildingkit/") || lower.Contains("/mansion") || lower.Contains("smoke");
+            bool shouldOverride = lower.Contains("/characters/") || lower.Contains("/weapons/") || lower.Contains("/environment/") || lower.Contains("/buildingkit/") || lower.Contains("smoke");
             if (shouldOverride)
             {
                 var a = new TextureImporterPlatformSettings

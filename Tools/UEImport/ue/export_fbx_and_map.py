@@ -244,12 +244,28 @@ else:
             # --------------------------------------------------------------
             # 4. Manifest
             # --------------------------------------------------------------
+            # merge with any existing manifest so incremental exports of the
+            # same kit accumulate instead of dropping previously exported
+            # meshes (rows for re-exported meshes are replaced)
             manifest = os.path.join(out_dir, 'import_manifest.csv')
+            run_meshes = set(m.get_name() for m in meshes)
+            old_rows = []
+            if os.path.exists(manifest):
+                with open(manifest) as f:
+                    lines = [l.rstrip('\n') for l in f if l.strip()]
+                for l in lines[1:]:
+                    parts = l.split(',')
+                    if len(parts) >= 7 and parts[0] and parts[0] not in run_meshes:
+                        old_rows.append(l)
             with open(manifest, 'w') as f:
                 f.write('mesh,slot,material,param,texture,texture_path,two_sided\n')
+                for l in old_rows:
+                    f.write(l + '\n')
                 for r in rows:
                     f.write('%s,%s,%s,%s,%s,%s,%s\n'
                             % (r[0], r[1], r[2], r[3], r[4], r[5], mat_flags.get(r[2], '')))
+            unreal.log('UEI: manifest kept=%d new=%d (meshes this run=%d)'
+                       % (len(old_rows), len(rows), len(run_meshes)))
 
             unreal.log('UEI EXPORT DONE meshes=%d textures=%d rows=%d fbx_fail=%d tex_fail=%d'
                        % (fbx_ok, tex_ok, len(rows), fbx_fail, tex_fail))

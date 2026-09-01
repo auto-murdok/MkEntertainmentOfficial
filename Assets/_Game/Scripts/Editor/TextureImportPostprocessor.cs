@@ -59,24 +59,22 @@ public class TextureImportPostprocessor : AssetPostprocessor
         }
         else if (path.Contains("/characters/"))
         {
-            // Hero characters – 2048 with streaming, highest quality.
-            importer.maxTextureSize = 2048;
+            // Perf: 1024 for heroes (was 2048 sharp) - user requested performant
+            importer.maxTextureSize = 1024;
             importer.mipmapEnabled = true;
             importer.streamingMipmaps = true;
             importer.streamingMipmapsPriority = 0;
             importer.isReadable = false;
-            // Normal maps keep TextureType.NormalMap – don't override.
         }
         else if (path.Contains("/weapons/") || path.Contains("/prefabs/weapons/"))
         {
-            // Props – 2048 default, streaming; large 4096 sources are already capped to 2048.
-            // Small ammo shells (1024 source) also capped here – downsizing is free at import.
-            importer.maxTextureSize = 2048;
+            // Perf: 1024 BC / 512 N/ORM (was 2048)
+            bool isBCw = path.Contains("_bc.");
+            importer.maxTextureSize = isBCw ? 1024 : 512;
             importer.mipmapEnabled = true;
             importer.streamingMipmaps = true;
             importer.streamingMipmapsPriority = 0;
             importer.isReadable = false;
-            // TGA 24-bit sources: wrap repeat for tiling, clamp only for VFX handled above.
         }
         else if (path.Contains("/environment/"))
         {
@@ -87,14 +85,13 @@ public class TextureImportPostprocessor : AssetPostprocessor
         }
         else if (path.Contains("/buildingkit/"))
         {
-            // BuildingKit (Unreal Kit) - walls/floors/prop sheets: 2048 for BC, 1024 for N/ORM/EM, streaming
-            // Learnings: source TGA 2048-4096, cap to avoid VAT, streaming for arena, clamp for props
-            // Channel packing: BC sRGB true, N Normal sRGB false, ORM/EM linear sRGB false (URP Lit _MaskMap)
+            // BuildingKit perf: 1024 BC / 512 N/ORM/EM streaming (was 2048/1024 sharp) - user requested performant over sharp
             bool isBC = path.Contains("_bc.");
             bool isN = path.Contains("_n.");
             bool isORM = path.Contains("_orm.");
             bool isEM = path.Contains("_em.");
-            importer.maxTextureSize = isBC ? 2048 : 1024;
+            importer.maxTextureSize = isBC ? 1024 : 512;
+            
             importer.mipmapEnabled = true;
             importer.streamingMipmaps = true;
             importer.streamingMipmapsPriority = 0;

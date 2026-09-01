@@ -132,7 +132,7 @@ public static class AssetAuditFix
         }
         else if (lower.Contains("/characters/"))
         {
-            desiredMax = 2048;
+            desiredMax = 1024; // perf was 2048
             desiredMip = true;
             desiredStreaming = true;
             desiredWrap = TextureWrapMode.Repeat;
@@ -140,7 +140,8 @@ public static class AssetAuditFix
         }
         else if (lower.Contains("/weapons/") || lower.Contains("prefabs/weapons"))
         {
-            desiredMax = 2048;
+            bool isBCw = lower.Contains("_bc.");
+            desiredMax = isBCw ? 1024 : 512; // perf was 2048
             desiredMip = true;
             desiredStreaming = true;
             desiredWrap = TextureWrapMode.Repeat;
@@ -156,7 +157,7 @@ public static class AssetAuditFix
         else if (lower.Contains("/buildingkit/"))
         {
             bool isBC = lower.Contains("_bc.");
-            desiredMax = isBC ? 2048 : 1024;
+            desiredMax = isBC ? 1024 : 512; // perf: was 2048/1024
             desiredMip = true;
             desiredStreaming = true;
             desiredWrap = TextureWrapMode.Repeat;

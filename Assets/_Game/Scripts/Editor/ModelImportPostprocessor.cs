@@ -36,26 +36,23 @@ public class ModelImportPostprocessor : AssetPostprocessor
 
         if (isCharacter)
         {
-            // Hero skinned meshes – blendShapes required for face/morph; no compression to preserve skinning quality.
-            // Keep importBlendShapes = true, meshCompression = Off.
+            // Perf: Low for heroes (was Off) - still keeps blendShapes
             importer.importBlendShapes = true;
-            importer.meshCompression = ModelImporterMeshCompression.Off;
+            importer.meshCompression = ModelImporterMeshCompression.Low;
         }
         else if (isProp)
         {
-            // Hard-surface – no blendShapes, medium compression saves 30-40% mesh data.
+            // Perf: High for props (was Medium)
             importer.importBlendShapes = false;
-            importer.meshCompression = ModelImporterMeshCompression.Medium;
-            // Props should not add colliders by default.
+            importer.meshCompression = ModelImporterMeshCompression.High;
             importer.addCollider = false;
         }
         else if (isBuildingKit)
         {
-            // BuildingKit modular pieces - hard-surface, no skinning, keep Low compression for walls/floors (silhouette matters)
+            // Perf: High compression for BuildingKit (was Low) - user prefers perf over sharp
             importer.importBlendShapes = false;
-            importer.meshCompression = ModelImporterMeshCompression.Low;
-            importer.addCollider = false; // UCX_* handled via custom collider setup, not auto
-            // Learnings: globalScale 0.01 (1cm->1m) is correct for Unreal kit, don't override to 1; useFileScale true
+            importer.meshCompression = ModelImporterMeshCompression.High;
+            importer.addCollider = false;
         }
         else
         {

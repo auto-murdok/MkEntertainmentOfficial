@@ -105,3 +105,10 @@ Match `-Game`/`--game` (default `GAME_UE5_8`) to the cooking engine version.
   (edit `KIT_NAME` first) — every slot must show non-NULL base/normal/metal.
 - Tests: EditMode suite must stay green (`unity command run_tests --mode
   editmode --async_tests`, poll `test_status`).
+- **End of session**: kill the headless runtime with
+  `Tools\UEImport\Cleanup-Runtime.ps1` (kills the `-automated` editor tree,
+  the unity-cli identity helper, and any bun server; leaves interactive
+  editors, Unity Hub and MCP servers alone). Process snapshots of real runs
+  confirmed the pipeline spawns nothing else persistent, and that "bun"
+  substring matches like `C:\snapshot\bundle\...` are false positives - the
+  script matches bun by name/word-boundary only.

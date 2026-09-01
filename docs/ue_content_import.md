@@ -57,6 +57,15 @@ folder.
 5. **Re-import after art changes** — repeat steps 1–2; everything is
    overwritten in place, material GUIDs are preserved, so scene references
    survive.
+6. **Kill the headless runtime when done** — headless sessions leave a Unity
+   editor (`-automated`) and the unity-cli identity helper running:
+   ```powershell
+   Tools\UEImport\Cleanup-Runtime.ps1            # add -DryRun to just list
+   ```
+   Deterministically kills the `-automated` editor + its child tree, the
+   identity helper, and any bun server (word-bounded match, so unrelated
+   paths containing "bundle" are never hit). Never touches interactive
+   editors, Unity Hub, or opencode's MCP servers.
 
 ### Leg #2 — from a cooked build (no editor UI)
 

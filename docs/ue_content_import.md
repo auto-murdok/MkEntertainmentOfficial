@@ -143,14 +143,32 @@ Assets/ImportedContent/<KitName>\
   Materials\<Material>.mat        URP/Lit, one per unique manifest material
   Textures\<Texture>.png          import rules by suffix (see below)
   Generated\<ORM>_Pack.png        ORM channel pack (cached)
+  Generated\<Normal>_N_Unity.png  green-flipped normal (wired to _BumpMap)
 ```
 
 Texture import rules by name suffix: `_N` → normal map (linear), `_ORM`/`_EM`/
-`_M`/`_MASK` → default + linear, everything else → default + sRGB.
+`_M`/`_MASK` → default + linear, everything else → default + sRGB. Import size
+follows the source PNG resolution (power-of-two steps, capped at 4096).
 
-Material wiring: `BaseColor` candidates `00_BaseColor, BaseColor, Base_Color,
-Color, Albedo, Diffuse`; normal `00_Normal, Normal, NormalMap, Normal_Map`; ORM
-`ORM, 00_ORM, MaskMap, OcclusionRoughnessMetallic`. Channel packing:
+Material wiring is **layer-aware**: these UE master materials are layered, with
+texture parameters grouped by a numeric prefix (`00_BaseColor`,
+`04_Grunge_BaseColor`, `08_VCOL_BaseColor_A`, `12_AO_BaseColor`, ...). The
+importer ignores placeholder defaults (`T_Base_*`, `T_Default_*`, any
+`/Engine/...` texture) and picks the parameter layer that has a real BaseColor,
+taking that same layer's Normal/ORM with it (falling back across layers per
+channel; first manifest occurrence wins within a layer, so instance overrides
+beat parent defaults). Materials whose every parameter is a placeholder are
+logged as flat.
+
+Two generated texture variants live under `Generated/`:
+
+- `<ORM>_Pack.png` — URP channel pack (R=metallic from ORM.B, G=AO from ORM.R,
+  A=smoothness from 1−ORM.G)
+- `<Normal>_N_Unity.png` — the normal map with the **green channel inverted**
+  (UE stores DirectX-style Y− normals; Unity expects OpenGL-style Y+). The
+  flipped copy is what gets wired to `_BumpMap`.
+
+Channel packing per URP version:
 
 - URP shader exposes `_MaskMap` → mask map assigned directly.
 - Otherwise (e.g. URP in Unity 6000.3): `_MetallicGlossMap` (R=metallic,
@@ -172,6 +190,8 @@ place, material asset GUIDs are preserved.
 | `run_asset_export_task` missing on AssetTools | UE 5.8 moved it onto the exporter classes (`StaticMeshExporterFBX.run_asset_export_task`). |
 | Python property errors on `StaticMaterial.material` / `parameter_name` | UE 5.8 renames: use `material_interface` and `parameter_info.name`. |
 | Textures missing from export | Materials reference textures outside the kit folder. Leg #1 resolves every referenced texture via the asset registry — re-run with the current tool. |
+| Wrong/flat textures on some slots | Layered master material: the instance's real textures sit under a different parameter layer (e.g. `04_Grunge_BaseColor`) than the master defaults (`00_BaseColor` → `T_Base_*` placeholders). The importer's layer-aware picker handles this; if a material still wires placeholders, check the manifest rows for that material. |
+| Bumpy lighting looks inverted vs UE | UE normal maps are DirectX-style (Y−), Unity expects OpenGL (Y+) — the importer wires green-flipped `_N_Unity` copies. Don't replace them with the originals. |
 | Unity material has base+normal but no metallic/occlusion | URP in Unity 6000.3 has **no `_MaskMap`** property; the importer detects this and uses `_MetallicGlossMap` + `_OcclusionMap`. Don't hand-add `_MaskMap` on this URP version. |
 | `unity command eval_file` reports "Main thread operation timed out" | The eval's 5 s HTTP budget expired; long operations still complete on the main thread. Verify via console log markers instead of the exit code. |
 | Long-running UE commandlet killed when a shell tool times out | Shell kills its whole process tree. The PS scripts launch via `Win32_Process.Create` (WMI) — detached, no inherited pipes. Keep using that pattern for anything that can exceed ~2 min. |

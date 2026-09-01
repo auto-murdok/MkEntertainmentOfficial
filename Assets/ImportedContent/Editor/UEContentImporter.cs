@@ -11,9 +11,14 @@
 // What it does:
 //   - copies + imports every FBX and PNG into Assets/ImportedContent/<folder>/
 //   - applies texture import rules by suffix (_N -> normal map, _ORM/_EM/_M ->
-//     linear) and builds ORM channel packs for URP
-//   - creates URP/Lit materials per unique manifest material, wiring
-//     BaseColor / Normal / ORM params (first manifest occurrence wins)
+//     linear) and caps import size to the source resolution (max 4096)
+//   - builds ORM channel packs for URP and normal-map green flips
+//     (UE DirectX-style Y- -> Unity OpenGL-style Y+)
+//   - creates URP/Lit materials per unique manifest material using
+//     LAYER-AWARE texture selection: UE master materials here are layered
+//     (params grouped by prefix like 00_, 04_Grunge_, 08_VCOL_, 12_AO_); the
+//     picker ignores placeholder defaults (T_Base_*, T_Default_*, /Engine/)
+//     and takes BaseColor/Normal/ORM from the layer that has a real BaseColor
 //   - URP-version aware: uses _MaskMap when the shader exposes it, otherwise
 //     _MetallicGlossMap (R=metallic, A=smoothness) + _OcclusionMap (G=AO)
 //   - saves one prefab per mesh with materials assigned by slot name
@@ -35,14 +40,11 @@ public static class UEContentImporter
 {
     const string DestRoot = "Assets/ImportedContent";
     const string PrefsLastFolder = "UEImport.LastFolder";
-
-    static readonly string[] BaseColorParams = { "00_BaseColor", "BaseColor", "Base_Color", "Color", "Albedo", "Diffuse" };
-    static readonly string[] NormalParams = { "00_Normal", "Normal", "NormalMap", "Normal_Map" };
-    static readonly string[] OrmParams = { "ORM", "00_ORM", "MaskMap", "OcclusionRoughnessMetallic" };
+    const int MaxTextureSizeCap = 4096;
 
     struct Row
     {
-        public string Mesh, Slot, Material, Param, Texture;
+        public string Mesh, Slot, Material, Param, Texture, TexturePath;
     }
 
     [MenuItem("Tools/UE Import/Import FBX Folder...")]
@@ -78,6 +80,7 @@ public static class UEContentImporter
                     Material = p[2].Trim(),
                     Param = p[3].Trim(),
                     Texture = p[4].Trim(),
+                    TexturePath = p.Length > 5 ? p[5].Trim() : "",
                 });
             }
         }
@@ -102,6 +105,16 @@ public static class UEContentImporter
             var urpLit = Shader.Find("Universal Render Pipeline/Lit");
             if (urpLit == null) throw new Exception("Universal Render Pipeline/Lit shader not found");
             var useMaskMap = new Material(urpLit).HasProperty("_MaskMap");
+
+            // ---------------- import EVERY exported texture (not just the
+            // ones wired into materials) so the kit's texture set is complete
+            var allPngs = Directory.GetFiles(sourceFolder, "*.png");
+            for (var i = 0; i < allPngs.Length; i++)
+            {
+                var name = Path.GetFileNameWithoutExtension(allPngs[i]);
+                EditorUtility.DisplayProgressBar("UE Import", "texture " + name, i / (float)Math.Max(1, allPngs.Length));
+                ImportTexture(sourceFolder, dest, name, texCache);
+            }
 
             int total = meshes.Count;
             for (var mi = 0; mi < meshes.Count; mi++)
@@ -149,9 +162,10 @@ public static class UEContentImporter
                     }
 
                     var goName = meshName;
-                    var existing = AssetDatabase.LoadAssetAtPath<GameObject>(dest + "/" + goName + ".prefab");
+                    var prefabPath = dest + "/" + goName + ".prefab";
+                    var existing = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
                     var go = existing != null
-                        ? (GameObject)PrefabUtility.LoadPrefabContents(dest + "/" + goName + ".prefab")
+                        ? (GameObject)PrefabUtility.LoadPrefabContents(prefabPath)
                         : (GameObject)PrefabUtility.InstantiatePrefab(prefab);
 
                     foreach (var rend in go.GetComponentsInChildren<MeshRenderer>(true))
@@ -178,7 +192,6 @@ public static class UEContentImporter
                         rend.sharedMaterials = mats;
                     }
 
-                    var prefabPath = dest + "/" + goName + ".prefab";
                     PrefabUtility.SaveAsPrefabAsset(go, prefabPath);
                     if (existing != null) PrefabUtility.UnloadPrefabContents(go);
                     else UnityEngine.Object.DestroyImmediate(go);
@@ -228,38 +241,62 @@ public static class UEContentImporter
             return null;
         }
 
+        var maxSize = PickMaxSize(src);
+        var isNormal = texName.EndsWith("_N", StringComparison.OrdinalIgnoreCase);
+
+        // import the original into Textures/ first (complete texture set)
         var dir = dest + "/Textures";
         Directory.CreateDirectory(dir);
         var dst = $"{dir}/{texName}.png";
         File.Copy(src, dst, true);
-        AssetDatabase.ImportAsset(dst, ImportAssetOptions.ForceUpdate);
+        ApplyTextureImport(dst, isNormal, isNormal, maxSize);
 
-        var ti = (TextureImporter)AssetImporter.GetAtPath(dst);
-        if (ti != null)
+        // normals: wire a green-flipped copy (UE DirectX Y- -> Unity GL Y+);
+        // the original stays in Textures/ for reference
+        if (isNormal)
         {
-            var n = texName.ToLowerInvariant();
-            if (n.EndsWith("_n"))
-            {
-                ti.textureType = TextureImporterType.NormalMap;
-                ti.sRGBTexture = false;
-            }
-            else if (n.EndsWith("_orm") || n.EndsWith("_em") || n.EndsWith("_m") || n.EndsWith("_mask"))
-            {
-                ti.textureType = TextureImporterType.Default;
-                ti.sRGBTexture = false;
-            }
-            else
-            {
-                ti.textureType = TextureImporterType.Default;
-                ti.sRGBTexture = true;
-            }
-            ti.mipmapEnabled = true;
-            ti.SaveAndReimport();
+            var flipped = GetOrCreateNormalFlip(sourceFolder, dest, texName, maxSize, cache);
+            if (flipped != null) return flipped;
         }
 
         var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(dst);
         cache[texName] = tex;
         return tex;
+    }
+
+    static void ApplyTextureImport(string assetPath, bool normal, bool linear, int maxSize)
+    {
+        AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
+        var ti = (TextureImporter)AssetImporter.GetAtPath(assetPath);
+        if (ti == null) return;
+        ti.textureType = normal ? TextureImporterType.NormalMap : TextureImporterType.Default;
+        ti.sRGBTexture = !linear;
+        ti.mipmapEnabled = true;
+        if (maxSize > 0) ti.maxTextureSize = maxSize;
+        ti.SaveAndReimport();
+    }
+
+    // PNG IHDR: width/height are big-endian at bytes 16..23
+    static int PickMaxSize(string pngPath)
+    {
+        try
+        {
+            using var fs = File.OpenRead(pngPath);
+            Span<byte> buf = stackalloc byte[24];
+            if (fs.Read(buf) < 24) return 0;
+            int w = (buf[16] << 24) | (buf[17] << 16) | (buf[18] << 8) | buf[19];
+            int h = (buf[20] << 24) | (buf[21] << 16) | (buf[22] << 8) | buf[23];
+            int need = Math.Max(w, h);
+            int[] sizes = { 256, 512, 1024, 2048, 4096, 8192 };
+            foreach (var s in sizes)
+                if (s >= need)
+                    return Math.Min(s, MaxTextureSizeCap);
+            return MaxTextureSizeCap;
+        }
+        catch
+        {
+            return 0; // leave importer default
+        }
     }
 
     // ------------------------------------------------- ORM channel pack (URP)
@@ -303,12 +340,137 @@ public static class UEContentImporter
         {
             ti.sRGBTexture = false;
             ti.mipmapEnabled = true;
+            ti.maxTextureSize = PickMaxSize(dst);
             ti.SaveAndReimport();
         }
 
         var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(dst);
         cache[ormTexName] = tex;
         return tex;
+    }
+
+    // --------------------------------------------------- normal green flip
+    // UE saves DirectX-style normal maps (green = -Y); Unity expects OpenGL
+    // (green = +Y). Invert the G channel once into Generated/.
+    static Texture2D GetOrCreateNormalFlip(string sourceFolder, string dest, string texName,
+        int maxSize, Dictionary<string, Texture2D> cache)
+    {
+        if (cache.TryGetValue(texName, out var cached)) return cached;
+
+        var dir = dest + "/Generated";
+        Directory.CreateDirectory(dir);
+        var dst = $"{dir}/{texName}_N_Unity.png";
+
+        if (!File.Exists(dst))
+        {
+            var src = Path.Combine(sourceFolder, texName + ".png");
+            var nrm = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
+            nrm.LoadImage(File.ReadAllBytes(src));
+            var px = nrm.GetPixels32();
+            var flipped = new Color32[px.Length];
+            for (var i = 0; i < px.Length; i++)
+                flipped[i] = new Color32(px[i].r, (byte)(255 - px[i].g), px[i].b, px[i].a);
+            var outTex = new Texture2D(nrm.width, nrm.height, TextureFormat.RGBA32, false, true);
+            outTex.SetPixels32(flipped);
+            outTex.Apply();
+            File.WriteAllBytes(dst, outTex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(nrm);
+            UnityEngine.Object.DestroyImmediate(outTex);
+        }
+
+        ApplyTextureImport(dst, true, true, maxSize);
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(dst);
+        cache[texName] = tex;
+        return tex;
+    }
+
+    // ------------------------------------------------------- layer selection
+    // UE master materials here are layered: parameters are grouped by a
+    // numeric prefix (00_BaseColor, 04_Grunge_BaseColor, 08_VCOL_BaseColor_A,
+    // 12_AO_BaseColor, ...). Unprefixed params (ORM, BaseColor_Texture, ...)
+    // belong to the master's root group and usually hold flat placeholder
+    // defaults (T_Base_*, T_Default_*, /Engine/...). For each material we pick
+    // the layer that has a REAL (non-placeholder) BaseColor and take that
+    // layer's Normal/ORM with it, falling back across layers per role.
+    static bool IsPlaceholder(Row r)
+    {
+        if (r.Texture.Length == 0) return true;
+        if (r.TexturePath.StartsWith("/Engine/", StringComparison.OrdinalIgnoreCase)) return true;
+        var n = r.Texture.ToLowerInvariant();
+        return n.StartsWith("t_base_") || n == "t_default_normal" || n.StartsWith("t_normal");
+    }
+
+    static string LayerOf(string param)
+    {
+        // layer prefix = leading digits + underscore (e.g. "00_", "04_", "12_")
+        for (var i = 0; i < param.Length; i++)
+        {
+            if (char.IsDigit(param[i])) continue;
+            return (i >= 2 && param[i] == '_') ? param.Substring(0, i + 1) : "";
+        }
+        return "";
+    }
+
+    static bool RoleMatch(string param, string role)
+    {
+        var p = param.ToLowerInvariant();
+        switch (role)
+        {
+            case "base": return p.Contains("basecolor");
+            case "normal": return p.Contains("normal");
+            // "normal" contains "orm" - guard so normal params don't match ORM
+            case "orm": return p.Contains("orm") && !p.Contains("normal");
+            default: return false;
+        }
+    }
+
+    static string FindInLayer(List<Row> layerRows, string role)
+    {
+        foreach (var r in layerRows)
+            if (RoleMatch(r.Param, role))
+                return r.Texture; // first occurrence wins (instance overrides first)
+        return null;
+    }
+
+    static (string baseTex, string normalTex, string ormTex) SelectMaterialTextures(List<Row> matRows)
+    {
+        var layers = new Dictionary<string, List<Row>>();
+        foreach (var r in matRows)
+        {
+            if (r.Texture.Length == 0 || IsPlaceholder(r)) continue;
+            var layer = LayerOf(r.Param);
+            if (!layers.TryGetValue(layer, out var list))
+                layers[layer] = list = new List<Row>();
+            list.Add(r);
+        }
+
+        // choose the layer with a real BaseColor; tie-break on row count
+        string chosen = null;
+        var bestScore = -1;
+        foreach (var kv in layers)
+        {
+            if (!kv.Value.Any(r => RoleMatch(r.Param, "base"))) continue;
+            if (kv.Value.Count > bestScore)
+            {
+                bestScore = kv.Value.Count;
+                chosen = kv.Key;
+            }
+        }
+
+        if (chosen == null)
+            return (null, null, null); // material is flat placeholders in UE too
+
+        var chosenRows = layers[chosen];
+        var baseTex = FindInLayer(chosenRows, "base");
+        if (baseTex == null)
+            baseTex = layers.Values.SelectMany(v => v).FirstOrDefault(r => RoleMatch(r.Param, "base")).Texture;
+        var normalTex = FindInLayer(chosenRows, "normal");
+        if (normalTex == null)
+            normalTex = layers.Values.SelectMany(v => v).FirstOrDefault(r => RoleMatch(r.Param, "normal")).Texture;
+        var ormTex = FindInLayer(chosenRows, "orm");
+        if (ormTex == null)
+            ormTex = layers.Values.SelectMany(v => v).FirstOrDefault(r => RoleMatch(r.Param, "orm")).Texture;
+        return (baseTex, normalTex, ormTex);
     }
 
     // ------------------------------------------------------------- materials
@@ -327,27 +489,18 @@ public static class UEContentImporter
             AssetDatabase.CreateAsset(mat, path);
         }
 
-        // first manifest occurrence per parameter wins (instance overrides
-        // come before parent-chain defaults)
-        string FindTex(string[] candidates)
-        {
-            foreach (var c in candidates)
-            {
-                var row = rows.FirstOrDefault(r => r.Material == matName && r.Param == c && r.Texture.Length > 0);
-                if (row.Texture != null) return row.Texture;
-            }
-            return null;
-        }
-
-        var baseTexName = FindTex(BaseColorParams);
-        var normalTexName = FindTex(NormalParams);
-        var ormTexName = FindTex(OrmParams);
+        var matRows = rows.Where(r => r.Material == matName).ToList();
+        var (baseTexName, normalTexName, ormTexName) = SelectMaterialTextures(matRows);
 
         if (baseTexName != null)
         {
             var t = ImportTexture(sourceFolder, dest, baseTexName, texCache);
             if (t != null) mat.SetTexture("_BaseMap", t);
             else errors.Add($"{matName}: base color PNG missing ({baseTexName})");
+        }
+        else
+        {
+            errors.Add($"{matName}: no non-placeholder base color in manifest (flat material in UE)");
         }
         if (normalTexName != null)
         {

@@ -83,6 +83,14 @@ Match `-Game`/`--game` (default `GAME_UE5_8`) to the cooking engine version.
 - Textures referenced by kit materials often live **outside** the kit folder;
   leg #1 resolves them via the asset registry (never copy just the local
   Textures subfolder).
+- Kit master materials are **layered** — an instance's real textures may sit
+  under `04_Grunge_*` / `08_VCOL_*` / `12_AO_*` params while `00_BaseColor`
+  holds flat placeholder defaults (`T_Base_*`, tiny 160-byte PNGs). The Unity
+  importer picks the first non-placeholder layer; don't "fix" it back to
+  `00_*`.
+- UE normal maps are DirectX-style: the importer wires green-flipped
+  `Generated/<name>_N_Unity.png` copies. The originals in `Textures/` are for
+  reference only.
 
 ## Verification
 

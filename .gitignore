@@ -128,3 +128,8 @@ $RECYCLE.BIN/
 **/*.fbm/
 **/*.fbm.meta
 
+
+# UEI imported content is regenerable via Tools/UEImport - keep only the importer tooling
+Assets/ImportedContent/*
+!Assets/ImportedContent/Editor
+!Assets/ImportedContent/Editor.meta

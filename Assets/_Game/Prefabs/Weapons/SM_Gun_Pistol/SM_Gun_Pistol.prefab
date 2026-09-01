@@ -129,9 +129,9 @@ MonoBehaviour:
   _shellPrefab: {fileID: 4042088133657341482, guid: d2326e9af5fe87e4283f2c39bbfdb0db,
     type: 3}
   _ejectPoint: {fileID: 2027599742219015397}
-  _shellLife: 3
-  _ejectionVelocity: {x: 2, y: 1, z: -0.5}
-  _ejectionTorque: {x: 4, y: 7, z: 3}
+  _shellLife: 4
+  _ejectionVelocity: {x: -1, y: 2, z: 0.5}
+  _ejectionTorque: {x: 8, y: 14, z: 6}
 --- !u!114 &1846380068989163953
 MonoBehaviour:
   m_ObjectHideFlags: 0

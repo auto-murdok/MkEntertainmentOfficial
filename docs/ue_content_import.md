@@ -163,11 +163,14 @@ Material wiring is **layer-aware**: these UE master materials are layered, with
 texture parameters grouped by a numeric prefix (`00_BaseColor`,
 `04_Grunge_BaseColor`, `08_VCOL_BaseColor_A`, `12_AO_BaseColor`, ...). The
 importer ignores placeholder defaults (`T_Base_*`, `T_Default_*`, any
-`/Engine/...` texture) and picks the parameter layer that has a real BaseColor,
-taking that same layer's Normal/ORM with it (falling back across layers per
-channel; first manifest occurrence wins within a layer, so instance overrides
-beat parent defaults). Materials whose every parameter is a placeholder are
-logged as flat.
+`/Engine/...` texture) and picks the parameter layer whose BaseColor texture is
+the **most detailed** — PNG byte size is the detail proxy (a flat tint at
+2048² compresses to ~78 KB while a detailed concrete at the same resolution is
+~7.8 MB), which is the better single-layer approximation of UE's blended
+result. That layer's Normal/ORM come along with it (falling back across layers
+per channel; first manifest occurrence wins within a layer, so instance
+overrides beat parent defaults). Materials whose every parameter is a
+placeholder are logged as flat.
 
 Two generated texture variants live under `Generated/`:
 

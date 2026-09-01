@@ -86,8 +86,10 @@ Match `-Game`/`--game` (default `GAME_UE5_8`) to the cooking engine version.
 - Kit master materials are **layered** — an instance's real textures may sit
   under `04_Grunge_*` / `08_VCOL_*` / `12_AO_*` params while `00_BaseColor`
   holds flat placeholder defaults (`T_Base_*`, tiny 160-byte PNGs). The Unity
-  importer picks the first non-placeholder layer; don't "fix" it back to
-  `00_*`.
+  importer picks the layer whose BaseColor is most DETAILED (PNG byte-size
+  proxy - a 2048^2 flat tint is ~78 KB vs ~7.8 MB for detailed concrete at the
+  same resolution), which best approximates UE's vertex-color layer blending.
+  Don't "fix" it back to `00_*`.
 - Kit parts **see-through from one side only** (fine in UE) = flipped triangle
   winding from mirrored/negatively-scaled pieces baked at FBX export (UE
   masters here are NOT flagged TwoSided). The importer renders both faces

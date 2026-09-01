@@ -19,7 +19,9 @@
 //     LAYER-AWARE texture selection: UE master materials here are layered
 //     (params grouped by prefix like 00_, 04_Grunge_, 08_VCOL_, 12_AO_); the
 //     picker ignores placeholder defaults (T_Base_*, T_Default_*, /Engine/)
-//     and takes BaseColor/Normal/ORM from the layer that has a real BaseColor
+//     and takes BaseColor/Normal/ORM from the layer whose BaseColor texture
+//     is the most detailed (PNG byte size proxy - approximates UE's blended
+//     result; flat tint layers compress tiny)
 //   - URP-version aware: uses _MaskMap when the shader exposes it, otherwise
 //     _MetallicGlossMap (R=metallic, A=smoothness) + _OcclusionMap (G=AO)
 //   - saves one prefab per mesh with materials assigned by slot name
@@ -445,7 +447,7 @@ public static class UEContentImporter
         return null;
     }
 
-    static (string baseTex, string normalTex, string ormTex) SelectMaterialTextures(List<Row> matRows)
+    static (string baseTex, string normalTex, string ormTex) SelectMaterialTextures(List<Row> matRows, string sourceFolder)
     {
         var layers = new Dictionary<string, List<Row>>();
         foreach (var r in matRows)
@@ -457,15 +459,26 @@ public static class UEContentImporter
             list.Add(r);
         }
 
-        // choose the layer with a real BaseColor; tie-break on row count
+        // choose the layer with a real BaseColor; prefer the most DETAILED one -
+        // PNG byte size is the detail proxy (flat tint layers compress tiny,
+        // e.g. a 2048^2 tint = ~78 KB vs a detailed concrete = ~7.8 MB), which
+        // approximates UE's blended result far better than picking by row count
         string chosen = null;
-        var bestScore = -1;
+        long bestSize = -1;
         foreach (var kv in layers)
         {
-            if (!kv.Value.Any(r => RoleMatch(r.Param, "base"))) continue;
-            if (kv.Value.Count > bestScore)
+            var baseRow = kv.Value.FirstOrDefault(r => RoleMatch(r.Param, "base"));
+            if (baseRow.Texture == null) continue;
+            long size = 0;
+            try
             {
-                bestScore = kv.Value.Count;
+                var png = Path.Combine(sourceFolder, baseRow.Texture + ".png");
+                if (File.Exists(png)) size = new FileInfo(png).Length;
+            }
+            catch { }
+            if (size > bestSize)
+            {
+                bestSize = size;
                 chosen = kv.Key;
             }
         }
@@ -503,7 +516,7 @@ public static class UEContentImporter
         }
 
         var matRows = rows.Where(r => r.Material == matName).ToList();
-        var (baseTexName, normalTexName, ormTexName) = SelectMaterialTextures(matRows);
+        var (baseTexName, normalTexName, ormTexName) = SelectMaterialTextures(matRows, sourceFolder);
 
         if (baseTexName != null)
         {

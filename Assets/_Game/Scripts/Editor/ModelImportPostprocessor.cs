@@ -31,8 +31,9 @@ public class ModelImportPostprocessor : AssetPostprocessor
         // importer.indexFormat is already Auto by default.
 
         bool isCharacter = path.Contains("/characters/") || path.Contains("femalemodelyellow") || path.Contains("zombiemodel");
-        bool isProp = path.Contains("/ammo") || path.Contains("/weapons/") || path.Contains("sm_") || path.Contains("gun");
         bool isBuildingKit = path.Contains("/buildingkit/");
+        bool isMansion = path.Contains("/mansion_buildingkit/") || path.Contains("/mansion/");
+        bool isProp = (path.Contains("/ammo") || path.Contains("/weapons/") || path.Contains("sm_") || path.Contains("gun")) && !isBuildingKit && !isMansion;
 
         if (isCharacter)
         {
@@ -47,12 +48,16 @@ public class ModelImportPostprocessor : AssetPostprocessor
             importer.meshCompression = ModelImporterMeshCompression.High;
             importer.addCollider = false;
         }
-        else if (isBuildingKit)
+        else if (isBuildingKit || isMansion)
         {
-            // Perf: High compression for BuildingKit (was Low) - user prefers perf over sharp
+            // Master §1: Mesh Compression Off hero fidelity (Mansion walls etc). Keep Off per Master:34.
+            // Only use High for tiny props if build size matters, not for hero kit.
             importer.importBlendShapes = false;
-            importer.meshCompression = ModelImporterMeshCompression.High;
+            importer.meshCompression = ModelImporterMeshCompression.Off;
             importer.addCollider = false;
+            // Master normals/tangents Import, bakeAxis true, weld/strict handled in manual fix script
+            if (importer.importNormals != ModelImporterNormals.Import) importer.importNormals = ModelImporterNormals.Import;
+            if (importer.importTangents != ModelImporterTangents.Import) importer.importTangents = ModelImporterTangents.Import;
         }
         else
         {
@@ -68,9 +73,9 @@ public class ModelImportPostprocessor : AssetPostprocessor
     private void OnPostprocessModel(GameObject g)
     {
         // Learnings: UCX_ meshes are collision-only (Unreal) - disable MeshRenderer, ensure MeshCollider
-        // Applies to BuildingKit and shell - keep SM_ visible, UCX_ hidden
+        // Applies to BuildingKit/Mansion and shell - keep SM_ visible, UCX_ hidden
         string path = assetPath.ToLowerInvariant();
-        if (!path.Contains("/buildingkit/") && !path.Contains("gunshells")) return;
+        if (!path.Contains("/buildingkit/") && !path.Contains("/mansion") && !path.Contains("gunshells")) return;
 
         foreach (Transform t in g.GetComponentsInChildren<Transform>(true))
         {

@@ -113,6 +113,52 @@ public class TextureImportPostprocessor : AssetPostprocessor
                 importer.sRGBTexture = true;
             }
         }
+        else if (path.Contains("/mansion_buildingkit/") || path.Contains("/mansion/"))
+        {
+            // Mansion_BuildingKit per Master §2: *_B.png = BC sRGB on 4096, *_N sRGB off, *_ORM/_RMA/_ORD sRGB off linear.
+            // Master §2 hero fidelity 4096 (was perf 512/1024). Detect Mansion naming: _B. = BC, _N. = Normal, _ORM/_RMA/_ORD = packed.
+            bool isMask = path.Contains("mask");
+            bool isBC = path.Contains("basecolor") || path.Contains("base_color") || path.Contains("_bc.") || path.Contains("_b.") || path.EndsWith("_b.png") || path.Contains("_b_");
+            bool isN = path.Contains("normal") || path.Contains("_n.") || path.Contains("_n_");
+            bool isORM = isMask || path.Contains("orm") || path.Contains("_orm.") || path.Contains("_rma") || path.Contains("_ord") || path.Contains("_r.") || path.Contains("_m.") || path.Contains("_mm.");
+            bool isAO = path.Contains("_ao") || (path.Contains("ao") && !path.Contains("basecolor"));
+            bool isGray = path.Contains("grayscale");
+            // Hero overrides for bathtub etc: keep 4096 per Master §2, not perf 512.
+            bool isHeroMansion = path.Contains("bathtub") || path.Contains("bathtube") || path.Contains("bath");
+            if (isN)
+            {
+                importer.textureType = TextureImporterType.NormalMap;
+                importer.sRGBTexture = false;
+                importer.maxTextureSize = 4096;
+                importer.wrapMode = TextureWrapMode.Repeat;
+                importer.filterMode = FilterMode.Bilinear;
+            }
+            else if (isORM || isAO || isGray)
+            {
+                importer.textureType = TextureImporterType.Default;
+                importer.sRGBTexture = false;
+                importer.maxTextureSize = isHeroMansion ? 4096 : 2048;
+                importer.wrapMode = TextureWrapMode.Repeat;
+                importer.filterMode = FilterMode.Bilinear;
+            }
+            else // BaseColor / default
+            {
+                importer.textureType = TextureImporterType.Default;
+                importer.sRGBTexture = true;
+                importer.maxTextureSize = isHeroMansion ? 4096 : 2048;
+                importer.wrapMode = TextureWrapMode.Repeat;
+                importer.filterMode = FilterMode.Bilinear;
+                // skip 0-byte placeholders (T_Base_*.png 0 bytes) - keep small
+                if (path.Contains("t_base_")) importer.maxTextureSize = 256;
+            }
+            importer.mipmapEnabled = true;
+            importer.streamingMipmaps = false; // Master fidelity off for hero; enable if memory-bound
+            importer.streamingMipmapsPriority = 0;
+            importer.isReadable = false;
+            importer.textureCompression = TextureImporterCompression.Compressed;
+            importer.compressionQuality = 50;
+            importer.anisoLevel = 4;
+        }
         else
         {
             // Fallback – ensure sane defaults without stomping explicit artist settings.

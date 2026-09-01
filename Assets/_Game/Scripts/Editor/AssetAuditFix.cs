@@ -153,6 +153,15 @@ public static class AssetAuditFix
             desiredStreaming = true;
             desiredCompression = TextureImporterCompression.Compressed;
         }
+        else if (lower.Contains("/buildingkit/"))
+        {
+            bool isBC = lower.Contains("_bc.");
+            desiredMax = isBC ? 2048 : 1024;
+            desiredMip = true;
+            desiredStreaming = true;
+            desiredWrap = TextureWrapMode.Repeat;
+            desiredCompression = TextureImporterCompression.Compressed;
+        }
 
         if (importer.maxTextureSize != desiredMax)
         {
@@ -212,7 +221,7 @@ public static class AssetAuditFix
         if (!standalone.overridden)
         {
             // Only override for characters/props where quality matters; leave UI sprites at default.
-            bool shouldOverride = lower.Contains("/characters/") || lower.Contains("/weapons/") || lower.Contains("/environment/");
+            bool shouldOverride = lower.Contains("/characters/") || lower.Contains("/weapons/") || lower.Contains("/environment/") || lower.Contains("/buildingkit/");
             if (shouldOverride)
             {
                 var s = new TextureImporterPlatformSettings
@@ -235,7 +244,7 @@ public static class AssetAuditFix
         var android = importer.GetPlatformTextureSettings("Android");
         if (!android.overridden)
         {
-            bool shouldOverride = lower.Contains("/characters/") || lower.Contains("/weapons/") || lower.Contains("/environment/") || lower.Contains("smoke");
+            bool shouldOverride = lower.Contains("/characters/") || lower.Contains("/weapons/") || lower.Contains("/environment/") || lower.Contains("/buildingkit/") || lower.Contains("smoke");
             if (shouldOverride)
             {
                 var a = new TextureImporterPlatformSettings

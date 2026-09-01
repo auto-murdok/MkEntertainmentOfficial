@@ -85,6 +85,18 @@ public class TextureImportPostprocessor : AssetPostprocessor
             importer.streamingMipmaps = true;
             importer.isReadable = false;
         }
+        else if (path.Contains("/buildingkit/"))
+        {
+            // BuildingKit (Unreal Kit) - walls/floors/prop sheets: 2048 for BC, 1024 for N/ORM/EM, streaming
+            // Learnings: source TGA 2048-4096, cap to avoid VAT, streaming for arena, clamp for props
+            bool isBC = path.Contains("_bc.");
+            importer.maxTextureSize = isBC ? 2048 : 1024;
+            importer.mipmapEnabled = true;
+            importer.streamingMipmaps = true;
+            importer.streamingMipmapsPriority = 0;
+            importer.isReadable = false;
+            importer.textureCompression = TextureImporterCompression.Compressed;
+        }
         else
         {
             // Fallback – ensure sane defaults without stomping explicit artist settings.

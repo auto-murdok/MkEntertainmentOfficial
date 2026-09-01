@@ -10,6 +10,7 @@
 //
 // What it does:
 //   - copies + imports every FBX and PNG into Assets/ImportedContent/<folder>/
+//     (FBX under Meshes/, generated prefabs under Prefabs/)
 //   - applies texture import rules by suffix (_N -> normal map, _ORM/_EM/_M ->
 //     linear) and caps import size to the source resolution (max 4096)
 //   - builds ORM channel packs for URP and normal-map green flips
@@ -171,7 +172,8 @@ public static class UEContentImporter
                     }
 
                     var goName = meshName;
-                    var prefabPath = dest + "/" + goName + ".prefab";
+                    var prefabPath = dest + "/Prefabs/" + goName + ".prefab";
+                    Directory.CreateDirectory(dest + "/Prefabs");
                     var existing = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
                     var go = existing != null
                         ? (GameObject)PrefabUtility.LoadPrefabContents(prefabPath)
@@ -230,7 +232,9 @@ public static class UEContentImporter
     // ------------------------------------------------------------------ FBX
     static string ImportFbx(string src, string dest)
     {
-        var dst = dest + "/" + Path.GetFileName(src);
+        var meshDir = dest + "/Meshes";
+        Directory.CreateDirectory(meshDir);
+        var dst = meshDir + "/" + Path.GetFileName(src);
         File.Copy(src, dst, true);
         AssetDatabase.ImportAsset(dst, ImportAssetOptions.ForceUpdate);
         return dst;

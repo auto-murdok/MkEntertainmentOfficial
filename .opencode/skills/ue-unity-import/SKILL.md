@@ -88,6 +88,10 @@ Match `-Game`/`--game` (default `GAME_UE5_8`) to the cooking engine version.
   holds flat placeholder defaults (`T_Base_*`, tiny 160-byte PNGs). The Unity
   importer picks the first non-placeholder layer; don't "fix" it back to
   `00_*`.
+- Kit parts **see-through from one side only** (fine in UE) = flipped triangle
+  winding from mirrored/negatively-scaled pieces baked at FBX export (UE
+  masters here are NOT flagged TwoSided). The importer renders both faces
+  (`_Cull Off`, `ForceTwoSided`) - don't set kit materials back to Cull Back.
 - UE normal maps are DirectX-style: the importer wires green-flipped
   `Generated/<name>_N_Unity.png` copies. The originals in `Textures/` are for
   reference only.

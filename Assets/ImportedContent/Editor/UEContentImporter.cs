@@ -42,9 +42,17 @@ public static class UEContentImporter
     const string PrefsLastFolder = "UEImport.LastFolder";
     const int MaxTextureSizeCap = 4096;
 
+    // Render both faces on imported kit materials. Matches UE for genuinely
+    // TwoSided masters AND masks winding flips that FBX export bakes into
+    // mirrored/negatively-scaled modular pieces (Unity culls those from the
+    // side that should be visible -> "transparent from one side"). Trade-off:
+    // extra overdraw on large kits; genuinely one-sided UE materials (manifest
+    // two_sided=0) would also render their backfaces.
+    const bool ForceTwoSided = true;
+
     struct Row
     {
-        public string Mesh, Slot, Material, Param, Texture, TexturePath;
+        public string Mesh, Slot, Material, Param, Texture, TexturePath, TwoSided;
     }
 
     [MenuItem("Tools/UE Import/Import FBX Folder...")]
@@ -81,6 +89,7 @@ public static class UEContentImporter
                     Param = p[3].Trim(),
                     Texture = p[4].Trim(),
                     TexturePath = p.Length > 5 ? p[5].Trim() : "",
+                    TwoSided = p.Length > 6 ? p[6].Trim() : "",
                 });
             }
         }
@@ -529,6 +538,16 @@ public static class UEContentImporter
             }
             else errors.Add($"{matName}: ORM PNG missing ({ormTexName})");
         }
+
+        // two-sided handling: ForceTwoSided renders both faces unconditionally;
+        // otherwise the manifest two_sided column decides, defaulting to
+        // two-sided when absent (matches UE interior kits)
+        var twoSidedStr = matRows.Select(r => r.TwoSided).FirstOrDefault(v => v.Length > 0);
+        var twoSided = ForceTwoSided
+                        || twoSidedStr.Length == 0
+                        || twoSidedStr == "1"
+                        || twoSidedStr.Equals("true", StringComparison.OrdinalIgnoreCase);
+        mat.SetFloat("_Cull", twoSided ? 0f : 2f); // 0 = Off (both faces), 2 = Back
 
         EditorUtility.SetDirty(mat);
         return mat;

@@ -112,9 +112,27 @@ else:
 
             rows = []            # (mesh, slot, material, param, texture_name, texture_path)
             texture_names = []   # unique, ordered
+            mat_flags = {}       # material name -> two_sided ("1"/"0"/"")
             mesh_exporter = unreal.StaticMeshExporterFBX()
             tex_exporter = unreal.TextureExporterPNG()
             fbx_options = unreal.FbxExportOption()
+
+            def two_sided_of(mi):
+                # TwoSided lives on the base Material; walk the parent chain
+                cur = mi
+                guard = 0
+                while cur is not None and guard < 8:
+                    try:
+                        ts = cur.get_editor_property('two_sided')
+                        return '1' if ts else '0'
+                    except Exception:
+                        pass
+                    guard += 1
+                    try:
+                        cur = cur.get_editor_property('parent') if isinstance(cur, unreal.MaterialInstance) else None
+                    except Exception:
+                        cur = None
+                return ''
 
             fbx_ok = 0
             fbx_fail = 0
@@ -143,6 +161,8 @@ else:
                     mi = sm.get_editor_property('material_interface')
                     if mi is None:
                         continue
+                    if mi.get_name() not in mat_flags:
+                        mat_flags[mi.get_name()] = two_sided_of(mi)
                     collected = []
                     cur = mi
                     guard = 0
@@ -226,9 +246,10 @@ else:
             # --------------------------------------------------------------
             manifest = os.path.join(out_dir, 'import_manifest.csv')
             with open(manifest, 'w') as f:
-                f.write('mesh,slot,material,param,texture,texture_path\n')
+                f.write('mesh,slot,material,param,texture,texture_path,two_sided\n')
                 for r in rows:
-                    f.write('%s,%s,%s,%s,%s,%s\n' % r)
+                    f.write('%s,%s,%s,%s,%s,%s,%s\n'
+                            % (r[0], r[1], r[2], r[3], r[4], r[5], mat_flags.get(r[2], '')))
 
             unreal.log('UEI EXPORT DONE meshes=%d textures=%d rows=%d fbx_fail=%d tex_fail=%d'
                        % (fbx_ok, tex_ok, len(rows), fbx_fail, tex_fail))

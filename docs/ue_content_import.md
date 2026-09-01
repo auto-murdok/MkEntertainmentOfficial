@@ -168,6 +168,15 @@ Two generated texture variants live under `Generated/`:
   (UE stores DirectX-style Y− normals; Unity expects OpenGL-style Y+). The
   flipped copy is what gets wired to `_BumpMap`.
 
+**Two-sided handling**: imported kit materials render **both faces** (`_Cull
+Off`) — UE's master materials here are not flagged TwoSided, but modular kit
+pieces that are mirrored/negatively-scaled in UE get their triangle winding
+flipped when FBX export bakes the transform, which Unity otherwise culls from
+the side that should be visible ("part of the model is transparent but not in
+UE"). The exporter records each material's actual `two_sided` flag in the
+manifest; the Unity importer's `ForceTwoSided` option (on by default) renders
+both faces regardless.
+
 Channel packing per URP version:
 
 - URP shader exposes `_MaskMap` → mask map assigned directly.
@@ -192,6 +201,7 @@ place, material asset GUIDs are preserved.
 | Textures missing from export | Materials reference textures outside the kit folder. Leg #1 resolves every referenced texture via the asset registry — re-run with the current tool. |
 | Wrong/flat textures on some slots | Layered master material: the instance's real textures sit under a different parameter layer (e.g. `04_Grunge_BaseColor`) than the master defaults (`00_BaseColor` → `T_Base_*` placeholders). The importer's layer-aware picker handles this; if a material still wires placeholders, check the manifest rows for that material. |
 | Bumpy lighting looks inverted vs UE | UE normal maps are DirectX-style (Y−), Unity expects OpenGL (Y+) — the importer wires green-flipped `_N_Unity` copies. Don't replace them with the originals. |
+| Part of the model see-through from one side (fine in UE) | Flipped triangle winding from mirrored/negatively-scaled kit pieces baked at FBX export (or a genuinely TwoSided UE material). Importer renders both faces (`_Cull Off`) by default — see Two-sided handling above. |
 | Unity material has base+normal but no metallic/occlusion | URP in Unity 6000.3 has **no `_MaskMap`** property; the importer detects this and uses `_MetallicGlossMap` + `_OcclusionMap`. Don't hand-add `_MaskMap` on this URP version. |
 | `unity command eval_file` reports "Main thread operation timed out" | The eval's 5 s HTTP budget expired; long operations still complete on the main thread. Verify via console log markers instead of the exit code. |
 | Long-running UE commandlet killed when a shell tool times out | Shell kills its whole process tree. The PS scripts launch via `Win32_Process.Create` (WMI) — detached, no inherited pipes. Keep using that pattern for anything that can exceed ~2 min. |

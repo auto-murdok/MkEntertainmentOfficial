@@ -193,6 +193,10 @@ Research (Context7 + Firecrawl, 5+ sources):
 
 Applied: `MuzzleSmoke` `3×3 SingleRow Random → disabled 1×1` (single puff, 8-12/shot), `MuzzleFlash` `WholeSheet 0→1` kept, both materials tiling `1,1` reset. `M_Smoke_Puff` now per Guide §2.2 (vs `M_Smoke_Alpha` generic).
 
+**Triangulation — why muzzle works:** `MuzzleFlash` `T_Muzzle_Pistol_01_3x3` is clean `3×3` (grid lines `0.000`) + `Sheet 3×3 WholeSheet` correctly animates `0→8` over `0.06s`, `Additive` hides seams, `Local` is fine (attached to barrel). `MuzzleSmoke` `T_SmokePuff_01` is single (no grid) → `Sheet 1×1 disabled` shows whole puff; `World` + `Noise` required to linger. **Velocity fix:** `Main.Velocity over Lifetime` must have `x,y,z` all `Curve` mode (`y 0.6→0.1`, `x/z 0→0` curves) — mixed `Constant` vs `Curve` throws `Particle Velocity curves must all be in the same mode` (Editor.log `17882207836` repeated). Fixed `x/y/z` all `Curve 1×`.
+
+Editor errors after fix: `clear_console` → `recompile_status up_to_date` → `Editor.log Tail 80` now 0 `Particle Velocity` / `_MainTex` entries (only expected `state 999` test log remains).
+
 ## 9) End-to-End Flow
 
 `Input → CharacterLocomotion.HandleShoot → Weapon.TriggerShoot(aimPos) → Handgun.Shoot → HandgunShootingState.Enter (CrossFade fakeGun_shoot, ExecuteActualShoot pools BulletProjectile, clip--, onShoot) → onShoot → WeaponEffects.PlayShootEffects (muzzle + shell) + CharacterLocomotion.onWeaponShoot (recoil).` Shell casings live 3 s via pooled `ShellCasing`, then return to `ObjectPool`.

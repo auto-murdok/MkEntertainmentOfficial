@@ -26,6 +26,20 @@ public static class BuildingKitMaterialFix
             dict[suffix] = path;
         }
 
+        // Alias for 9 white mats with typo/mismatch (learnings: cardboardtargtets, glass_alarm, etc.)
+        var alias = new Dictionary<string, string>
+        {
+            { "cardboardtargtets", "cardboardtargets" },
+            { "glass_alarm", "alarmlight" },
+            { "vp_01", "concrete_01" },
+            { "m_props_em", "concrete_01" },
+            { "lanedividers", "floorstripes" },
+            { "metallattice", "metal_lattice" },
+            { "metalshelves", "metalshelf" },
+            { "shootingrange_mechanism", "cardboardtarget_mechanism" },
+            { "worldgridmaterial", "floorstripes" },
+        };
+
         var matGuids = AssetDatabase.FindAssets("t:Material", new[] { "Assets/_Game/Art/BuildingKit/Materials" });
         int fixedMats = 0;
         foreach (var g in matGuids)
@@ -34,6 +48,7 @@ public static class BuildingKitMaterialFix
             var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
             string raw = mat.name.ToLowerInvariant();
             if (raw.StartsWith("mi_")) raw = raw.Substring(3);
+            if (alias.TryGetValue(raw, out var aliased)) raw = aliased;
             string baseKey = null;
             if (texByKey.ContainsKey(raw)) baseKey = raw;
             else

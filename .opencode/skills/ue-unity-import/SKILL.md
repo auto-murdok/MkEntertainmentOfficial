@@ -90,6 +90,15 @@ Match `-Game`/`--game` (default `GAME_UE5_8`) to the cooking engine version.
   proxy - a 2048^2 flat tint is ~78 KB vs ~7.8 MB for detailed concrete at the
   same resolution), which best approximates UE's vertex-color layer blending.
   Don't "fix" it back to `00_*`.
+- **Baking layered materials**: `Tools/UEImport/ue/bake_materials.py` renders
+  each material's true blended albedo via a SceneCapture G-buffer capture
+  (SCS_BASE_COLOR on a plane in /Engine/Maps/Entry) into
+  `Baked/<Material>_Bake_B.png`; the Unity importer prefers those as base maps.
+  5.8 python specifics: `RenderingLibrary.create_render_target2d` (lowercase 2d,
+  5-arg form), enum members are `RTF_*` under `unreal.TextureRenderTargetFormat`,
+  `export_render_target(world, rt, path, name)` splits path/name, RT class is
+  `unreal.TextureRenderTarget2D`. No roughness capture source exists - ORM stays
+  a layer approximation. VCOL bakes at full strength.
 - Kit parts **see-through from one side only** (fine in UE) = flipped triangle
   winding from mirrored/negatively-scaled pieces baked at FBX export (UE
   masters here are NOT flagged TwoSided). The importer renders both faces

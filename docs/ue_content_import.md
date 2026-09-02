@@ -189,6 +189,24 @@ UE"). The exporter records each material's actual `two_sided` flag in the
 manifest; the Unity importer's `ForceTwoSided` option (on by default) renders
 both faces regardless.
 
+**Material bake (flattened layered materials)**: UE renders the layered blend
+that Unity cannot reproduce with a single texture. After exporting, bake each
+material's true blended albedo via a G-buffer capture:
+
+```powershell
+UnrealEditor-Cmd.exe "<uproject>" -run=pythonscript `
+  -script="Tools\UEImport\ue\bake_materials.py" -unattended -nop4 -nosplash `
+  -stdout -AllowCommandletRendering
+```
+
+Writes `Baked\<Material>_Bake_B.png` (base-color capture of the real material
+on a flat plane inside `/Engine/Maps/Entry`) for every unique manifest
+material. The Unity importer prefers the baked albedo automatically; normals
+and ORM keep the detailed-layer approximation. Limitations: vertex colors bake
+at full strength (per-mesh VCOL variation is not captured), and ORM is not
+G-buffer-capturable (`SCS_ROUGHNESS` doesn't exist) — it stays the
+detailed-layer pack.
+
 Channel packing per URP version:
 
 - URP shader exposes `_MaskMap` → mask map assigned directly.

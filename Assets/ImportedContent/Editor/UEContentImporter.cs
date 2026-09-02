@@ -127,6 +127,16 @@ public static class UEContentImporter
                 EditorUtility.DisplayProgressBar("UE Import", "texture " + name, i / (float)Math.Max(1, allPngs.Length));
                 ImportTexture(sourceFolder, dest, name, texCache);
             }
+            var bakedDir = Path.Combine(sourceFolder, "Baked");
+            if (Directory.Exists(bakedDir))
+            {
+                var bakedPngs = Directory.GetFiles(bakedDir, "*.png");
+                for (var i = 0; i < bakedPngs.Length; i++)
+                {
+                    var name = Path.GetFileNameWithoutExtension(bakedPngs[i]);
+                    ImportTexture(sourceFolder, dest, name, texCache);
+                }
+            }
 
             int total = meshes.Count;
             for (var mi = 0; mi < meshes.Count; mi++)
@@ -248,7 +258,9 @@ public static class UEContentImporter
     {
         if (cache.TryGetValue(texName, out var cached)) return cached;
 
+        // search the export root first, then the Baked subfolder
         var src = Path.Combine(sourceFolder, texName + ".png");
+        if (!File.Exists(src)) src = Path.Combine(sourceFolder, "Baked", texName + ".png");
         if (!File.Exists(src))
         {
             Debug.LogWarning("[UEImport] texture PNG missing: " + texName);
@@ -517,6 +529,11 @@ public static class UEContentImporter
 
         var matRows = rows.Where(r => r.Material == matName).ToList();
         var (baseTexName, normalTexName, ormTexName) = SelectMaterialTextures(matRows, sourceFolder);
+
+        // the UE-side baked albedo captures the FULL layered blend (grading,
+        // tiling, masks) - prefer it over the single-layer pick when present
+        var bakedBase = Path.Combine(sourceFolder, "Baked", matName + "_Bake_B.png");
+        if (File.Exists(bakedBase)) baseTexName = matName + "_Bake_B";
 
         if (baseTexName != null)
         {

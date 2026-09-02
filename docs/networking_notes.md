@@ -202,6 +202,29 @@ balanced standing skeleton. Verified live: server-side kills of BOTH players
 collapse both corpses on the host view (hips world-Y 0.97 → ~0.2) and the
 client log shows both mirrored deaths.
 
+⚠️ **Host-side client death ragdoll (lesson 14):** in `ActorBrainBase.ApplyDamage()`,
+fatal damage (`_hitPoints <= 0f && Context.isAlive`) must immediately call
+`RunDeathTeardown()`. On the Host, client players are remote copies whose
+locomotion FSM is disabled (`_locomotion.enabled = false`), and `NetworkedHealth`
+explicitly skips `MirrorHitPoints` on the server (`if (IsServer) return`).
+Without `RunDeathTeardown()` inside `ApplyDamage()`, the Host never ran
+`HandleDeath()` for dying clients, leaving them standing upright on the Host's
+view while they collapsed on the client.
+
+⚠️ **Zombie attack trigger authority (lesson 15):** `NetworkedZombieController.DisableLocalSimulation()`
+must disable all child `ZombieHand` scripts and colliders on non-server peers,
+and `ZombieHand.OnTriggerStay()` must guard against non-server execution
+(`!NetworkManager.Singleton.IsServer => return`). Without this, client-side physics
+triggers fired `InteractableRegistry.Interact` locally on the client, dealing
+rogue client-side bite damage. Because `NetworkedHealth` is server-write only,
+the server never saw this damage, desyncing the client into death while everyone
+else saw them at 100 HP.
+
+⚠️ **Connection approval explicit toggle (lesson 16):** setting
+`NetworkManager.ConnectionApprovalCallback = ApproveConnection` is silently
+ignored by NGO (with a console warning) unless `networkManager.NetworkConfig.ConnectionApproval = true;`
+is set beforehand in `NetworkArenaBootstrap.cs`.
+
 **Bite relay verification (host + built client):** warping zombies in front
 of the client player (facing it — the vision cone check rejects victims
 behind the zombie) produces a server-side bite; the host view shows the

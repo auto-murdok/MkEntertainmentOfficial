@@ -165,7 +165,13 @@ Assets/ImportedContent/<KitName>\
 
 Texture import rules by name suffix: `_N` → normal map (linear), `_ORM`/`_EM`/
 `_M`/`_MASK` → default + linear, everything else → default + sRGB. Import size
-follows the source PNG resolution (power-of-two steps, capped at 4096).
+follows the documented category budgets:
+- Modular kits & architecture: capped to **2048×2048 max**
+- Props & shelves: capped to **1024×1024 max**
+- Ammo pickups & small items: capped to **512×512 max**
+- Packed ORM / mask maps: scaled to **1024×1024 max** (half-res rule)
+- Standalone platform format: **BC5** for normals, **BC7** for albedo and packed ORMs.
+- Physical source PNGs exceeding target resolution on disk are automatically downsampled to prevent Git blob / Git LFS bloat.
 
 Material wiring is **layer-aware**: these UE master materials are layered, with
 texture parameters grouped by a numeric prefix (`00_BaseColor`,
@@ -211,6 +217,13 @@ Channel packing per URP version:
   A=smoothness) + `_OcclusionMap` (G=AO) + `_GlossMapScale=1` and the
   `_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A` keyword disabled.
 
+**World-Aligned Snapping Shader (`UEI/WorldAlignedLit`)**:
+For modular architecture pieces (external bricks, concrete walls, interior wallpaper, wainscoting panels, floors, ceilings), `UEContentImporter` automatically assigns `UEI/WorldAlignedLit` (`Assets/ImportedContent/Shaders/WorldAlignedLit.shader`).
+- Implements world-space triplanar coordinates mirroring Unreal's `MM_Buildings_WorldAligned` and `MF_WorldAligned_BaseMAterial`.
+- Prevents visible seams and orientation breaks when modular walls or floors meet.
+- Texture scale (`_TextureSize` in cm) is automatically tuned by surface category (e.g. 300 cm for exterior bricks/concrete, 250 cm for floors/ceilings, 200 cm for interior wallpaper/wainscoting).
+- Forward+, SRP Batcher, and GPU Resident Drawer compatible.
+
 **UCX collision**: meshes named `UCX_*` inside imported FBXs automatically get
 their renderer disabled and a convex `MeshCollider` (postprocessor scoped to
 `Assets/ImportedContent/` — it does not touch assets elsewhere in the project).
@@ -228,7 +241,7 @@ place, material asset GUIDs are preserved.
 | Textures missing from export | Materials reference textures outside the kit folder. Leg #1 resolves every referenced texture via the asset registry — re-run with the current tool. |
 | Wrong/flat textures on some slots | Layered master material: the instance's real textures sit under a different parameter layer (e.g. `04_Grunge_BaseColor`) than the master defaults (`00_BaseColor` → `T_Base_*` placeholders). The importer's layer-aware picker handles this; if a material still wires placeholders, check the manifest rows for that material. |
 | **Bumpy lighting looks inverted vs UE** | UE normal maps are DirectX-style (Y−), Unity expects OpenGL (Y+) — the importer wires green-flipped `_N_Unity` copies. Don't replace them with the originals. |
-| **Texture orientation wrong on some faces** (e.g. bricks vertical instead of horizontal on `SM_ExternalWall_Baseflor_wall01` / `WindowFrame01`/`03`, fine in UE) | **Root cause is the source mesh**: submeshes contain a mixture of correctly-oriented and rotated UV0 faces (authored with vertical UV gradients or mixed during kit assembly). UE hides it because the kit master `MM_Building` projects its detailed grunge layer in **world space** (`WorldAlignedTexture` / `WorldAlignedNormal` — verified by graph traversal); Unity's URP/Lit samples mesh UV0 faithfully. A world-aligned URP shader was evaluated and **dropped** (visual quality loss, orientation unchanged). **Working fix**: `Tools\UEImport\Apply-UvFixes.ps1` — headless Blender computes 3D differential tangents ($\vec{T}_U, \vec{T}_V$) per polygon in `mode: "auto"` per `uvfixes.json` and rotates only faces where $U$ is vertical around $(0.5, 0.5)$ (idempotent: rotates from `.orig` pristine backups; avoids blanket 90° rotations that invert already-horizontal panels like top walls or bottom-middle window bases) → then re-import in Unity. |
+| **Texture orientation wrong on some faces** (e.g. bricks vertical instead of horizontal on `SM_ExternalWall_Baseflor_wall01` / `WindowFrame01`/`03`, fine in UE) | **Root cause is the source mesh**: submeshes contain a mixture of correctly-oriented and rotated UV0 faces (authored with vertical UV gradients or mixed during kit assembly). UE hides it because the kit master `MM_Building` projects its detailed grunge layer in **world space** (`WorldAlignedTexture` / `WorldAlignedNormal` — verified by graph traversal); Unity's standard URP/Lit samples mesh UV0 faithfully. **Two complementary solutions available**: (1) **`UEI/WorldAlignedLit` shader** (`Assets/ImportedContent/Shaders/WorldAlignedLit.shader`), which projects textures in world space coordinates identically to UE's `MM_Buildings_WorldAligned` and `MF_WorldAligned_BaseMAterial`, providing seamless snapping without UV seams; (2) **`Tools\UEImport\Apply-UvFixes.ps1`**, where headless Blender computes 3D differential tangents ($\vec{T}_U, \vec{T}_V$) per polygon in `mode: "auto"` per `uvfixes.json` and rotates only faces where $U$ is vertical around $(0.5, 0.5)$ for UV-based rendering. |
 | **Baking layered materials (attempted & dropped)** | A G-buffer bake (`SceneCaptureComponent2D` + `SCS_BASE_COLOR` on a plane in a commandlet) was implemented and rolled back: the commandlet's SceneCapture renders materials **without their textures** (flat tint output, ~79 KB 2048² PNGs) regardless of master recompiles, texture-residency forcing, or `r.TextureStreaming 0` — commandlets never tick, so nothing streams/compiles into the capture. Layered materials therefore use the most-detailed-layer approximation. Pixel-perfect would require baking inside a live editor or a unique-UV baker (out of scope). |
 | Part of the model see-through from one side (fine in UE) | Flipped triangle winding from mirrored/negatively-scaled kit pieces baked at FBX export (or a genuinely TwoSided UE material). Importer renders both faces (`_Cull Off`) by default — see Two-sided handling above. |
 | Unity material has base+normal but no metallic/occlusion | URP in Unity 6000.3 has **no `_MaskMap`** property; the importer detects this and uses `_MetallicGlossMap` + `_OcclusionMap`. Don't hand-add `_MaskMap` on this URP version. |

@@ -16,6 +16,6 @@ foreach (var a in System.AppDomain.CurrentDomain.GetAssemblies())
     if (a.GetName().Name == "Assembly-CSharp-Editor") { target = a; break; }
 if (target == null) return "FAIL: Assembly-CSharp-Editor not found";
 var t = target.GetType("UEContentImporter");
-if (t == null) return "FAIL: UEContentImporter type not found";
-t.GetMethod("Run").Invoke(null, new object[] { SOURCE_FOLDER });
+var method = t.GetMethod("ScheduleRun") ?? t.GetMethod("Run");
+method.Invoke(null, new object[] { SOURCE_FOLDER });
 return "INVOKED OK";

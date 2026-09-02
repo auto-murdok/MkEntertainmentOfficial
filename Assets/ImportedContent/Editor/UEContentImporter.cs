@@ -43,7 +43,7 @@ public static class UEContentImporter
 {
     const string DestRoot = "Assets/ImportedContent";
     const string PrefsLastFolder = "UEImport.LastFolder";
-    const int MaxTextureSizeCap = 4096;
+    const int MaxTextureSizeCap = 2048;
 
     // Render both faces on imported kit materials. Matches UE for genuinely
     // TwoSided masters AND masks winding flips that FBX export bakes into
@@ -66,6 +66,31 @@ public static class UEContentImporter
         if (string.IsNullOrEmpty(folder)) return;
         EditorPrefs.SetString(PrefsLastFolder, folder);
         Run(folder);
+    }
+
+    public static void ExecuteBatchImport()
+    {
+        string exportFolder = @"C:\Users\ljtinitanao\Documents\Unreal Projects\MyProject\Exports\Building_kit";
+        var args = System.Environment.GetCommandLineArgs();
+        for (int i = 0; i < args.Length - 1; i++)
+        {
+            if (args[i].Equals("-exportFolder", StringComparison.OrdinalIgnoreCase))
+            {
+                exportFolder = args[i + 1];
+                break;
+            }
+        }
+        Debug.Log("[UEContentImporter] Running ExecuteBatchImport on: " + exportFolder);
+        Run(exportFolder);
+    }
+
+    public static void ScheduleRun(string sourceFolder)
+    {
+        EditorApplication.delayCall += () =>
+        {
+            Debug.Log("[UEContentImporter] Executing scheduled import on: " + sourceFolder);
+            Run(sourceFolder);
+        };
     }
 
     public static void Run(string sourceFolder)
@@ -116,6 +141,7 @@ public static class UEContentImporter
             // shader capability probe (Unity 6.3 URP Lit has no _MaskMap)
             var urpLit = Shader.Find("Universal Render Pipeline/Lit");
             if (urpLit == null) throw new Exception("Universal Render Pipeline/Lit shader not found");
+            var worldAlignedLit = Shader.Find("UEI/WorldAlignedLit");
             var useMaskMap = new Material(urpLit).HasProperty("_MaskMap");
 
             // ---------------- import EVERY exported texture (not just the
@@ -161,8 +187,12 @@ public static class UEContentImporter
                     // ---------------- materials
                     var resolved = new Dictionary<string, Material>();
                     foreach (var matName in usedMaterials)
-                        resolved[matName] = GetOrCreateMaterial(matName, rows, sourceFolder, dest,
-                            urpLit, useMaskMap, texCache, packCache, errors);
+                    {
+                        var m = GetOrCreateMaterial(matName, rows, sourceFolder, dest,
+                            urpLit, worldAlignedLit, useMaskMap, texCache, packCache, errors);
+                        resolved[matName] = m;
+                        if (m != null) matCache[matName] = m;
+                    }
 
                     // ---------------- FBX + prefab
                     var fbxPath = ImportFbx(fbxSrc, dest);
@@ -218,7 +248,7 @@ public static class UEContentImporter
             AssetDatabase.SaveAssets();
             Debug.Log($"[UEImport] DONE kit='{kitName}' meshes={meshes.Count} materials={matCache.Count} textures={texCache.Count} packs={packCache.Count} errors={errors.Count}" +
                       (errors.Count > 0 ? "\n" + string.Join("\n", errors) : ""));
-            if (errors.Count > 0)
+            if (errors.Count > 0 && !Application.isBatchMode)
                 EditorUtility.DisplayDialog("UE Import", $"Finished with {errors.Count} error(s). See console for details.", "OK");
         }
         catch (Exception ex)
@@ -256,15 +286,20 @@ public static class UEContentImporter
             return null;
         }
 
-        var maxSize = PickMaxSize(src);
+        var kitName = Path.GetFileName(dest);
         var isNormal = texName.EndsWith("_N", StringComparison.OrdinalIgnoreCase);
+        var maxSize = PickMaxSize(src, texName, kitName);
 
         // import the original into Textures/ first (complete texture set)
         var dir = dest + "/Textures";
         Directory.CreateDirectory(dir);
         var dst = $"{dir}/{texName}.png";
         File.Copy(src, dst, true);
-        ApplyTextureImport(dst, isNormal, isNormal, maxSize);
+
+        // Physical downsample guard on disk if image exceeds target budget
+        EnsurePngMaxDiskResolution(dst, maxSize, isNormal);
+
+        ApplyTextureImport(dst, isNormal, isNormal, maxSize, false);
 
         // normals: wire a green-flipped copy (UE DirectX Y- -> Unity GL Y+);
         // the original stays in Textures/ for reference
@@ -279,7 +314,7 @@ public static class UEContentImporter
         return tex;
     }
 
-    static void ApplyTextureImport(string assetPath, bool normal, bool linear, int maxSize)
+    static void ApplyTextureImport(string assetPath, bool normal, bool linear, int maxSize, bool isOrmPack = false)
     {
         AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceUpdate);
         var ti = (TextureImporter)AssetImporter.GetAtPath(assetPath);
@@ -288,29 +323,113 @@ public static class UEContentImporter
         ti.sRGBTexture = !linear;
         ti.mipmapEnabled = true;
         if (maxSize > 0) ti.maxTextureSize = maxSize;
+
+        // Standalone platform compression: BC5 for normal maps, BC7 for albedo & packed ORM
+        var standalone = ti.GetPlatformTextureSettings("Standalone");
+        if (standalone == null)
+        {
+            standalone = new TextureImporterPlatformSettings
+            {
+                name = "Standalone",
+                overridden = true
+            };
+        }
+        standalone.overridden = true;
+        if (maxSize > 0) standalone.maxTextureSize = maxSize;
+        standalone.format = normal ? TextureImporterFormat.BC5 : TextureImporterFormat.BC7;
+        standalone.textureCompression = TextureImporterCompression.Compressed;
+        ti.SetPlatformTextureSettings(standalone);
+
         ti.SaveAndReimport();
     }
 
-    // PNG IHDR: width/height are big-endian at bytes 16..23
-    static int PickMaxSize(string pngPath)
+    // Category-aware budget resolution:
+    // Modular kits <= 2048, Props <= 1024, Ammo/Pickups <= 512, ORMs <= 1024
+    static int PickMaxSize(string pngPath, string texName = "", string kitName = "")
     {
         try
         {
             using var fs = File.OpenRead(pngPath);
             Span<byte> buf = stackalloc byte[24];
-            if (fs.Read(buf) < 24) return 0;
+            if (fs.Read(buf) < 24) return MaxTextureSizeCap;
             int w = (buf[16] << 24) | (buf[17] << 16) | (buf[18] << 8) | buf[19];
             int h = (buf[20] << 24) | (buf[21] << 16) | (buf[22] << 8) | buf[23];
             int need = Math.Max(w, h);
+
+            int targetCap = MaxTextureSizeCap;
+            string lowerName = (texName ?? "").ToLowerInvariant();
+            string lowerKit = (kitName ?? "").ToLowerInvariant();
+
+            if (lowerName.Contains("ammo") || lowerName.Contains("cartridge") || lowerName.Contains("bullet"))
+            {
+                targetCap = Math.Min(targetCap, 512);
+            }
+            else if (lowerName.EndsWith("_orm") || lowerName.EndsWith("_pack") || lowerName.EndsWith("_mask") || lowerName.EndsWith("_roughness") || lowerName.EndsWith("_metallic"))
+            {
+                targetCap = Math.Min(targetCap, 1024);
+            }
+            else if (lowerName.Contains("shelf") || lowerName.Contains("crate") || lowerName.Contains("cabinet") || lowerName.Contains("lamp") || lowerName.Contains("door") || lowerName.Contains("partition"))
+            {
+                targetCap = Math.Min(targetCap, 1024);
+            }
+            else if (lowerKit.Contains("building") || lowerKit.Contains("mansion") || lowerKit.Contains("wall") || lowerKit.Contains("floor"))
+            {
+                targetCap = Math.Min(targetCap, 2048);
+            }
+
             int[] sizes = { 256, 512, 1024, 2048, 4096, 8192 };
             foreach (var s in sizes)
                 if (s >= need)
-                    return Math.Min(s, MaxTextureSizeCap);
-            return MaxTextureSizeCap;
+                    return Math.Min(s, targetCap);
+            return targetCap;
         }
         catch
         {
-            return 0; // leave importer default
+            return MaxTextureSizeCap;
+        }
+    }
+
+    // Physical downsampling on disk to guarantee Git blob size <= budget
+    static void EnsurePngMaxDiskResolution(string pngPath, int targetMax, bool isLinear)
+    {
+        if (targetMax <= 0 || !File.Exists(pngPath)) return;
+        try
+        {
+            using var fs = File.OpenRead(pngPath);
+            Span<byte> buf = stackalloc byte[24];
+            if (fs.Read(buf) < 24) return;
+            int w = (buf[16] << 24) | (buf[17] << 16) | (buf[18] << 8) | buf[19];
+            int h = (buf[20] << 24) | (buf[21] << 16) | (buf[22] << 8) | buf[23];
+            fs.Close();
+
+            if (w > targetMax || h > targetMax)
+            {
+                var origTex = new Texture2D(2, 2, TextureFormat.RGBA32, false, isLinear);
+                origTex.LoadImage(File.ReadAllBytes(pngPath));
+                int newW = Math.Min(origTex.width, targetMax);
+                int newH = Math.Min(origTex.height, targetMax);
+
+                var rt = RenderTexture.GetTemporary(newW, newH, 0, RenderTextureFormat.ARGB32,
+                    isLinear ? RenderTextureReadWrite.Linear : RenderTextureReadWrite.sRGB);
+                Graphics.Blit(origTex, rt);
+                var prev = RenderTexture.active;
+                RenderTexture.active = rt;
+
+                var downsampled = new Texture2D(newW, newH, TextureFormat.RGBA32, false, isLinear);
+                downsampled.ReadPixels(new Rect(0, 0, newW, newH), 0, 0);
+                downsampled.Apply();
+
+                RenderTexture.active = prev;
+                RenderTexture.ReleaseTemporary(rt);
+
+                File.WriteAllBytes(pngPath, downsampled.EncodeToPNG());
+                UnityEngine.Object.DestroyImmediate(origTex);
+                UnityEngine.Object.DestroyImmediate(downsampled);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[UEImport] Downsample on disk skipped for {Path.GetFileName(pngPath)}: {ex.Message}");
         }
     }
 
@@ -324,6 +443,9 @@ public static class UEContentImporter
         var dir = dest + "/Generated";
         Directory.CreateDirectory(dir);
         var dst = $"{dir}/{ormTexName}_Pack.png";
+        var kitName = Path.GetFileName(dest);
+        var maxSize = PickMaxSize(Path.Combine(sourceFolder, ormTexName + ".png"), ormTexName, kitName);
+        maxSize = Math.Min(maxSize, 1024); // ORM packed masks always <= 1024 per documented budget
 
         if (!File.Exists(dst))
         {
@@ -347,17 +469,11 @@ public static class UEContentImporter
             File.WriteAllBytes(dst, outTex.EncodeToPNG());
             UnityEngine.Object.DestroyImmediate(orm);
             UnityEngine.Object.DestroyImmediate(outTex);
+
+            EnsurePngMaxDiskResolution(dst, maxSize, true);
         }
 
-        AssetDatabase.ImportAsset(dst, ImportAssetOptions.ForceUpdate);
-        var ti = (TextureImporter)AssetImporter.GetAtPath(dst);
-        if (ti != null)
-        {
-            ti.sRGBTexture = false;
-            ti.mipmapEnabled = true;
-            ti.maxTextureSize = PickMaxSize(dst);
-            ti.SaveAndReimport();
-        }
+        ApplyTextureImport(dst, false, true, maxSize, true);
 
         var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(dst);
         cache[ormTexName] = tex;
@@ -391,9 +507,11 @@ public static class UEContentImporter
             File.WriteAllBytes(dst, outTex.EncodeToPNG());
             UnityEngine.Object.DestroyImmediate(nrm);
             UnityEngine.Object.DestroyImmediate(outTex);
+
+            EnsurePngMaxDiskResolution(dst, maxSize, true);
         }
 
-        ApplyTextureImport(dst, true, true, maxSize);
+        ApplyTextureImport(dst, true, true, maxSize, false);
         var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(dst);
         cache[texName] = tex;
         return tex;
@@ -501,26 +619,60 @@ public static class UEContentImporter
 
     // ------------------------------------------------------------- materials
     static Material GetOrCreateMaterial(string matName, List<Row> rows, string sourceFolder,
-        string dest, Shader urpLit, bool useMaskMap,
+        string dest, Shader urpLit, Shader worldAlignedLit, bool useMaskMap,
         Dictionary<string, Texture2D> texCache, Dictionary<string, Texture2D> packCache,
         List<string> errors)
     {
+        var matRows = rows.Where(r => r.Material == matName).ToList();
+
+        // Check if this material is intended to be world-aligned:
+        // Covers world-aligned masters, modular building walls, bricks, floors, ceilings, concrete, and wallpapers
+        bool isWorldAligned = worldAlignedLit != null && (
+            matRows.Any(r => r.Param.IndexOf("TextureSize", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             r.Param.IndexOf("WorldAligned", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             r.TexturePath.IndexOf("WorldAligned", StringComparison.OrdinalIgnoreCase) >= 0) ||
+            matName.IndexOf("WorldAligned", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            matName.IndexOf("External_Wall", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            matName.IndexOf("Bricks_External", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            matName.IndexOf("Concrete_Wall", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            matName.IndexOf("Concrete_InnerWall", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            matName.IndexOf("Wallpaper", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            matName.IndexOf("Wood_Wainscoting", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            matName.IndexOf("Wood_InternalFloor", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            matName.IndexOf("Ceiling", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            matName.IndexOf("Floor", StringComparison.OrdinalIgnoreCase) >= 0
+        );
+
+        var targetShader = isWorldAligned ? worldAlignedLit : urpLit;
+
         var dir = dest + "/Materials";
         Directory.CreateDirectory(dir);
         var path = $"{dir}/{matName}.mat";
         var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
         if (mat == null)
         {
-            mat = new Material(urpLit) { name = matName };
+            mat = new Material(targetShader) { name = matName };
             AssetDatabase.CreateAsset(mat, path);
         }
-        else if (mat.shader != urpLit)
+        else if (mat.shader != targetShader)
         {
             // self-heal: re-route materials that drifted to another shader
-            mat.shader = urpLit;
+            mat.shader = targetShader;
         }
 
-        var matRows = rows.Where(r => r.Material == matName).ToList();
+        if (isWorldAligned)
+        {
+            // Set world texture size tailored to the surface material type
+            float texSize = 300f;
+            if (matName.IndexOf("Floor", StringComparison.OrdinalIgnoreCase) >= 0) texSize = 250f;
+            else if (matName.IndexOf("Wallpaper", StringComparison.OrdinalIgnoreCase) >= 0) texSize = 200f;
+            else if (matName.IndexOf("Wainscoting", StringComparison.OrdinalIgnoreCase) >= 0) texSize = 200f;
+            else if (matName.IndexOf("Ceiling", StringComparison.OrdinalIgnoreCase) >= 0) texSize = 250f;
+            else if (matName.IndexOf("Concrete", StringComparison.OrdinalIgnoreCase) >= 0) texSize = 300f;
+
+            mat.SetFloat("_TextureSize", texSize);
+            mat.SetFloat("_BlendSharpness", 4.0f);
+        }
         var (baseTexName, normalTexName, ormTexName) = SelectMaterialTextures(matRows, sourceFolder);
 
         if (baseTexName != null)

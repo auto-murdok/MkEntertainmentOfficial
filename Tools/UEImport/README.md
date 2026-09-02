@@ -9,16 +9,16 @@ wired to URP Lit.
 ## Quickstart
 
 ```powershell
-# Leg #1 (preferred - needs the source .uproject):
+# Native UE 5.8 FBX Export (Primary standard - replaces glTF / gltfpack pipelines):
 Tools\UEImport\Run-Export.ps1 -UProject "C:\...\MyProject.uproject" -AssetPath "/Game/Mansion/Mesh/Assets/Building_kit"
-# optional: apply configured UV fixes for meshes with rotated UV authoring
+# optional: apply configured UV fixes for meshes with rotated UV authoring (or use UEI/WorldAlignedLit shader)
 Tools\UEImport\Apply-UvFixes.ps1
 # then in Unity: Tools > UE Import > Import FBX Folder... -> pick the output folder
 
-# Leg #2 (no editor UI; needs a cook first):
-Tools\UEImport\cook\Start-Cook.ps1 -UProject "C:\...\MyProject.uproject"
-Tools\UEImport\cue4parse\setup-prereqs.ps1
-Tools\UEImport\cue4parse\Convert-Cooked.ps1 -CookedContent "C:\...\Saved\Cooked\Windows\MyProject\Content" -Filter "Building_kit" -OutDir "C:\...\Exports\cue4parse_fbx"
+# Legacy/Cooked (cue4parse glTF leg):
+# Tools\UEImport\cook\Start-Cook.ps1 -UProject "C:\...\MyProject.uproject"
+# Tools\UEImport\cue4parse\setup-prereqs.ps1
+# Tools\UEImport\cue4parse\Convert-Cooked.ps1 -CookedContent "C:\...\Saved\Cooked\Windows\MyProject\Content" -Filter "Building_kit" -OutDir "C:\...\Exports\cue4parse_fbx"
 
 # end of a headless session: kill the -automated editor + helpers
 Tools\UEImport\Cleanup-Runtime.ps1

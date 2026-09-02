@@ -242,7 +242,10 @@ public sealed class HitscanWeapon : MonoBehaviour, IFirearm
         _triggerPressed = false;
         _reloadFinishTime = Time.time + (_definition != null ? _definition.reloadDuration : 1.6f);
         _events.onReloadStarted?.Invoke();
-        if (_animator != null) _animator.SetBool(AnimatorUtils.IsReloadingHash, true);
+        if (_animator != null && AnimatorUtils.HasParameter(_animator, AnimatorUtils.IsReloadingHash))
+        {
+            _animator.SetBool(AnimatorUtils.IsReloadingHash, true);
+        }
         if (_animator != null) _animator.CrossFade(_idleHash, 0f);
     }
 
@@ -261,7 +264,10 @@ public sealed class HitscanWeapon : MonoBehaviour, IFirearm
             _clip += taken;
             _reserve -= taken;
         }
-        if (_animator != null) _animator.SetBool(AnimatorUtils.IsReloadingHash, false);
+        if (_animator != null && AnimatorUtils.HasParameter(_animator, AnimatorUtils.IsReloadingHash))
+        {
+            _animator.SetBool(AnimatorUtils.IsReloadingHash, false);
+        }
         _events.onReloadFinished?.Invoke();
         NotifyShootUI();
     }

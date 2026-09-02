@@ -68,6 +68,7 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
         {
             Context.isAlive = false;
             Died?.Invoke();
+            RunDeathTeardown();
         }
     }
     // IDamageable: attacker-supplied damage, centralized through ApplyDamage.
@@ -81,6 +82,19 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
     {
         if (Context == null || !Context.isAlive)
         {
+            return;
+        }
+
+        if (serverHitPoints <= 0f)
+        {
+            float amount = Mathf.Max(0f, _hitPoints);
+            _hitPoints = 0f;
+            Context.isAlive = false;
+            CombatLog.ReportDamage(amount, 0f, gameObject);
+            Damaged?.Invoke(amount);
+            Died?.Invoke();
+            Debug.Log($"[{name}] Death mirrored from the server (fatal state replicated).");
+            RunDeathTeardown();
             return;
         }
 

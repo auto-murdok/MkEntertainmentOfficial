@@ -19,6 +19,13 @@ public class ZombieHand : MonoBehaviour
     {
         if (_zombieBrain == null || _zombieBrain.isBiting) return;
 
+        // Server-authoritative: in a networked session, only the host evaluates hand/bite triggers.
+        var networkManager = Unity.Netcode.NetworkManager.Singleton;
+        if (networkManager != null && networkManager.IsListening && !networkManager.IsServer)
+        {
+            return;
+        }
+
         ISurvivor survivor = other.GetComponentInParent<ISurvivor>();
         InteractableRegistry registry = _zombieBrain != null ? _zombieBrain.registry : null;
         if (survivor is IInteractable interactableSurvivor && interactableSurvivor.id != _zombieBrain.id && registry != null)

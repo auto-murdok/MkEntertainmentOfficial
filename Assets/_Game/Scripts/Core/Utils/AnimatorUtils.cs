@@ -42,4 +42,15 @@ public static class AnimatorUtils
         if (animator == null) return;
         animator.SetLayerWeight(layer, Mathf.Lerp(animator.GetLayerWeight(layer), weight, DampFactor(speed, Time.deltaTime)));
     }
+
+    public static bool HasParameter(Animator animator, int hash)
+    {
+        if (animator == null) return false;
+        var parameters = animator.parameters;
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            if (parameters[i].nameHash == hash) return true;
+        }
+        return false;
+    }
 }

@@ -54,5 +54,13 @@ public class NetworkedZombieController : NetworkBehaviour
         {
             agent.enabled = false;
         }
+
+        // Server-authoritative attacks: disable all hand attack colliders/scripts
+        // on remote clients so client physics never triggers rogue local damage.
+        foreach (var hand in GetComponentsInChildren<ZombieHand>(true))
+        {
+            hand.Disable();
+            hand.enabled = false;
+        }
     }
 }

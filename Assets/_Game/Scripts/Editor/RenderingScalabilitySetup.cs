@@ -33,12 +33,12 @@ public static class RenderingScalabilitySetup
         SerializedProperty brgProp = so.FindProperty("m_BrgStripping");
         if (brgProp != null)
         {
-            brgProp.intValue = 2; // 2 = Keep All
+            brgProp.intValue = 1; // 1 = Strip Unused (fast builds, only variants used in scenes are compiled)
         }
 
         so.ApplyModifiedProperties();
         EditorUtility.SetDirty(graphicsSettings);
-        Debug.Log("[RenderingScalabilitySetup] Configured BatchRendererGroup Variants to 'Keep All' (m_BrgStripping = 2).");
+        Debug.Log("[RenderingScalabilitySetup] Configured BatchRendererGroup Variants to 'Strip Unused' (m_BrgStripping = 1).");
     }
 
     private static void ConfigureRendererData()

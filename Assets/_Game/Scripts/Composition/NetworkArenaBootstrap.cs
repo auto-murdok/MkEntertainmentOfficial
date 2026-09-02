@@ -27,8 +27,9 @@ public class NetworkArenaBootstrap : MonoBehaviour
             return; // already started (e.g. scene reloaded during a session)
         }
 
-        // Spawn-position approval must be installed before the session starts
+        // Spawn-position approval must be enabled and installed before the session starts
         // (the host's own connection goes through it as well).
+        networkManager.NetworkConfig.ConnectionApproval = true;
         networkManager.ConnectionApprovalCallback = ApproveConnection;
 
         // Role resolution: an explicit menu choice wins; otherwise the command

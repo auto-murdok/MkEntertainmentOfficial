@@ -129,7 +129,9 @@ $RECYCLE.BIN/
 **/*.fbm.meta
 
 
-# UEI imported content is regenerable via Tools/UEImport - keep only the importer tooling
+# UEI imported content: Building_kit tracked as-is; other kits regenerable
 Assets/ImportedContent/*
 !Assets/ImportedContent/Editor
 !Assets/ImportedContent/Editor.meta
+!Assets/ImportedContent/Building_kit
+!Assets/ImportedContent/Building_kit.meta

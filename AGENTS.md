@@ -258,6 +258,17 @@ Tests: `GameCliArgsTests` (EditMode) covers parser, mode/connect aliases, auto-q
 
 ---
 
+## 🏗️ UE → Unity Content Import (UEI pipeline)
+
+Unreal kit content (Mansion/Building_kit style) is imported via
+`Tools/UEImport/` — full reference: `docs/ue_content_import.md`. New agents:
+the `ue-unity-import` and `ue-commandlet-python` skills cover the decision
+tree, exact commands, and every hard-won pitfall (Zen-store cooks, UE 5.8
+python API renames, commandlet log sinks, world-aligned materials). Read them
+before touching UE import/export work.
+
+---
+
 ## ⚡ Performance Best Practices & Anti-pattern Guidelines
 
 1. **Pre-hash Animator Parameters**:

@@ -431,10 +431,10 @@ public static class UEContentImporter
         var p = param.ToLowerInvariant();
         switch (role)
         {
-            case "base": return p.Contains("basecolor");
-            case "normal": return p.Contains("normal");
+            case "base": return p.Contains("basecolor") || p == "bc" || p.Contains("diffuse") || p.Contains("albedo");
+            case "normal": return p.Contains("normal") || p == "n" || p.Contains("bump");
             // "normal" contains "orm" - guard so normal params don't match ORM
-            case "orm": return p.Contains("orm") && !p.Contains("normal");
+            case "orm": return (p.Contains("orm") || p.Contains("mrao")) && !p.Contains("normal");
             default: return false;
         }
     }

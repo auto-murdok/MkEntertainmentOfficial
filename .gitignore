@@ -129,9 +129,13 @@ $RECYCLE.BIN/
 **/*.fbm.meta
 
 
-# UEI imported content: Building_kit tracked as-is; other kits regenerable
+# UEI imported content: tracked kits
 Assets/ImportedContent/*
 !Assets/ImportedContent/Editor
 !Assets/ImportedContent/Editor.meta
 !Assets/ImportedContent/Building_kit
 !Assets/ImportedContent/Building_kit.meta
+!Assets/ImportedContent/MTF_Environment
+!Assets/ImportedContent/MTF_Environment.meta
+!Assets/ImportedContent/GunFX
+!Assets/ImportedContent/GunFX.meta

@@ -9,7 +9,7 @@
 // editor main thread and may exceed the 5 s pipeline budget - confirm via the
 // "[UEImport] DONE" console line or project log afterwards.
 
-const string SOURCE_FOLDER = @"C:\Users\me\Documents\Unreal Projects\MyProject\Exports\Building_kit";
+const string SOURCE_FOLDER = @"C:\Users\ljtinitanao\Documents\Unreal Projects\MyProject\Exports\Building_kit";
 
 var target = (System.Reflection.Assembly)null;
 foreach (var a in System.AppDomain.CurrentDomain.GetAssemblies())

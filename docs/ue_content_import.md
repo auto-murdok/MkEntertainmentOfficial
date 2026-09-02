@@ -41,23 +41,31 @@ folder.
    Wait for `UEI EXPORT OK`. Output: `...\MyProject\Exports\Building_kit\` with
    one `.fbx` per mesh, one `.png` per referenced texture, and
    `import_manifest.csv`.
-2. **Import into Unity** — with the editor open:
+2. **Optional: apply UV fixes** — if the config `Tools\UEImport\uvfixes.json`
+   has entries for the exported meshes (kit meshes whose UVs are authored
+   rotated), patch them before importing:
+   ```powershell
+   Tools\UEImport\Apply-UvFixes.ps1        # idempotent; rotates from .orig backups
+   ```
+   Flip `degrees` to −90 in the config if the corrected orientation is wrong.
+3. **Import into Unity** — with the editor open:
    `Tools ▸ UE Import ▸ Import FBX Folder...` → pick
    `...\MyProject\Exports\Building_kit`.
    Wait for the `[UEImport] DONE ...` console line (progress bar shown).
-3. **Verify** (optional, headless):
+4. **Verify** (optional, headless):
    ```powershell
    unity command eval_file --file Tools\UEImport\unity\run_import.cs      # re-run import
    unity command eval_file --file Tools\UEImport\unity\verify_import.cs   # dump material bindings
    ```
    Edit the folder/kit constants at the top of each script first.
-4. **Use it** — prefabs live at `Assets/ImportedContent/<KitName>/<Mesh>.prefab`
-   (materials under `Materials/`, textures under `Textures/`, ORM packs under
-   `Generated/`). Drag prefabs into scenes as needed.
-5. **Re-import after art changes** — repeat steps 1–2; everything is
+5. **Use it** — prefabs live at
+   `Assets/ImportedContent/<KitName>/Prefabs/<Mesh>.prefab` (FBX sources under
+   `Meshes/`, materials under `Materials/`, textures under `Textures/`, ORM
+   packs under `Generated/`). Drag prefabs into scenes as needed.
+6. **Re-import after art changes** — repeat steps 1–3; everything is
    overwritten in place, material GUIDs are preserved, so scene references
    survive.
-6. **Kill the headless runtime when done** — headless sessions leave a Unity
+7. **Kill the headless runtime when done** — headless sessions leave a Unity
    editor (`-automated`) and the unity-cli identity helper running:
    ```powershell
    Tools\UEImport\Cleanup-Runtime.ps1            # add -DryRun to just list
@@ -189,23 +197,12 @@ UE"). The exporter records each material's actual `two_sided` flag in the
 manifest; the Unity importer's `ForceTwoSided` option (on by default) renders
 both faces regardless.
 
-**Material bake (flattened layered materials)**: UE renders the layered blend
-that Unity cannot reproduce with a single texture. After exporting, bake each
-material's true blended albedo via a G-buffer capture:
-
-```powershell
-UnrealEditor-Cmd.exe "<uproject>" -run=pythonscript `
-  -script="Tools\UEImport\ue\bake_materials.py" -unattended -nop4 -nosplash `
-  -stdout -AllowCommandletRendering
-```
-
-Writes `Baked\<Material>_Bake_B.png` (base-color capture of the real material
-on a flat plane inside `/Engine/Maps/Entry`) for every unique manifest
-material. The Unity importer prefers the baked albedo automatically; normals
-and ORM keep the detailed-layer approximation. Limitations: vertex colors bake
-at full strength (per-mesh VCOL variation is not captured), and ORM is not
-G-buffer-capturable (`SCS_ROUGHNESS` doesn't exist) — it stays the
-detailed-layer pack.
+**Glass materials**: slots whose material name contains `glass` (e.g.
+`MI_Glass_Window_Roof`) have no texture parameters in the manifest — in UE they
+are flat translucent panes. The importer configures them as URP transparent
+(alpha-blended 0.35 tint, smoothness 0.9, ZWrite off, transparent queue) with
+no textures; the `[UEImport] DONE ... errors=1` notice about a missing base
+color for glass is expected and harmless.
 
 Channel packing per URP version:
 
@@ -230,7 +227,9 @@ place, material asset GUIDs are preserved.
 | Python property errors on `StaticMaterial.material` / `parameter_name` | UE 5.8 renames: use `material_interface` and `parameter_info.name`. |
 | Textures missing from export | Materials reference textures outside the kit folder. Leg #1 resolves every referenced texture via the asset registry — re-run with the current tool. |
 | Wrong/flat textures on some slots | Layered master material: the instance's real textures sit under a different parameter layer (e.g. `04_Grunge_BaseColor`) than the master defaults (`00_BaseColor` → `T_Base_*` placeholders). The importer's layer-aware picker handles this; if a material still wires placeholders, check the manifest rows for that material. |
-| Bumpy lighting looks inverted vs UE | UE normal maps are DirectX-style (Y−), Unity expects OpenGL (Y+) — the importer wires green-flipped `_N_Unity` copies. Don't replace them with the originals. |
+| **Bumpy lighting looks inverted vs UE** | UE normal maps are DirectX-style (Y−), Unity expects OpenGL (Y+) — the importer wires green-flipped `_N_Unity` copies. Don't replace them with the originals. |
+| **Texture orientation wrong on some faces** (e.g. bricks vertical instead of horizontal on `SM_ExternalWall_Baseflor_wall01` / `WindowFrame01`/`03`, fine in UE) | **Root cause is the source mesh**: submeshes contain a mixture of correctly-oriented and rotated UV0 faces (authored with vertical UV gradients or mixed during kit assembly). UE hides it because the kit master `MM_Building` projects its detailed grunge layer in **world space** (`WorldAlignedTexture` / `WorldAlignedNormal` — verified by graph traversal); Unity's URP/Lit samples mesh UV0 faithfully. A world-aligned URP shader was evaluated and **dropped** (visual quality loss, orientation unchanged). **Working fix**: `Tools\UEImport\Apply-UvFixes.ps1` — headless Blender computes 3D differential tangents ($\vec{T}_U, \vec{T}_V$) per polygon in `mode: "auto"` per `uvfixes.json` and rotates only faces where $U$ is vertical around $(0.5, 0.5)$ (idempotent: rotates from `.orig` pristine backups; avoids blanket 90° rotations that invert already-horizontal panels like top walls or bottom-middle window bases) → then re-import in Unity. |
+| **Baking layered materials (attempted & dropped)** | A G-buffer bake (`SceneCaptureComponent2D` + `SCS_BASE_COLOR` on a plane in a commandlet) was implemented and rolled back: the commandlet's SceneCapture renders materials **without their textures** (flat tint output, ~79 KB 2048² PNGs) regardless of master recompiles, texture-residency forcing, or `r.TextureStreaming 0` — commandlets never tick, so nothing streams/compiles into the capture. Layered materials therefore use the most-detailed-layer approximation. Pixel-perfect would require baking inside a live editor or a unique-UV baker (out of scope). |
 | Part of the model see-through from one side (fine in UE) | Flipped triangle winding from mirrored/negatively-scaled kit pieces baked at FBX export (or a genuinely TwoSided UE material). Importer renders both faces (`_Cull Off`) by default — see Two-sided handling above. |
 | Unity material has base+normal but no metallic/occlusion | URP in Unity 6000.3 has **no `_MaskMap`** property; the importer detects this and uses `_MetallicGlossMap` + `_OcclusionMap`. Don't hand-add `_MaskMap` on this URP version. |
 | `unity command eval_file` reports "Main thread operation timed out" | The eval's 5 s HTTP budget expired; long operations still complete on the main thread. Verify via console log markers instead of the exit code. |

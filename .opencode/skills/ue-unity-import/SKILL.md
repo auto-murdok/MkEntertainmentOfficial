@@ -11,6 +11,9 @@ manifest, then import into Unity with URP/Lit materials wired. Full reference:
 `Tools ▸ UE Import ▸ Import FBX Folder...` (or headless via the eval helpers
 in `Tools/UEImport/unity/`).
 
+UE commandlet/pythonscript automation patterns (boot flags, log sinks, detach,
+5.8 API renames) live in the **`ue-commandlet-python`** skill.
+
 ## Decide the route first (investigate before acting)
 
 1. Does the user have the **source .uproject** that owns the assets?
@@ -90,15 +93,25 @@ Match `-Game`/`--game` (default `GAME_UE5_8`) to the cooking engine version.
   proxy - a 2048^2 flat tint is ~78 KB vs ~7.8 MB for detailed concrete at the
   same resolution), which best approximates UE's vertex-color layer blending.
   Don't "fix" it back to `00_*`.
-- **Baking layered materials**: `Tools/UEImport/ue/bake_materials.py` renders
-  each material's true blended albedo via a SceneCapture G-buffer capture
-  (SCS_BASE_COLOR on a plane in /Engine/Maps/Entry) into
-  `Baked/<Material>_Bake_B.png`; the Unity importer prefers those as base maps.
-  5.8 python specifics: `RenderingLibrary.create_render_target2d` (lowercase 2d,
-  5-arg form), enum members are `RTF_*` under `unreal.TextureRenderTargetFormat`,
-  `export_render_target(world, rt, path, name)` splits path/name, RT class is
-  `unreal.TextureRenderTarget2D`. No roughness capture source exists - ORM stays
-  a layer approximation. VCOL bakes at full strength.
+- **Do NOT attempt commandlet material bakes** (tried & rolled back):
+  SceneCaptureComponent2D + SCS_BASE_COLOR in a pythonscript commandlet renders
+  materials WITHOUT textures (flat tint output, byte-identical ~79 KB PNGs) -
+  master recompiles, texture-residency forcing and `r.TextureStreaming 0` do
+  not help because commandlets never tick (no streaming/async compile). The
+  most-detailed-layer wiring is the supported approximation; true fidelity
+  needs a live-editor bake or a unique-UV baker.
+- **Texture orientation on some faces** (bricks vertical in Unity, horizontal in
+  UE): root cause is the SOURCE MESH - submeshes contain a mix of correctly-oriented
+  and rotated UV0 faces (authored with vertical gradients or mixed during kit assembly).
+  UE hides it because MM_Building projects its grunge layer in world space
+  (`WorldAlignedTexture`/`WorldAlignedNormal` inside `MF_GrungeMaterial`, verified by
+  recursive graph traversal). A world-aligned URP shader was evaluated and DROPPED
+  (quality loss, orientation unchanged - don't retry). **Working fix**:
+  `Tools\UEImport\Apply-UvFixes.ps1` (manual step after export) - headless
+  Blender evaluates 3D differential tangents ($\vec{T}_U, \vec{T}_V$) in `mode: "auto"`
+  per `uvfixes.json` and rotates only faces where $U$ is vertical around $(0.5, 0.5)$
+  (idempotent via .orig backups; preserves unrotated faces like top walls and
+  bottom-middle window bases), then re-import in Unity.
 - Kit parts **see-through from one side only** (fine in UE) = flipped triangle
   winding from mirrored/negatively-scaled pieces baked at FBX export (UE
   masters here are NOT flagged TwoSided). The importer renders both faces

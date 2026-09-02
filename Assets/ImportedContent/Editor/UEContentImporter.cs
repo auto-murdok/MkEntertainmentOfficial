@@ -127,16 +127,6 @@ public static class UEContentImporter
                 EditorUtility.DisplayProgressBar("UE Import", "texture " + name, i / (float)Math.Max(1, allPngs.Length));
                 ImportTexture(sourceFolder, dest, name, texCache);
             }
-            var bakedDir = Path.Combine(sourceFolder, "Baked");
-            if (Directory.Exists(bakedDir))
-            {
-                var bakedPngs = Directory.GetFiles(bakedDir, "*.png");
-                for (var i = 0; i < bakedPngs.Length; i++)
-                {
-                    var name = Path.GetFileNameWithoutExtension(bakedPngs[i]);
-                    ImportTexture(sourceFolder, dest, name, texCache);
-                }
-            }
 
             int total = meshes.Count;
             for (var mi = 0; mi < meshes.Count; mi++)
@@ -258,9 +248,7 @@ public static class UEContentImporter
     {
         if (cache.TryGetValue(texName, out var cached)) return cached;
 
-        // search the export root first, then the Baked subfolder
         var src = Path.Combine(sourceFolder, texName + ".png");
-        if (!File.Exists(src)) src = Path.Combine(sourceFolder, "Baked", texName + ".png");
         if (!File.Exists(src))
         {
             Debug.LogWarning("[UEImport] texture PNG missing: " + texName);
@@ -526,14 +514,14 @@ public static class UEContentImporter
             mat = new Material(urpLit) { name = matName };
             AssetDatabase.CreateAsset(mat, path);
         }
+        else if (mat.shader != urpLit)
+        {
+            // self-heal: re-route materials that drifted to another shader
+            mat.shader = urpLit;
+        }
 
         var matRows = rows.Where(r => r.Material == matName).ToList();
         var (baseTexName, normalTexName, ormTexName) = SelectMaterialTextures(matRows, sourceFolder);
-
-        // the UE-side baked albedo captures the FULL layered blend (grading,
-        // tiling, masks) - prefer it over the single-layer pick when present
-        var bakedBase = Path.Combine(sourceFolder, "Baked", matName + "_Bake_B.png");
-        if (File.Exists(bakedBase)) baseTexName = matName + "_Bake_B";
 
         if (baseTexName != null)
         {
@@ -582,6 +570,25 @@ public static class UEContentImporter
                         || twoSidedStr == "1"
                         || twoSidedStr.Equals("true", StringComparison.OrdinalIgnoreCase);
         mat.SetFloat("_Cull", twoSided ? 0f : 2f); // 0 = Off (both faces), 2 = Back
+
+        // glass materials have no texture params in the manifest (flat
+        // translucent panes in UE) - configure URP transparency so windows
+        // are see-through instead of opaque white
+        if (matName.ToLowerInvariant().Contains("glass"))
+        {
+            mat.SetFloat("_Surface", 1f); // Transparent
+            mat.SetFloat("_Blend", 0f);   // Alpha
+            mat.SetOverrideTag("RenderType", "Transparent");
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.DisableKeyword("_ALPHATEST_ON");
+            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mat.SetInt("_ZWrite", 0);
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            var tint = mat.GetColor("_BaseColor");
+            mat.SetColor("_BaseColor", new Color(tint.r, tint.g, tint.b, 0.35f));
+            mat.SetFloat("_Smoothness", 0.9f);
+        }
 
         EditorUtility.SetDirty(mat);
         return mat;

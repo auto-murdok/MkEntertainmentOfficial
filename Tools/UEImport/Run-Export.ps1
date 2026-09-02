@@ -126,13 +126,24 @@ $fbxCount = @(Get-ChildItem $OutDir -Filter *.fbx -ErrorAction SilentlyContinue)
 $pngCount = @(Get-ChildItem $OutDir -Filter *.png -ErrorAction SilentlyContinue).Count
 $manifest = Join-Path $OutDir 'import_manifest.csv'
 $manifestOk = Test-Path $manifest
+
+# the filter must have produced at least one manifest row - a no-match run
+# (asset missing from the project) otherwise passes on stale outputs
+$filterOk = $true
+if ($Filter -and $manifestOk) {
+    $matchedRows = @(Import-Csv $manifest -ErrorAction SilentlyContinue |
+        Where-Object { $_.mesh -match [regex]::Escape($Filter) })
+    $filterOk = $matchedRows.Count -gt 0
+    if (-not $filterOk) { Write-Warning "filter '$Filter' matched no manifest rows - nothing was exported for it" }
+}
+
 Write-Host ''
 Write-Host "Output: $OutDir"
 Write-Host "  FBX: $fbxCount  PNG: $pngCount  manifest: $manifestOk"
 
 Remove-Item $bootstrap, $runCmd -Force -ErrorAction SilentlyContinue
 
-if (-not $sawFailed -and $fbxCount -gt 0 -and $manifestOk) {
+if (-not $sawFailed -and $fbxCount -gt 0 -and $manifestOk -and $filterOk) {
     Write-Host 'UEI EXPORT OK' -ForegroundColor Green
     exit 0
 }

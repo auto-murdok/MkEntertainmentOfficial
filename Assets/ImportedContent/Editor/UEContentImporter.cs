@@ -53,6 +53,11 @@ public static class UEContentImporter
     // two_sided=0) would also render their backfaces.
     const bool ForceTwoSided = true;
 
+    // Recenter modular prefab pivots to BottomCenter (X=center, Y=bottom, Z=center)
+    // so modular wall, floor, and roof pieces snap cleanly to integer grids and rotate
+    // in-place symmetrically without shifting.
+    const bool CenterModularPivots = true;
+
     struct Row
     {
         public string Mesh, Slot, Material, Param, Texture, TexturePath, TwoSided;
@@ -235,6 +240,11 @@ public static class UEContentImporter
                         rend.sharedMaterials = mats;
                     }
 
+                    if (CenterModularPivots)
+                    {
+                        RecenterPrefabToBottomCenter(go);
+                    }
+
                     PrefabUtility.SaveAsPrefabAsset(go, prefabPath);
                     if (existing != null) PrefabUtility.UnloadPrefabContents(go);
                     else UnityEngine.Object.DestroyImmediate(go);
@@ -258,6 +268,31 @@ public static class UEContentImporter
         finally
         {
             EditorUtility.ClearProgressBar();
+        }
+    }
+
+    static void RecenterPrefabToBottomCenter(GameObject root)
+    {
+        var renderers = root.GetComponentsInChildren<MeshRenderer>(true);
+        if (renderers.Length == 0) return;
+
+        Bounds b = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+        {
+            b.Encapsulate(renderers[i].bounds);
+        }
+
+        Vector3 center = b.center - root.transform.position;
+        Vector3 min = b.min - root.transform.position;
+        Vector3 bottomCenter = new Vector3(center.x, min.y, center.z);
+
+        // If bottomCenter is already effectively at zero, avoid redundant shifts
+        if (bottomCenter.sqrMagnitude < 0.00001f) return;
+
+        for (int i = 0; i < root.transform.childCount; i++)
+        {
+            var child = root.transform.GetChild(i);
+            child.localPosition -= bottomCenter;
         }
     }
 

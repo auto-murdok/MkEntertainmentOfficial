@@ -224,6 +224,13 @@ For modular architecture pieces (external bricks, concrete walls, interior wallp
 - Texture scale (`_TextureSize` in cm) is automatically tuned by surface category (e.g. 300 cm for exterior bricks/concrete, 250 cm for floors/ceilings, 200 cm for interior wallpaper/wainscoting).
 - Forward+, SRP Batcher, and GPU Resident Drawer compatible.
 
+**Modular Prefab Pivot Calibration (BottomCenter Snapping Standard)**:
+In Unreal, modular meshes are often authored with pivots at origin/corners. When exported to Unity, this causes rotation-induced shifts and awkward fractional placement.
+- `UEContentImporter` applies automatic pivot normalization via `CenterModularPivots = true` (`RecenterPrefabToBottomCenter`).
+- The prefab root transform sits at the exact **BottomCenter** (`X = 0`, `Y = 0` at floor level, `Z = 0` at wall midline).
+- Child meshes (`SM_*`) and colliders (`UCX_*`) are shifted inside the prefab so physics, visual meshes, and LODs stay 100% aligned.
+- **Snapping Invariant**: Walls of width $W$ (2m, 4m, 6m, 10m) snap deterministically with $X_{next} = X_{curr} + \frac{W_{curr} + W_{next}}{2}$. Rotating pieces by 90° or 180° rotates around their exact center in-place without coordinate displacement.
+
 **UCX collision**: meshes named `UCX_*` inside imported FBXs automatically get
 their renderer disabled and a convex `MeshCollider` (postprocessor scoped to
 `Assets/ImportedContent/` — it does not touch assets elsewhere in the project).

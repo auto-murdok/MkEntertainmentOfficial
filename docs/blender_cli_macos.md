@@ -33,6 +33,18 @@ Run: `blender --background --factory-startup --python <probe> -- <sample.fbx> <o
 - Full dry-run loop passed: `remove_degenerate.py` → `flip_faces.py` →
   `uv_rotate90.py` → `uv_scale.py` → `worldspace_preview.py` (render proof OK).
 
+### Where Blender work lives (`_blender/`, since PR #13)
+
+- `_blender/tools/` — working scripts (FBX inspection, polish render pipeline,
+  `build_matlib.py` material-library builder). All must resolve the repo root
+  from `__file__`, never hardcode a machine path.
+- `_blender/polish/` — session output meant to be committed: material libraries
+  (`matlib_building_kit.json`, matmap JSONs, `fbx_slots.json`) and **curated
+  proof renders** (`flipped_faces_join.png`, `normal_fix_before_after.png`,
+  `repaired_normals/`).
+- `_blender/tests/` — standalone test scenes (`indoor_room.blend`,
+  `build_indoor_room.py`).
+
 ## 3. Known issues & fixes (so you don't rediscover them)
 
 1. **`worldspace_preview.py` (and any headless render) needs an ABSOLUTE `out.png`
@@ -51,6 +63,13 @@ Run: `blender --background --factory-startup --python <probe> -- <sample.fbx> <o
    is gone; on this machine the CLI is brew's. Denoising stays OFF in QA renders for
    stable proof shots (no longer because 4.0.2 lacked OIDN — 5.2 ships it; the rule stands
    for reproducibility).
+6. **`_blender/**/renders/` is gitignored** (raw render output; ~35 MB was untracked
+   in 8d75fae). Committed proof images must therefore go directly under
+   `_blender/polish/`, **not** into a `renders/` subfolder — otherwise `git add -A`
+   silently skips them while staging the deletion (this is how the sole historical
+   proof of PR #10 vanished; restored as `_blender/polish/flipped_faces_join.png`).
+   Ad-hoc renders for PR descriptions can stay in `renders/` (ignored, attach to the
+   PR body instead).
 
 ## 4. Recipes
 

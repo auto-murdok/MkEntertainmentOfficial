@@ -27,6 +27,12 @@ in-game look.
     world-space material replicating `UEI/WorldAlignedLit`
     (`uvX=(-Z,Y)`, `uvY=(X,Z)`, `uvZ=(X,Y)` over tile `_TextureSize/100` m,
     weights `|n|^sharpness` normalized). Ignores mesh UVs, like the shader.
+  - `remove_degenerate.py <in.fbx> <out.fbx>` — delete zero-area faces
+    (degenerate triangles) from all meshes.
+  - `flip_faces.py <in.fbx> <out.fbx>` — reverse winding of faces whose
+    normal opposes all edge-neighbors (max dot < -0.5); preserves UVs via
+    bmesh `normal_flip()`. Re-run until clean; leave ambiguous
+    single-neighbor coplanar pairs alone (likely double-sided).
 - Python `trimesh` 5.1.0 for fast mesh stats; ImageMagick 6 for texture work.
 
 ## Workflow

@@ -269,6 +269,26 @@ before touching UE import/export work.
 
 ---
 
+## 🧊 Headless Blender CLI (3D model polish — FBX)
+
+- **macOS:** Blender **5.2.2 LTS** via `brew install --cask blender`; the CLI is
+  `blender` on PATH (`/opt/homebrew/bin/blender` command wrapper). Never hunt for
+  or re-download ad-hoc portable Blender builds; never install the conflicting
+  `blender@lts` cask alongside it.
+- **Full environment record + every hard-won pitfall: `docs/blender_cli_macos.md`.**
+  Read it before Blender work. Highlights: run
+  `.agents/skills/unity-fbx-polish/bin/probe_blender.py` after any Blender
+  upgrade (confirms legacy `io_scene_fbx` import/export ops still behave; do not
+  switch helpers to the 5.x `wm.fbx_import` without re-validating cm scale and
+  material/UV names); headless renders need **absolute** output paths; pip on
+  this box needs `-i https://pypi.org/simple` (corporate mirror unreachable);
+  `worldspace_preview.py` + repair helpers live in the `unity-fbx-polish` skill.
+- **Windows side:** portable Blender 4.2 stays in `Tools/UEImport/vendor/blender`
+  (setup-prereqs.ps1); keep `bin/*.py` helpers 4.x-compatible (e.g. `use_nodes`,
+  only deprecated until 6.0) until that vendor is deliberately bumped to 5.2 LTS.
+
+---
+
 ## ⚡ Performance Best Practices & Anti-pattern Guidelines
 
 1. **Pre-hash Animator Parameters**:

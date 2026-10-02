@@ -13,10 +13,22 @@ replication of world-aligned triplanar shaders so previews show the true
 in-game look.
 
 ## Tooling
-- Headless Blender 4.0.2 portable:
-  `~/workspace/blender-portable/blender-4.0.2-linux-x64/blender`
-  (persists across VM replacements; never use apt Blender). Run scripts with
-  `blender --background --python <script> -- <args>`.
+- Headless Blender **5.2.2 LTS** (macOS Apple Silicon): Homebrew cask
+  `blender` links a CLI wrapper — use `blender` on PATH
+  (`/opt/homebrew/bin/blender` → `/Applications/Blender.app/Contents/MacOS/Blender`).
+  Run scripts with `blender --background --python <script> -- <args>`.
+  Windows keeps its portable Blender 4.2 LTS in
+  `Tools/UEImport/vendor/blender` (setup-prereqs.ps1), so helpers must stay
+  4.x-compatible (e.g. keep `use_nodes`; it only *warns* on 5.2, removal is
+  slated for 6.0).
+- Verified on 5.2.2 (2026-10-02, Building_kit corner-wall round-trip): the
+  legacy Python FBX I/O add-on `io_scene_fbx` is still bundled and
+  factory-enabled, so `bpy.ops.import_scene.fbx` / `export_scene.fbx` — which
+  all helpers use — behave as on 4.x. Blender ≥5.0's new default importer is
+  `bpy.ops.wm.fbx_import`; do not switch helpers to it without re-validating
+  the cm object-space scale and material-slot naming the helpers rely on.
+  `worldspace_preview.py` needs an **absolute** path for `out.png`
+  (background-mode relative paths fail with "cannot save").
 - Helpers in `bin/`:
   - `uv_rotate90.py <in.fbx> <out.fbx> <MatSubstring>` — rotate one
     material's UVs 90° (e.g. fix vertical bricks).
@@ -62,9 +74,10 @@ in-game look.
 4. **A world-space shader ignores mesh UVs.** UV fixes then only affect
    Blender QA and standard-material fallbacks — say so explicitly instead of
    implying an in-game change.
-5. Blender 4.0.2 has no OpenImageDenoiser — keep denoising off. Headless
-   mesh ops must use `bmesh`, not `bpy.ops`. `SeparateRGB` has no Alpha
-   output; use the image node's Alpha socket.
+5. Denoising stays **off** in QA renders for stable, comparable proof shots
+   (the old 4.0.2 "no OpenImageDenoiser" reason is obsolete — 5.2.2 ships
+   OIDN). Headless mesh ops must use `bmesh`, not `bpy.ops`. `SeparateRGB`
+   has no Alpha output; use the image node's Alpha socket.
 6. Every repo change goes through a PR (rebase merges); never push to the
    default branch. Render proof before opening the PR, and never merge
    without explicit approval.

@@ -66,6 +66,7 @@ Shader "UEI/WorldAlignedLit"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl" // SampleLightmap
 
             struct Attributes
             {
@@ -73,6 +74,7 @@ Shader "UEI/WorldAlignedLit"
                 float3 normalOS     : NORMAL;
                 float4 tangentOS    : TANGENT;
                 float2 uv           : TEXCOORD0;
+                float2 uv1          : TEXCOORD1; // lightmap UVs
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -81,6 +83,7 @@ Shader "UEI/WorldAlignedLit"
                 float4 positionCS   : SV_POSITION;
                 float3 positionWS   : TEXCOORD0;
                 float3 normalWS     : TEXCOORD1;
+                float2 uvLM         : TEXCOORD2; // baked lightmap UVs (valid when LIGHTMAP_ON)
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -120,6 +123,9 @@ Shader "UEI/WorldAlignedLit"
                 output.positionCS = vertexInput.positionCS;
                 output.positionWS = vertexInput.positionWS;
                 output.normalWS = normalInput.normalWS;
+#ifdef LIGHTMAP_ON
+                output.uvLM = input.uv1 * unity_LightmapST.xy + unity_LightmapST.zw;
+#endif
 
                 return output;
             }
@@ -200,7 +206,11 @@ Shader "UEI/WorldAlignedLit"
                 inputData.shadowCoord = TransformWorldToShadowCoord(positionWS);
                 inputData.fogCoord = InitializeInputDataFog(float4(positionWS, 1.0), input.positionCS.z);
                 inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.positionCS);
+#ifdef LIGHTMAP_ON
+                inputData.bakedGI = SampleLightmap(input.uvLM, sampledNormalWS);
+#else
                 inputData.bakedGI = SampleSH(sampledNormalWS);
+#endif
 
                 SurfaceData surfaceData = (SurfaceData)0;
                 surfaceData.albedo = albedo.rgb;
@@ -237,6 +247,20 @@ Shader "UEI/WorldAlignedLit"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+
+            // Keep UnityPerMaterial identical in every pass for SRP Batcher compatibility
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                half4 _BaseColor;
+                half _BumpScale;
+                half _Metallic;
+                half _Smoothness;
+                half _GlossMapScale;
+                half _OcclusionStrength;
+                float _TextureSize;
+                float _BlendSharpness;
+                half _Cull;
+            CBUFFER_END
 
             struct Attributes
             {
@@ -291,6 +315,20 @@ Shader "UEI/WorldAlignedLit"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+            // Keep UnityPerMaterial identical in every pass for SRP Batcher compatibility
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                half4 _BaseColor;
+                half _BumpScale;
+                half _Metallic;
+                half _Smoothness;
+                half _GlossMapScale;
+                half _OcclusionStrength;
+                float _TextureSize;
+                float _BlendSharpness;
+                half _Cull;
+            CBUFFER_END
+
             struct Attributes
             {
                 float4 positionOS   : POSITION;
@@ -316,6 +354,180 @@ Shader "UEI/WorldAlignedLit"
             half4 DepthOnlyFragment(Varyings input) : SV_Target
             {
                 return 0;
+            }
+            ENDHLSL
+        }
+
+        // DepthNormals Pass (screen-space AO)
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DepthNormalsVertex
+            #pragma fragment DepthNormalsFragment
+
+            #pragma shader_feature_local _NORMALMAP
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            // Keep UnityPerMaterial identical in every pass for SRP Batcher compatibility
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                half4 _BaseColor;
+                half _BumpScale;
+                half _Metallic;
+                half _Smoothness;
+                half _GlossMapScale;
+                half _OcclusionStrength;
+                float _TextureSize;
+                float _BlendSharpness;
+                half _Cull;
+            CBUFFER_END
+
+            TEXTURE2D(_BumpMap);
+            SAMPLER(sampler_BumpMap);
+
+            struct Attributes
+            {
+                float4 positionOS   : POSITION;
+                float3 normalOS     : NORMAL;
+                float4 tangentOS    : TANGENT;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS   : SV_POSITION;
+                float3 positionWS   : TEXCOORD0;
+                float3 normalWS     : TEXCOORD1;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            Varyings DepthNormalsVertex(Attributes input)
+            {
+                Varyings output = (Varyings)0;
+                UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                return output;
+            }
+
+            half4 DepthNormalsFragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+
+                float3 positionWS = input.positionWS;
+                float3 normalWS = normalize(input.normalWS);
+
+                float scale = 1.0 / max(0.01, (_TextureSize * 0.01));
+                float2 uvX = positionWS.zy * float2(-1.0, 1.0) * scale;
+                float2 uvY = positionWS.xz * scale;
+                float2 uvZ = positionWS.xy * scale;
+                float3 blend = pow(abs(normalWS), _BlendSharpness);
+                blend /= max(0.0001, (blend.x + blend.y + blend.z));
+
+                #if defined(_NORMALMAP)
+                half3 tnormalX = UnpackNormalScale(SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, uvX), _BumpScale);
+                half3 tnormalY = UnpackNormalScale(SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, uvY), _BumpScale);
+                half3 tnormalZ = UnpackNormalScale(SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, uvZ), _BumpScale);
+                half3 worldNormalX = half3(0, tnormalX.y, tnormalX.x * (normalWS.x < 0 ? -1 : 1));
+                half3 worldNormalY = half3(tnormalY.x, 0, tnormalY.y * (normalWS.y < 0 ? -1 : 1));
+                half3 worldNormalZ = half3(tnormalZ.x * (normalWS.z < 0 ? -1 : 1), tnormalZ.y, 0);
+                normalWS = normalize(normalWS + (worldNormalX * blend.x + worldNormalY * blend.y + worldNormalZ * blend.z));
+                #endif
+
+                float3 normalVS = TransformWorldToViewDir(normalWS);
+                return float4(normalVS, 0.0);
+            }
+            ENDHLSL
+        }
+
+        // Meta Pass (lightmap baking: albedo extraction)
+        Pass
+        {
+            Name "Meta"
+            Tags { "LightMode" = "Meta" }
+
+            Cull Off
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex MetaVertex
+            #pragma fragment MetaFragment
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/MetaInput.hlsl"
+
+            // Keep UnityPerMaterial identical in every pass for SRP Batcher compatibility
+            CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                half4 _BaseColor;
+                half _BumpScale;
+                half _Metallic;
+                half _Smoothness;
+                half _GlossMapScale;
+                half _OcclusionStrength;
+                float _TextureSize;
+                float _BlendSharpness;
+                half _Cull;
+            CBUFFER_END
+
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+
+            struct MetaAttributes
+            {
+                float4 positionOS   : POSITION;
+                float3 normalOS     : NORMAL;
+                float2 uv1          : TEXCOORD1;
+                float2 uv2          : TEXCOORD2;
+            };
+
+            struct MetaVaryings
+            {
+                float4 positionCS   : SV_POSITION;
+                float3 positionWS   : TEXCOORD0;
+                float3 normalWS     : TEXCOORD1;
+            };
+
+            MetaVaryings MetaVertex(MetaAttributes input)
+            {
+                MetaVaryings output = (MetaVaryings)0;
+                output.positionCS = MetaVertexPosition(input.positionOS, input.uv1, input.uv2,
+                    unity_LightmapST, unity_DynamicLightmapST);
+                output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                return output;
+            }
+
+            half4 MetaFragment(MetaVaryings input) : SV_Target
+            {
+                float3 positionWS = input.positionWS;
+                float3 normalWS = normalize(input.normalWS);
+
+                float scale = 1.0 / max(0.01, (_TextureSize * 0.01));
+                float2 uvX = positionWS.zy * float2(-1.0, 1.0) * scale;
+                float2 uvY = positionWS.xz * scale;
+                float2 uvZ = positionWS.xy * scale;
+                float3 blend = pow(abs(normalWS), _BlendSharpness);
+                blend /= max(0.0001, (blend.x + blend.y + blend.z));
+
+                half4 albedo = (SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uvX) * blend.x
+                              + SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uvY) * blend.y
+                              + SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uvZ) * blend.z) * _BaseColor;
+
+                MetaInput metaInput;
+                metaInput.Albedo = albedo.rgb;
+                metaInput.Emission = half3(0.0, 0.0, 0.0);
+                return MetaFragment(metaInput);
             }
             ENDHLSL
         }

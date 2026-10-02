@@ -8,7 +8,8 @@ writes _blender/polish/matlib_building_kit.json keyed by material name.
 """
 import json, os, re, subprocess, sys
 
-REPO = os.path.expanduser('~/workspace/mk-entertainment')
+HERE = os.path.dirname(os.path.abspath(__file__))   # _blender/tools
+REPO = os.path.dirname(os.path.dirname(HERE))       # repo root
 MAT_DIR = os.path.join(REPO, 'Assets/ImportedContent/Building_kit/Materials')
 OUT = os.path.join(REPO, '_blender/polish/matlib_building_kit.json')
 

@@ -236,3 +236,30 @@ Stage 3 of the "use every kit piece" pass:
 
 Proof renders: new `two_story_house_int_mezzanine.png` and
 `two_story_house_int_decay_room.png`.
+
+## Polish pass — seal audit, floor-slot fix, refreshed interiors (2026-10-03)
+
+A full audit of the merged build (169 objects), with one real defect found and fixed:
+
+- **Envelope seal sweep** — ~1,100 outside-in rays on the solid wall bands of all four
+  facades plus junction probes at the bay returns and balcony door: **no through-slots**.
+  The only deep readings are Corner02's sculpted quoin pockets (every such ray still
+  hits the corner piece itself) and the roof eaves shadowing the z 12.2 band.
+- **Floor-coverage scan** — a down-ray grid over the whole upper floor found a
+  **0.48 m through-slot in the primary closet's floor** (x 13.34..13.82, full strip
+  depth): the south strip's Wood02 slab really ends at x 13.34 and the filler's clean
+  edge starts at 13.82, so the nominal 13.79 placement left a gap you could fall
+  through to the family room (or onto the mezzanine deck). The filler now starts at
+  **13.35** — slot verified closed, rescan clean. (Every other low reading on the scan
+  is accounted for: the stairwell and its treads, and Floor04's ragged north rim.)
+- **Noted kit character, left as designed**: Floor04's top edge has plank pinholes
+  along the dressing room's north wall line (the piece's broken rim — reads as
+  damage, matches its broken-ceiling underside), and the Wood02 floor piece carries
+  a 0.25 m wide, 0.22 m deep recessed channel across the primary bedroom (its own
+  surface detail, solid throughout).
+- **Refreshed renders**: `two_story_house_int_family.png` (reframed — wide elevated
+  shot: flight, gallery deck, and bay wall in one frame) and
+  `two_story_house_int_primary.png` (reframed to include the bay and, through the
+  closet arch, the balcony door) regenerated; new
+  `two_story_house_int_decay_ceiling.png` shows the Floor04 ceiling from the decay
+  room — cracked plaster, cornice, and the torn walls' peeled tops.

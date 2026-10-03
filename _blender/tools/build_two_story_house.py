@@ -452,10 +452,13 @@ slab("SM_Wood_Internal_Floor03.fbx", 2.51, -0.99,
 slab("SM_Ceramic_Internal_Floor02.fbx", 2.51, 3.26,
      [((6.65, 0, 0), (1, 0, 0)), ((0, 5.66, 0), (0, 1, 0))])
 # east wing slabs: south strip (wood), dressing + sitting (wood), ensuite (ceramic)
+# (the filler starts at 13.35, not the strip's nominal end: raycast audit measured
+# the strip's real east edge at 13.34 and the filler's clean west edge at 13.82 —
+# placing the filler at 13.79 left a 0.48 m through-slot in the closet floor)
 slab("SM_Wood_Internal_Floor02.fbx", 6.65, -5.66,
      [((0, -0.99, 0), (0, 1, 0)), ((14.65, 0, 0), (1, 0, 0))])
-slab("SM_Wood_Internal_Floor02.fbx", 13.79, -5.66,
-     [((0, -0.99, 0), (0, 1, 0)), ((13.79, 0, 0), (-1, 0, 0)), ((14.65, 0, 0), (1, 0, 0))])
+slab("SM_Wood_Internal_Floor02.fbx", 13.35, -5.66,
+     [((0, -0.99, 0), (0, 1, 0)), ((13.35, 0, 0), (-1, 0, 0)), ((14.65, 0, 0), (1, 0, 0))])
 slab("SM_Wood_Internal_Floor03.fbx", 6.65, -0.99,
      [((10.65, 0, 0), (1, 0, 0))])
 slab("SM_Wood_Internal_Floor03.fbx", 6.65, 3.66,

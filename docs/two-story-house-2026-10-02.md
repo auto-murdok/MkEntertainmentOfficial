@@ -130,3 +130,41 @@ the main ridge (module designed for the source mansion's taller roof).
 New/updated proof renders: `two_story_house_east_elevation.png` (fins
 gone), `two_story_house_int_hall_upper.png` and
 `two_story_house_ext_front_se.png` (regenerated).
+
+## Expansion — +8 m east wing (2026-10-02)
+
+The house grows along its length only (the Roof01 modules fix the 12.25 m
+depth): footprint **22.22 × 12.25 m** (outer faces x −7.11 … +15.11), two
+more roof modules per slope, gables and platform extended (terrace edge
+column cut to fit). ≈ 5,460 sq ft total. The west block is unchanged; the
+old east wall line (x 6.65) becomes interior, joined by kit arches.
+
+New rooms (clear dimensions, measured from the built geometry):
+
+- **Ground wing:** family room 7.69 × 4.36 ≈ 33.5 m² off the kitchen
+  (arch), laundry 3.38 × 2.43 = 8.2 m² off the family room, and a guest
+  wing: sitting 3.38 × 3.29 = 11.1 m², bedroom 3.69 × 3.29 = 12.1 m²,
+  ensuite 3.69 × 2.43 = 9.0 m².
+- **Upper wing — the primary suite:** bedroom 5.13 × 3.42 = 17.5 m² (the
+  real-home build-to size), walk-in closet 1.94 × 4.36 = 8.5 m² absorbing
+  the hall's east end, dressing room 3.38 × 6.34 = 21.4 m², ensuite
+  3.69 × 2.43 = 9.0 m², private sitting room 3.69 × 3.29 = 12.1 m². The
+  hall now runs the full length at 1.15–1.25 m wide; the mid-east suite
+  (15.0 + 8.7 m²) becomes a second upstairs suite.
+- **Wet stacking:** the primary ensuite sits directly over the guest
+  ensuite; laundry sits under the dressing room.
+
+**Also fixed — corner seam slots (pre-existing).** Outside-in raycasts
+found vertical through-slots where three wall runs meet their corner
+pieces: the corner arms are shorter than the runs assume (Corner01 reaches
+1.04/1.02 m from its vertex, Corner02 1.21/1.18), leaving gaps of 0.12 m
+(north face at the NE corner), 0.19 m (east face at NE) and 0.03 m (west
+face at NW), on both floors — present in the pre-expansion house too. The
+tool now plugs all three with flush brick piers (`SeamPlug`); re-probed:
+every outside-in ray at the seams hits wall or plug at the facade plane,
+and the facade-box check reports zero violations (149 objects).
+
+Proof renders: `two_story_house_ext_front_se.png`,
+`two_story_house_ext_back_nw.png`, `two_story_house_east_elevation.png`
+and `two_story_house_int_hall_upper.png` (regenerated), plus new
+`two_story_house_int_family.png` and `two_story_house_int_primary.png`.

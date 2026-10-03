@@ -1,14 +1,19 @@
 """Build a two-story house from the MkEntertainmentOfficial building kit.
 
 Layout (kit grid, meters, house centered at origin, front = -Y/south):
-  Footprint 14.22 x 12.25 (outer faces x +-7.11, y +-6.125).
+  Footprint 22.22 x 12.25 (outer faces x -7.11..+15.11, y +-6.125) after the
+  +8 m east-wing expansion (the roof modules fix the 12.25 depth; the house
+  grows along its length only). Original west block: 14.22 x 12.25.
   Ground floor surface z=2.0 (top of brick platform), floor-to-floor 5.5,
   upper floor z=7.5, wall top / eaves z=13.0, gable roof ridge z=16.28.
-  Ground: living SW, foyer S-center, kitchen SE, dining NE, guest WC in dining NE.
-  Stair (Internal_Stairs01) against north wall: entry from foyer, 3 flights,
-  exit at west end up top onto a plank landing.
-  Upper: hall strip y=-2.55..-0.99, bed2/bed3/study south strip, main bath SE
-  (ceramic, over kitchen), primary suite east block (bedroom S + ensuite N).
+  Ground: living SW, foyer S-center, kitchen S-center-E, dining NE of the west
+  block; east wing: family room S, laundry + guest wing N (sitting, bedroom,
+  ensuite). Stair (Internal_Stairs01) against north wall: entry from foyer,
+  3 flights, exit at west end up top onto a plank landing.
+  Upper: hall strip y=-2.55..-0.99 running the full length, bed2/bed3/study
+  south strip, main bath SE of the west block (ceramic, over kitchen), suite
+  (bedroom S + ensuite N) mid-east, primary suite in the east wing (bedroom
+  + walk-in closet S, dressing + ensuite + sitting N).
 Materials: real kit materials from matlib_building_kit.json (polish recipe).
 Texture paths are stored relative to the .blend so it opens in any checkout.
 
@@ -110,6 +115,7 @@ def centered_target(objs, theta_deg, run_axis, thick_axis, line, start, z):
 
 # ---------------------------------------------------------------- layout ----
 WX, WY = 7.11, 6.125
+WXE = 15.11          # east outer face after the +8 m wing (west stays -WX)
 Z0, Z1 = 0.0, 7.5
 
 def ext_corner(fbx, quadrant, z):
@@ -141,7 +147,7 @@ def ext_corner(fbx, quadrant, z):
         vy = mx.y if iy == mn.y else mn.y
     vc = Vector((vx, vy, mn.z))
     want = {'SW': (0, 0), 'SE': (1, 0), 'NE': (1, 1), 'NW': (0, 1)}[quadrant]
-    corner_pt = Vector((WX if want[0] else -WX, WY if want[1] else -WY))
+    corner_pt = Vector((WXE if want[0] else -WX, WY if want[1] else -WY))
     for theta in (0, 90, 180, 270):
         R = Matrix.Rotation(math.radians(theta), 4, 'Z')
         corners = [Vector((x, y, zz)) for x in (mn.x, mx.x) for y in (mn.y, mx.y) for zz in (mn.z, mx.z)]
@@ -185,11 +191,21 @@ print("== platforms")
 for fbx, tx, ty in [("SM_Wood_External_Floor01.fbx", -7.4, -6.42),
                     ("SM_Wood_External_Floor03.fbx", 0.0, -6.42),
                     ("SM_Wood_External_Floor03.fbx", -7.4, 0.0),
-                    ("SM_Wood_External_Floor01.fbx", 0.0, 0.0)]:
+                    ("SM_Wood_External_Floor01.fbx", 0.0, 0.0),
+                    ("SM_Wood_External_Floor01.fbx", 7.4, -6.42),
+                    ("SM_Wood_External_Floor03.fbx", 7.4, 0.0)]:
     objs = import_piece(fbx)
     bb = place(objs, 0, (tx, ty, 0.0))
     bake(objs)
     print(f"  {fbx} top z={bb[1].z:.2f}")
+# east edge column, cut to the terrace edge (east wall face 15.11 + 0.30)
+for fbx, tx, ty in [("SM_Wood_External_Floor03.fbx", 14.8, -6.42),
+                    ("SM_Wood_External_Floor01.fbx", 14.8, 0.0)]:
+    objs = import_piece(fbx)
+    place(objs, 0, (tx, ty, 0.0))
+    bake(objs)
+    bisect_cut(objs, (15.41, 0, 0), (1, 0, 0))
+    print(f"  {fbx} (cut) top z={combined_bbox(objs)[1].z:.2f}")
 
 # exterior entry stairs (auto-detect ascent direction)
 print("== external stairs")
@@ -223,12 +239,16 @@ ext_corner("SM_ExternalWall_Baseflor_Corner01.fbx", 'NE', Z0)
 ext_corner("SM_ExternalWall_Baseflor_Corner02.fbx", 'NW', Z0)
 end = ext_wall_run(["SM_ExternalWall_Baseflor_WindowFrame01.fbx",
                     "SM_ExternalWall_Baseflor_DoorFrame01.fbx",
-                    "SM_ExternalWall_Baseflor_WindowFrame01.fbx"],
+                    "SM_ExternalWall_Baseflor_WindowFrame01.fbx",
+                    "SM_ExternalWall_Baseflor_WindowFrame01.fbx",
+                    "SM_ExternalWall_Baseflor_DoorFrame01.fbx"],
                    0, 1, -WY, False, -6.07, Z0, "S-ground")
-print(f"  S-ground ends {end:.3f} (SE corner starts ~5.93)")
+print(f"  S-ground ends {end:.3f} (SE corner starts ~13.93)")
 end = ext_wall_run(["SM_ExternalWall_Baseflor_wall01.fbx",
                     "SM_ExternalWall_Baseflor_WindowFrame01.fbx",
-                    "SM_ExternalWall_Baseflor_WindowFrame02.fbx"],
+                    "SM_ExternalWall_Baseflor_WindowFrame02.fbx",
+                    "SM_ExternalWall_Baseflor_WindowFrame01.fbx",
+                    "SM_ExternalWall_Baseflor_WindowFrame01.fbx"],
                    180, 1, WY, True, -6.07, Z0, "N-ground")
 print(f"  N-ground ends {end:.3f}")
 end = ext_wall_run(["SM_ExternalWall_Baseflor_WindowFrame02.fbx",
@@ -238,7 +258,7 @@ print(f"  W-ground ends {end:.3f} (NW corner starts ~4.91)")
 end = ext_wall_run(["SM_ExternalWall_Baseflor_WindowFrame01.fbx",
                     "SM_ExternalWall_Baseflor_DoorFrame01.fbx",
                     "SM_ExternalWall_Baseflor_wall01.fbx"],
-                   90, 0, WX, True, -5.10, Z0, "E-ground")
+                   90, 0, WXE, True, -5.10, Z0, "E-ground")
 print(f"  E-ground ends {end:.3f}")
 
 print("== exterior walls upper")
@@ -248,28 +268,33 @@ ext_corner("SM_ExternalWall_SecondFloor_Corner01.fbx", 'NE', Z1)
 ext_corner("SM_ExternalWall_SecondFloor_Corner02.fbx", 'NW', Z1)
 ext_wall_run(["SM_ExternalWall_SecondFloor_WindowFrame02.fbx",
               "SM_ExternalWall_SecondFloor_WindowFrame01.fbx",
+              "SM_ExternalWall_SecondFloor_wall01.fbx",
+              "SM_ExternalWall_SecondFloor_WindowFrame01.fbx",
+              "SM_ExternalWall_SecondFloor_wall01.fbx",
               "SM_ExternalWall_SecondFloor_wall01.fbx"],
              0, 1, -WY, False, -6.07, Z1, "S-upper")
 ext_wall_run(["SM_ExternalWall_SecondFloor_WindowFrame01.fbx",
               "SM_ExternalWall_SecondFloor_WindowFrame02.fbx",
-              "SM_ExternalWall_SecondFloor_wall01.fbx"],
+              "SM_ExternalWall_SecondFloor_wall01.fbx",
+              "SM_ExternalWall_SecondFloor_WindowFrame01.fbx",
+              "SM_ExternalWall_SecondFloor_WindowFrame01.fbx"],
              180, 1, WY, True, -6.07, Z1, "N-upper")
 ext_wall_run(["SM_ExternalWall_SecondFloor_WindowFrame01.fbx",
               "SM_ExternalWall_SecondFloor_WindowFrame02.fbx"],
              -90, 0, -WX, False, -5.10, Z1, "W-upper")
 ext_wall_run(["SM_ExternalWall_SecondFloor_WindowFrame02.fbx",
               "SM_ExternalWall_SecondFloor_WindowFrame01.fbx"],
-             90, 0, WX, True, -5.10, Z1, "E-upper")
+             90, 0, WXE, True, -5.10, Z1, "E-upper")
 
 # string-course trim between floors
 print("== trim")
 for theta, ty in ((0, -WY - 0.20), (180, WY - 0.003)):
-    for k in range(4):
+    for k in range(6):
         objs = import_piece("SM_Trim01.fbx")
         place(objs, theta, (-6.45 + 3.227 * k, ty, 7.24))
         bake(objs)
-for theta, tx, ty in ((0, -7.30, -WY - 0.20), (0, 6.82, -WY - 0.20),
-                      (180, -7.30, WY - 0.003), (180, 6.82, WY - 0.003)):
+for theta, tx, ty in ((0, -7.30, -WY - 0.20), (0, 14.82, -WY - 0.20),
+                      (180, -7.30, WY - 0.003), (180, 14.82, WY - 0.003)):
     objs = import_piece("SM_Trim01_Corner.fbx")
     place(objs, theta, (tx, ty, 7.24))
     bake(objs)
@@ -292,6 +317,26 @@ int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, 3.4, 5.65, 2.0)
 objs = import_piece("SM_Internal_Wall_corner01.fbx")
 place(objs, 0, (3.85, 2.85, 2.0)); bake(objs)
 
+print("== interior walls ground, east wing (z=2.0)")
+# old east wall line x=6.65 becomes interior: arch S (kitchen->family),
+# wall + arch N (dining->guest sitting)
+int_wall("SM_Internal_Wall_DoorFrame01.fbx", 90, 1, 0, 6.65, -5.95, 2.0)
+int_wall("SM_Internal_Wall_wall02.fbx", 90, 1, 0, 6.65, -0.99, 2.0)
+int_wall("SM_Internal_Wall_DoorFrame01.fbx", 90, 1, 0, 6.65, 2.02, 2.0)
+# family room north wall (laundry door gap x 8.15..9.05)
+int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 6.65, 2.0)
+int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, -0.99, 9.05, 2.0)
+int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 12.06, 2.0)
+int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 13.56, 2.0)
+# guest wing spine x=10.65 (sitting->bedroom door gap y 3.52..4.42)
+int_wall("SM_Internal_Wall_wall02.fbx", 90, 1, 0, 10.65, -0.99, 2.0)
+int_wall("SM_Internal_Wall_wall03.fbx", 90, 1, 0, 10.65, 2.02, 2.0)
+int_wall("SM_Internal_Wall_wall02.fbx", 90, 1, 0, 10.65, 4.42, 2.0)
+# guest wing divider y=2.06 (bedroom->ensuite door gap x 12.67..13.57)
+int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, 2.06, 6.65, 2.0)
+int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, 2.06, 9.66, 2.0)
+int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, 2.06, 13.57, 2.0)
+
 print("== interior walls upper (z=7.5)")
 int_wall("SM_Internal_Wall_DoorFrame01.fbx", 0, 0, 1, -2.55, -6.65, 7.5)
 int_wall("SM_Internal_Wall_DoorFrame01.fbx", 0, 0, 1, -2.55, -1.65, 7.5)
@@ -307,6 +352,35 @@ int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 2.51, 7.5)  # suite S wa
 int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 5.15, 7.5)
 int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, 3.26, 3.65, 7.5)   # ensuite divider (passage 2.51..3.65)
 
+print("== interior walls upper, east wing (z=7.5)")
+# cross wall x=6.65 in the south strip (main bath | primary bedroom, solid)
+int_wall("SM_Internal_Wall_wall02.fbx", 90, 1, 0, 6.65, -5.66, 7.5)
+# cross wall x=6.65 in the north block (suite ensuite | dressing, solid)
+int_wall("SM_Internal_Wall_wall02.fbx", 90, 1, 0, 6.65, -0.99, 7.5)
+int_wall("SM_Internal_Wall_wall03.fbx", 90, 1, 0, 6.65, 1.77, 7.5)
+int_wall("SM_Internal_Wall_wall02.fbx", 90, 1, 0, 6.65, 3.02, 7.5)
+# hall wall extension (primary bedroom door gap x 8.15..9.15)
+int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -2.55, 6.65, 7.5)
+int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, -2.55, 9.15, 7.5)
+int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -2.55, 12.16, 7.5)
+int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -2.55, 13.66, 7.5)
+# suite wall extension (dressing door gap x 8.15..9.15)
+int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 6.65, 7.5)
+int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, -0.99, 9.15, 7.5)
+int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 12.16, 7.5)
+int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 13.66, 7.5)
+# wing spine x=10.65 (dressing | ensuite/sitting; door gaps y 0.51..1.41, 4.42..5.32)
+int_wall("SM_Internal_Wall_wall03.fbx", 90, 1, 0, 10.65, -0.99, 7.5)
+int_wall("SM_Internal_Wall_wall02.fbx", 90, 1, 0, 10.65, 1.41, 7.5)
+int_wall("SM_Internal_Wall_wall03.fbx", 90, 1, 0, 10.65, 5.32, 7.5)
+# ensuite | sitting divider y=2.06 (solid; both rooms open off the dressing)
+int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, 2.06, 10.65, 7.5)
+int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, 2.06, 13.41, 7.5)
+# walk-in closet spine x=12.40 (bedroom | WIC; door gap y -4.16..-3.26; the WIC
+# absorbs the hall strip's east end, so the spine runs to the suite wall line)
+int_wall("SM_Internal_Wall_wall03.fbx", 90, 1, 0, 12.40, -5.66, 7.5)
+int_wall("SM_Internal_Wall_wall02.fbx", 90, 1, 0, 12.40, -3.26, 7.5)
+
 # Measurement-fix pass: no interior wall may leave the building. Run-fill
 # overshoot pushed two wall02 end pieces through the east facade (audit
 # 2026-10-02: protrusions to x 8.66 / 8.86). Clip any internal-wall object
@@ -315,9 +389,9 @@ for o in list(bpy.data.objects):
     if o.type != 'MESH' or 'Internal_Wall' not in o.name:
         continue
     mn, mx = combined_bbox([o])
-    if mx.x > 7.11:
-        bisect_cut([o], (6.65, 0, 0), (1, 0, 0))
-    if mn.x < -7.11:
+    if mx.x > WXE:
+        bisect_cut([o], (14.65, 0, 0), (1, 0, 0))
+    if mn.x < -WX:
         bisect_cut([o], (-6.65, 0, 0), (-1, 0, 0))
     if mx.y > 6.13:
         bisect_cut([o], (0, 5.66, 0), (0, 1, 0))
@@ -355,6 +429,19 @@ slab("SM_Wood_Internal_Floor03.fbx", 2.51, -0.99,
      [((6.65, 0, 0), (1, 0, 0)), ((0, 3.26, 0), (0, 1, 0))])
 slab("SM_Ceramic_Internal_Floor02.fbx", 2.51, 3.26,
      [((6.65, 0, 0), (1, 0, 0)), ((0, 5.66, 0), (0, 1, 0))])
+# east wing slabs: south strip (wood), dressing + sitting (wood), ensuite (ceramic)
+slab("SM_Wood_Internal_Floor02.fbx", 6.65, -5.66,
+     [((0, -0.99, 0), (0, 1, 0)), ((14.65, 0, 0), (1, 0, 0))])
+slab("SM_Wood_Internal_Floor02.fbx", 13.79, -5.66,
+     [((0, -0.99, 0), (0, 1, 0)), ((13.79, 0, 0), (-1, 0, 0)), ((14.65, 0, 0), (1, 0, 0))])
+slab("SM_Wood_Internal_Floor03.fbx", 6.65, -0.99,
+     [((10.65, 0, 0), (1, 0, 0))])
+slab("SM_Wood_Internal_Floor03.fbx", 6.65, 3.66,
+     [((10.65, 0, 0), (1, 0, 0)), ((0, 5.66, 0), (0, 1, 0))])
+slab("SM_Ceramic_Internal_Floor02.fbx", 10.65, -0.99,
+     [((14.65, 0, 0), (1, 0, 0)), ((0, 2.06, 0), (0, 1, 0))])
+slab("SM_Wood_Internal_Floor03.fbx", 10.65, 2.06,
+     [((14.65, 0, 0), (1, 0, 0)), ((0, 5.66, 0), (0, 1, 0))])
 
 print("== planks")
 for k in range(3):
@@ -368,7 +455,8 @@ for k in range(2):
 print("== roof")
 roof_south = []
 roof_plain = []
-for k, fbx in enumerate(["SM_Roof01.fbx", "SM_Roof01.fbx", "SM_Roof03.fbx", "SM_Roof01.fbx"]):
+for k, fbx in enumerate(["SM_Roof01.fbx", "SM_Roof01.fbx", "SM_Roof03.fbx",
+                         "SM_Roof01.fbx", "SM_Roof01.fbx", "SM_Roof01.fbx"]):
     objs = import_piece(fbx)
     place(objs, 0, (-8.0 + 4.0 * k, -7.085, 12.06))
     bake(objs)
@@ -377,7 +465,7 @@ for k, fbx in enumerate(["SM_Roof01.fbx", "SM_Roof01.fbx", "SM_Roof03.fbx", "SM_
     if k == 0:
         roof_plain = objs
     print(f"  S module {k} {fbx}")
-for k in range(4):
+for k in range(6):
     objs = import_piece("SM_Roof01.fbx")
     mn, mx = combined_bbox(objs)
     ty = 6.575 - mx.y          # rotated: tile eave (local y=0) lands at house y +6.575
@@ -422,7 +510,7 @@ for xsign in (1, -1):
     bm.to_mesh(me); bm.free()
     ob = bpy.data.objects.new("Gable", me)
     bpy.context.scene.collection.objects.link(ob)
-    ob.location.x = (6.87 if xsign > 0 else -7.11)
+    ob.location.x = (14.87 if xsign > 0 else -7.11)
     if brick:
         me.materials.append(brick)
     # simple planar UVs from (y,z)
@@ -433,6 +521,36 @@ for xsign in (1, -1):
     bpy.context.view_layer.update()
     bake([ob])
     print(f"  gable {'E' if xsign > 0 else 'W'} built, ridge z={ridge_z:.2f}")
+
+# ------------------------------------------------- corner seam plugs ----
+# The corner pieces' arms are shorter than the run pieces assume (Corner01
+# reaches 1.04/1.02 from its vertex, Corner02 1.21/1.18), leaving vertical
+# slots where three runs meet their NE/NW corners (measured by outside-in
+# raycasts, 2026-10-02: N-face slot x 13.95..14.07, E-face slot y 4.91..5.10,
+# W-face slot y 4.91..4.94, both floors; the same slots exist in the
+# pre-expansion house). Plug them with brick piers flush with the wall faces.
+print("== corner seam plugs")
+def seam_plug(x0, x1, y0, y1):
+    bm = bmesh.new()
+    vs = [bm.verts.new((x, y, z)) for x in (x0, x1) for y in (y0, y1) for z in (0.0, 13.0)]
+    for a, b, c, d in ((0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)):
+        bm.faces.new((vs[a], vs[b], vs[c], vs[d]))
+    me = bpy.data.meshes.new("SeamPlug")
+    bm.to_mesh(me); bm.free()
+    ob = bpy.data.objects.new("SeamPlug", me)
+    bpy.context.scene.collection.objects.link(ob)
+    if brick:
+        me.materials.append(brick)
+    uv = me.uv_layers.new(name="UVMap")
+    for loop in me.loops:
+        v = me.vertices[loop.vertex_index]
+        uv.data[loop.index].uv = ((v.co.x + v.co.y) * 0.22, v.co.z * 0.22)
+    bpy.context.view_layer.update()
+    bake([ob])
+
+seam_plug(13.93, 14.09, 5.66, WY)        # NE corner, north face
+seam_plug(14.65, WXE, 4.89, 5.12)        # NE corner, east face
+seam_plug(-WX, -6.65, 4.89, 4.96)        # NW corner, west face
 
 # ---------------------------------------------------------------- ground ----
 bpy.ops.mesh.primitive_plane_add(size=90, location=(0, 0, -0.03))

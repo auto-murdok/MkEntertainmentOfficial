@@ -91,3 +91,42 @@ In `_blender/polish/`: `two_story_house_ext_front_se.png`,
 `two_story_house_ext_front.png`, `two_story_house_ext_back_nw.png`,
 `two_story_house_int_foyer.png`, `two_story_house_int_kitchen.png`,
 `two_story_house_int_hall_upper.png` (Cycles, real materials throughout).
+
+## Measurement audit & fixes (2026-10-02, follow-up)
+
+Every room was re-measured from the built geometry (wall face planes,
+raycast stair profiles, through-ray aperture grids) against the IRC-based
+brief. The plan dimensions mostly match real-home ranges (living 20.7 m²,
+bed2 11.2 m², bed3 14.2 m², guest WC 3.8 m², roof pitch 6.05/12, stair maths
+closes: 18 risers × ~0.303 = 5.46 floor-to-floor), but measuring caught four
+defects the proof views had missed. All four are fixed in the tool:
+
+1. **Two interior walls protruded outside the east facade.** Run-fill
+   overshoot let the last piece of two runs exit the building (guest-WC run
+   to x 8.66, hall run to x 8.86 — damask-wallpaper fins on the brick). The
+   tool now clips any internal-wall object that crosses the facade box back
+   to the interior clear face (x ±6.65 / y ±5.66). Verified: zero facade
+   violations; both pieces end flush at 6.65.
+2. **Upper hall pinched to 0.36 m** at the main-bath corner post (corner01,
+   1.19 m deep, protruding past the hall wall into the corridor, blocking
+   the route to the suite and bath doors). The post is removed (spine + hall
+   wall form a flush T-junction) and the hall wall moved 0.25 south
+   (centerline −2.30 → −2.55): hall now 1.25 m at the west leg and 1.15 m at
+   body height on the east leg (was 1.00 / 0.90; code minimum 0.914).
+3. **Study 5 cm under the habitable minimum dimension** (2.08 vs IRC 2.13).
+   Its spine moved 0.10 east (x 3.9 → 4.0): study is now 2.18 m wide, the
+   main bath 2.34 m (still generous).
+4. **Suite split inverted vs real homes** (primary bedroom 10.1 m², ensuite
+   13.6 m²; norms ~18 / ~6). The divider moved y 2.06 → 3.26: bedroom
+   4.14 × 3.63 = 15.0 m², ensuite 4.14 × 2.09 = 8.7 m².
+
+Not fixable with this kit (documented, accepted): ceiling heights 5.15 /
+5.50 m (norms 2.74 / 2.44), floor-to-floor 5.46, plinth 2.04, stair module
+(risers 0.20–0.35 non-uniform vs 0.197 max, goings 0.47, width 3.2 — a
+ceremonial stair), windows 1.75 × 2.60 with the upper sill at 1.18 (6 cm over
+the 1.12 egress maximum), and the Roof03 dormer cap peaking ~1.57 m above
+the main ridge (module designed for the source mansion's taller roof).
+
+New/updated proof renders: `two_story_house_east_elevation.png` (fins
+gone), `two_story_house_int_hall_upper.png` and
+`two_story_house_ext_front_se.png` (regenerated).

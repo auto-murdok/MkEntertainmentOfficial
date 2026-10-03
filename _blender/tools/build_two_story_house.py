@@ -19,6 +19,12 @@ Layout (kit grid, meters, house centered at origin, front = -Y/south):
   above; the bay carries its own trapezoid floors and a flat roof lid.
   A SecondFloor DoorFrame01 in the east wall opens from the primary bedroom
   onto a small timber balcony (kit floor deck on posts, prism rails).
+  Interior stage: wall01 single-piece spines on the two long wing runs;
+  the guest bedroom is the decay-gradient room (torn02 south wall, torn
+  wall01 west wall with a cut doorway, Floor04 floor/ceiling sandwich
+  above it with the broken-ceiling underside); the family room gains a
+  gallery mezzanine reached by the bisected centre flight of the
+  imperial Internal_Stair02.
 Materials: real kit materials from matlib_building_kit.json (polish recipe).
 Texture paths are stored relative to the .blend so it opens in any checkout.
 
@@ -334,18 +340,25 @@ int_wall("SM_Internal_Wall_DoorFrame01.fbx", 90, 1, 0, 6.65, -5.95, 2.0)
 int_wall("SM_Internal_Wall_wall02.fbx", 90, 1, 0, 6.65, -0.99, 2.0)
 int_wall("SM_Internal_Wall_DoorFrame01.fbx", 90, 1, 0, 6.65, 2.02, 2.0)
 # family room north wall (laundry door gap x 8.15..9.05)
-int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 6.65, 2.0)
-int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, -0.99, 9.05, 2.0)
+int_wall("SM_Internal_Wall_wall01.fbx", 0, 0, 1, -0.99, 6.65, 2.0)
 int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 12.06, 2.0)
 int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 13.56, 2.0)
 # guest wing spine x=10.65 (sitting->bedroom door gap y 3.52..4.42)
-int_wall("SM_Internal_Wall_wall02.fbx", 90, 1, 0, 10.65, -0.99, 2.0)
-int_wall("SM_Internal_Wall_wall03.fbx", 90, 1, 0, 10.65, 2.02, 2.0)
-int_wall("SM_Internal_Wall_wall02.fbx", 90, 1, 0, 10.65, 4.42, 2.0)
+# guest bedroom west wall: torn wall01 with its doorway (gap y 3.53..4.42)
+# kept - two side pieces plus a header piece above the opening (z >= 5.9)
+for _start, _cuts in ((-0.99, [((0, 3.53, 0), (0, 1, 0))]),
+                      (3.53, [((0, 3.53, 0), (0, -1, 0)), ((0, 4.42, 0), (0, 1, 0)),
+                              ((0, 0, 5.9), (0, 0, -1))]),
+                      (4.42, [((0, 4.42, 0), (0, -1, 0))])):
+    _objs = import_piece("SM_Internal_Wall_wall01_torn.fbx")
+    _tgt = centered_target(_objs, 90, 1, 0, 10.65, _start, 2.0)
+    place(_objs, 90, _tgt)
+    bake(_objs)
+    for _co, _no in _cuts:
+        bisect_cut(_objs, _co, _no)
 # guest wing divider y=2.06 (bedroom->ensuite door gap x 12.67..13.57)
 int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, 2.06, 6.65, 2.0)
-int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, 2.06, 9.66, 2.0)
-int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, 2.06, 13.57, 2.0)
+int_wall("SM_Internal_Wall_wall01_torn02.fbx", 0, 0, 1, 2.06, 9.67, 2.0)
 
 print("== interior walls upper (z=7.5)")
 int_wall("SM_Internal_Wall_DoorFrame01.fbx", 0, 0, 1, -2.55, -6.65, 7.5)
@@ -375,8 +388,7 @@ int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, -2.55, 9.15, 7.5)
 int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -2.55, 12.16, 7.5)
 int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -2.55, 13.66, 7.5)
 # suite wall extension (dressing door gap x 8.15..9.15)
-int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 6.65, 7.5)
-int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, -0.99, 9.15, 7.5)
+int_wall("SM_Internal_Wall_wall01.fbx", 0, 0, 1, -0.99, 6.65, 7.5)
 int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 12.16, 7.5)
 int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 13.66, 7.5)
 # wing spine x=10.65 (dressing | ensuite/sitting; door gaps y 0.51..1.41, 4.42..5.32)
@@ -450,7 +462,7 @@ slab("SM_Wood_Internal_Floor03.fbx", 6.65, 3.66,
      [((10.65, 0, 0), (1, 0, 0)), ((0, 5.66, 0), (0, 1, 0))])
 slab("SM_Ceramic_Internal_Floor02.fbx", 10.65, -0.99,
      [((14.65, 0, 0), (1, 0, 0)), ((0, 2.06, 0), (0, 1, 0))])
-slab("SM_Wood_Internal_Floor03.fbx", 10.65, 2.06,
+slab("SM_Wood_Internal_Floor04.fbx", 10.65, 2.06,
      [((14.65, 0, 0), (1, 0, 0)), ((0, 5.66, 0), (0, 1, 0))])
 
 # bay floors (ground, Floor02) + bay slabs (upper, Wood02): trapezoid pieces
@@ -664,6 +676,33 @@ for y0, y1 in ((-5.29, -5.21), (-0.83, -0.75)):
     prism("RailMid", [(15.11, y0), (16.45, y0), (16.45, y1), (15.11, y1)], 8.02, 8.12, wood_mat)
     prism("RailLow", [(15.11, y0), (16.45, y0), (16.45, y1), (15.11, y1)], 7.62, 7.72, wood_mat)
 print("  bay cap + balcony built")
+
+# ------------------------------------------------ family-room mezzanine ----
+# Internal_Stair02 is a 16.4 m imperial stair - it fits nowhere whole. Its
+# centre flight is bisected out and laid along the family room's north
+# wall, rising east to a gallery deck (Wood02) in the room's east end.
+print("== mezzanine (Stair02 centre flight)")
+objs = import_piece("SM_Internal_Stair02.fbx")
+place(objs, 270, (7.1, -12.85, 1.95))
+bake(objs)
+for co, no in [((7.05, 0, 0), (-1, 0, 0)), ((12.3, 0, 0), (1, 0, 0)),
+               ((0, -4.25, 0), (0, -1, 0)), ((0, -1.05, 0), (0, 1, 0)),
+               ((0, 0, 5.25), (0, 0, 1))]:
+    bisect_cut(objs, co, no)
+bb = combined_bbox(objs)
+print(f"  stair02 flight -> x {bb[0].x:.2f}..{bb[1].x:.2f} y {bb[0].y:.2f}..{bb[1].y:.2f} z {bb[0].z:.2f}..{bb[1].z:.2f}")
+objs = import_piece("SM_Wood_Internal_Floor02.fbx")
+place(objs, 0, (12.3, -4.25, 4.84))
+bake(objs)
+bisect_cut(objs, (14.65, 0, 0), (1, 0, 0))
+bisect_cut(objs, (0, -0.99, 0), (0, 1, 0))
+prism("MezzPost", [(12.35, -4.20), (12.59, -4.20), (12.59, -3.96), (12.35, -3.96)], 2.04, 4.84, wood_mat)
+prism("MezzBeam", [(12.3, -4.39), (14.65, -4.39), (14.65, -4.11), (12.3, -4.11)], 4.50, 4.84, wood_mat)
+for ux in (12.45, 13.5, 14.5):
+    prism("MezzRailPost", [(ux - 0.05, -4.24), (ux + 0.05, -4.24), (ux + 0.05, -4.14), (ux - 0.05, -4.14)], 5.15, 6.20, wood_mat)
+prism("MezzRailTop", [(12.3, -4.25), (14.65, -4.25), (14.65, -4.13), (12.3, -4.13)], 6.08, 6.20, wood_mat)
+prism("MezzRailMid", [(12.3, -4.23), (14.65, -4.23), (14.65, -4.15), (12.3, -4.15)], 5.60, 5.70, wood_mat)
+print("  mezzanine deck + guard built")
 
 # ---------------------------------------------------------------- ground ----
 bpy.ops.mesh.primitive_plane_add(size=90, location=(0, 0, -0.03))

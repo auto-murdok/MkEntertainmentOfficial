@@ -7,7 +7,7 @@ Layout (kit grid, meters, house centered at origin, front = -Y/south):
   Ground: living SW, foyer S-center, kitchen SE, dining NE, guest WC in dining NE.
   Stair (Internal_Stairs01) against north wall: entry from foyer, 3 flights,
   exit at west end up top onto a plank landing.
-  Upper: hall strip y=-2.3..-0.99, bed2/bed3/study south strip, main bath SE
+  Upper: hall strip y=-2.55..-0.99, bed2/bed3/study south strip, main bath SE
   (ceramic, over kitchen), primary suite east block (bedroom S + ensuite N).
 Materials: real kit materials from matlib_building_kit.json (polish recipe).
 Texture paths are stored relative to the .blend so it opens in any checkout.
@@ -293,18 +293,36 @@ objs = import_piece("SM_Internal_Wall_corner01.fbx")
 place(objs, 0, (3.85, 2.85, 2.0)); bake(objs)
 
 print("== interior walls upper (z=7.5)")
-int_wall("SM_Internal_Wall_DoorFrame01.fbx", 0, 0, 1, -2.3, -6.65, 7.5)
-int_wall("SM_Internal_Wall_DoorFrame01.fbx", 0, 0, 1, -2.3, -1.65, 7.5)
-int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -2.3, 3.35, 7.5)
-int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, -2.3, 5.85, 7.5)   # bath door gap x 4.85..5.85
-for xline in (-3.3, 1.2, 3.9):
+int_wall("SM_Internal_Wall_DoorFrame01.fbx", 0, 0, 1, -2.55, -6.65, 7.5)
+int_wall("SM_Internal_Wall_DoorFrame01.fbx", 0, 0, 1, -2.55, -1.65, 7.5)
+int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -2.55, 3.35, 7.5)
+int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, -2.55, 5.85, 7.5)   # bath door gap x 4.85..5.85
+for xline in (-3.3, 1.2, 4.0):
     int_wall("SM_Internal_Wall_wall02.fbx", 90, 1, 0, xline, -5.66, 7.5)
     int_wall("SM_Internal_Wall_wall03.fbx", 90, 1, 0, xline, -3.85, 7.5)
-objs = import_piece("SM_Internal_Wall_corner01.fbx")
-place(objs, 90, (3.35, -2.85, 7.5)); bake(objs)
+# No corner post at the bath/hall junction: the chunky corner01 (1.19 deep)
+# protruded into the hall and pinched it to 0.36 m (measurement audit
+# 2026-10-02). The spine + hall wall form a flush T-junction instead.
 int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 2.51, 7.5)  # suite S wall + door gap 4.01..5.15
 int_wall("SM_Internal_Wall_wall03.fbx", 0, 0, 1, -0.99, 5.15, 7.5)
-int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, 2.06, 3.65, 7.5)   # ensuite divider (passage 2.51..3.65)
+int_wall("SM_Internal_Wall_wall02.fbx", 0, 0, 1, 3.26, 3.65, 7.5)   # ensuite divider (passage 2.51..3.65)
+
+# Measurement-fix pass: no interior wall may leave the building. Run-fill
+# overshoot pushed two wall02 end pieces through the east facade (audit
+# 2026-10-02: protrusions to x 8.66 / 8.86). Clip any internal-wall object
+# that crosses the facade box back to the interior clear face.
+for o in list(bpy.data.objects):
+    if o.type != 'MESH' or 'Internal_Wall' not in o.name:
+        continue
+    mn, mx = combined_bbox([o])
+    if mx.x > 7.11:
+        bisect_cut([o], (6.65, 0, 0), (1, 0, 0))
+    if mn.x < -7.11:
+        bisect_cut([o], (-6.65, 0, 0), (-1, 0, 0))
+    if mx.y > 6.13:
+        bisect_cut([o], (0, 5.66, 0), (0, 1, 0))
+    if mn.y < -6.13:
+        bisect_cut([o], (0, -5.66, 0), (0, -1, 0))
 
 # ---------------------------------------------------------------- stair ----
 print("== internal staircase")
@@ -330,12 +348,12 @@ def slab(fbx, tx, ty, cuts):
 slab("SM_Wood_Internal_Floor01.fbx", -6.65, -5.66,
      [((0, -0.99, 0), (0, 1, 0))])
 slab("SM_Wood_Internal_Floor02.fbx", 0.06, -5.66,
-     [((0, -0.99, 0), (0, 1, 0)), ((3.9, 0, 0), (1, 0, 0))])
+     [((0, -0.99, 0), (0, 1, 0)), ((4.0, 0, 0), (1, 0, 0))])
 slab("SM_Ceramic_Internal_Floor01.fbx", -0.025, -5.66,
-     [((0, -0.99, 0), (0, 1, 0)), ((3.9, 0, 0), (-1, 0, 0))])
+     [((0, -0.99, 0), (0, 1, 0)), ((4.0, 0, 0), (-1, 0, 0))])
 slab("SM_Wood_Internal_Floor03.fbx", 2.51, -0.99,
-     [((6.65, 0, 0), (1, 0, 0)), ((0, 2.06, 0), (0, 1, 0))])
-slab("SM_Ceramic_Internal_Floor02.fbx", 2.51, 2.06,
+     [((6.65, 0, 0), (1, 0, 0)), ((0, 3.26, 0), (0, 1, 0))])
+slab("SM_Ceramic_Internal_Floor02.fbx", 2.51, 3.26,
      [((6.65, 0, 0), (1, 0, 0)), ((0, 5.66, 0), (0, 1, 0))])
 
 print("== planks")

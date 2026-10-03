@@ -208,3 +208,31 @@ Proof renders: `two_story_house_ext_front_se.png` and
 `two_story_house_east_elevation.png` (regenerated), plus new
 `two_story_house_int_bay_family.png` and
 `two_story_house_int_primary_bay.png`.
+
+## Interior stage — wall01 spines, decay room, mezzanine (2026-10-03)
+
+Stage 3 of the "use every kit piece" pass:
+
+- **wall01 spines.** The kit's 6.0 m single-piece interior wall forms
+  the first 6 m of the two long wing runs (family-room north wall at
+  ground, second-suite hall wall above), replacing wall02/wall03
+  chains with the same coverage.
+- **Decay-gradient room (guest bedroom).** The route in stays pristine
+  (sitting room), then decays: the bedroom's south wall is
+  `wall01_torn02`, its torn geometry protruding past the standard wall
+  band; its west wall is `wall01_torn` with the room's doorway cut from
+  the piece itself (two side pieces plus a header above the opening,
+  keeping the original gap at y 3.53..4.42); its ceiling is the
+  underside of a `Wood_Internal_Floor04` sandwich — intact wood floor
+  for the room above, part-broken ceiling boards over the bedroom.
+- **Family-room mezzanine.** `Internal_Stair02` is a 16.4 m imperial
+  stair that fits nowhere whole; its centre flight is bisected out
+  (3.2 m wide, torn carpet runner and all) and laid along the family
+  room's north wall, rising east — treads probed at 2.93 / 3.49 / 4.07
+  to a landing plateau at 5.25 — onto a Wood02 gallery deck (top
+  z 5.15) in the room's east end, carried on a post and beam with a
+  prism guard rail along its open edge. Headroom: 2.80 m under the
+  deck, 2.04 m on it.
+
+Proof renders: new `two_story_house_int_mezzanine.png` and
+`two_story_house_int_decay_room.png`.

@@ -516,7 +516,36 @@ for k in range(2):
     place(objs, 0, (-2.28, -3.45 + 0.244 * k, 2.04)); bake(objs)
 
 # ------------------------------------------------------------------ roof ----
-print("== roof")
+# Mansard conversion: the kit's mansard family (Roof08/09/10 sections) forms
+# a steep bell-cast LOWER tier on both slopes; the Roof01 modules keep the
+# shallow UPPER tier. Measured fit: with eaves at |y| 7.10 (z 13.0), the bell
+# curve reaches z 15.25 at |y| 2.2 — exactly the height of the Roof01 slope
+# plane there (15.26) — so the mansard sections are cut at |y| 2.15 and their
+# top edge embeds into the upper tier's slope with no step and no gap.
+print("== roof: mansard lower tier")
+def mansard_side(theta, spring_y):
+    cursor = -8.0
+    sample = []
+    for fbx in ("SM_Roof09.fbx", "SM_Roof08.fbx", "SM_Roof10.fbx",
+                "SM_Roof08.fbx", "SM_Roof09.fbx"):
+        objs = import_piece(fbx)
+        mn, mx = place(objs, theta, (cursor, 0.0, 12.06))
+        dy = (-7.10 - mn.y) if theta == 0 else (7.10 - mx.y)
+        if abs(dy) > 1e-4:
+            mn, mx = place(objs, 0, (mn.x, mn.y + dy, mn.z))
+        bake(objs)
+        bisect_cut(objs, (0, spring_y, 0), (0, 1 if theta == 0 else -1, 0))
+        bisect_cut(objs, (16.0, 0, 0), (1, 0, 0))
+        if not sample:
+            sample = objs
+        print(f"  mansard {'S' if theta == 0 else 'N'} {fbx} at x {cursor:.2f}")
+        cursor = mx.x
+    return sample
+
+mansard_plain = mansard_side(0, -2.15)
+mansard_side(180, 2.15)
+
+print("== roof: upper tier (Roof01 modules, as before)")
 roof_south = []
 roof_plain = []
 for k, fbx in enumerate(["SM_Roof01.fbx", "SM_Roof01.fbx", "SM_Roof03.fbx",
@@ -541,18 +570,21 @@ for k in range(6):
 # ------------------------------------------------------------- gable ends ----
 print("== gables")
 prof = {}
-for o in roof_plain:
+for o in roof_plain + mansard_plain:
     for p in o.data.polygons:
         if p.material_index < len(o.data.materials) and o.data.materials[p.material_index] \
-                and o.data.materials[p.material_index].name.split('.')[0] == "MI_Roof":
+                and o.data.materials[p.material_index].name.split('.')[0] in ("MI_Roof", "MI_RoofPieces", "MI_Wood_TrimSheet"):
             for vi in p.vertices:
                 w = o.data.vertices[vi].co
                 b = round(w.y * 4) / 4
                 if w.y <= 0.05:
                     prof[b] = max(prof.get(b, -99), w.z)
 pts = sorted((y, z) for y, z in prof.items() if z > 0)
-print("  profile pts:", [(round(y, 2), round(z, 2)) for y, z in pts])
 ridge_z = pts[-1][1] if pts else 16.9
+# keep the dense mansard samples up to the spring line, then close along the
+# upper tier's measured plane (its own samples are too sparse to chord well)
+pts = [(y, z) for y, z in pts if y <= -2.3] + [(-2.2, 15.26), (0.0, ridge_z)]
+print("  profile pts:", [(round(y, 2), round(z, 2)) for y, z in pts])
 poly = [(-7.35, 12.97)] + [(y, z - 0.05) for y, z in pts if y > -7.3] + \
        [(-y, z - 0.05) for y, z in reversed(pts) if y < -0.01] + [(7.35, 12.97)]
 brick = None
@@ -706,6 +738,213 @@ for ux in (12.45, 13.5, 14.5):
 prism("MezzRailTop", [(12.3, -4.25), (14.65, -4.25), (14.65, -4.13), (12.3, -4.13)], 6.08, 6.20, wood_mat)
 prism("MezzRailMid", [(12.3, -4.23), (14.65, -4.23), (14.65, -4.15), (12.3, -4.15)], 5.60, 5.70, wood_mat)
 print("  mezzanine deck + guard built")
+
+# ------------------------------------------------------- site structures ----
+# The rest of the mansard family works as designed on garden structures:
+# Roof05 (complete mansard) roofs a pavilion south of the house; two Roof04
+# half sections pair into a carport roof on the north; four Roof_corner01
+# hips form a kiosk pyramid in the west garden; Roof07 (complete hip cap)
+# roofs the entrance gate; corner02 (mansard end module) roofs the entry
+# porch gable-first and corner03 (its morphing twin) an east garden folly; Roof06's upper slope band is a canopy off the
+# pavilion's north eave; Roof02's sloped band hoods the east garden door.
+print("== site structures")
+
+def place_vertex(objs, theta_deg, vx, vy, tz):
+    """Place so the piece's local AABB-min corner lands exactly at (vx, vy)."""
+    mn, mx = combined_bbox(objs)
+    R = Matrix.Rotation(math.radians(theta_deg), 4, 'Z')
+    corners = [Vector((x, y, z)) for x in (mn.x, mx.x) for y in (mn.y, mx.y) for z in (mn.z, mx.z)]
+    rot = [R @ (c - mn) for c in corners]
+    rmin = Vector((min(c[i] for c in rot) for i in range(3)))
+    return place(objs, theta_deg, (vx + rmin.x, vy + rmin.y, tz + rmin.z))
+
+def base_slab(cx, cy, w, d):
+    """Plinth of SM_Wood_External_Floor03 pieces tiled and cut to w x d."""
+    all_objs = []
+    x = cx - w / 2
+    while x < cx + w / 2 - 0.01:
+        y = cy - d / 2
+        while y < cy + d / 2 - 0.01:
+            objs = import_piece("SM_Wood_External_Floor03.fbx")
+            place(objs, 0, (x, y, 0.0))
+            bake(objs)
+            all_objs += objs
+            y += 6.41
+        x += 7.41
+    for co, no in [((cx + w / 2, 0, 0), (1, 0, 0)), ((cx - w / 2, 0, 0), (-1, 0, 0)),
+                   ((0, cy + d / 2, 0), (0, 1, 0)), ((0, cy - d / 2, 0), (0, -1, 0))]:
+        bisect_cut(all_objs, co, no)
+    return all_objs
+
+def post(name, cx, cy, z0, z1, half=0.13):
+    prism(name, [(cx - half, cy - half), (cx + half, cy - half),
+                 (cx + half, cy + half), (cx - half, cy + half)], z0, z1, wood_mat)
+
+def steps(name, ex, ey, dx, dy):
+    """Three deck steps at a plinth edge (ex, ey), descending along (dx, dy)."""
+    for i in range(3):
+        off = 0.28 + 0.42 * i
+        cx, cy = ex + dx * off, ey + dy * off
+        x0, x1 = (cx - 0.8, cx + 0.8) if dx == 0 else (cx - 0.21, cx + 0.21)
+        y0, y1 = (cy - 0.8, cy + 0.8) if dy == 0 else (cy - 0.21, cy + 0.21)
+        prism(name, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)], 0.0, 1.53 - 0.51 * i, wood_mat)
+
+# pavilion (south garden)
+base_slab(4.35, -14.5, 14.6, 9.6)
+objs = import_piece("SM_Roof05.fbx")
+place(objs, 0, (-3.595, -19.08, 3.35)); bake(objs)
+for px in (-2.1, 11.3):
+    for py in (-18.3, -14.5, -10.7):
+        post("PavPost", px, py, 2.04, 4.05)
+prism("PavBeam", [(-2.35, -18.55), (11.55, -18.55), (11.55, -18.3), (-2.35, -18.3)], 3.95, 4.15, wood_mat)
+prism("PavBeam", [(-2.35, -10.95), (11.55, -10.95), (11.55, -10.7), (-2.35, -10.7)], 3.95, 4.15, wood_mat)
+steps("PavSteps", 4.35, -9.7, 0, 1)
+print("  pavilion built (Roof05)")
+
+# Roof06 canopy off the pavilion's north eave (upper slope band only)
+objs = import_piece("SM_Roof06.fbx")
+place(objs, 270, (0.3, -9.85, -0.55)); bake(objs)
+for co, no in [((7.7, 0, 0), (1, 0, 0)), ((0.3, 0, 0), (-1, 0, 0)),
+               ((0, -7.8, 0), (0, 1, 0)), ((0, -9.95, 0), (0, -1, 0)),
+               ((0, 0, 4.35), (0, 0, 1))]:
+    bisect_cut(objs, co, no)
+post("CanPost", 0.6, -7.95, 0.0, 2.55)
+post("CanPost", 7.4, -7.95, 0.0, 2.55)
+print("  pavilion canopy built (Roof06 band)")
+
+# carport (north garden): Roof04 is a mansard HALF section (one slope + flat
+# deck + one brick gable end + ridge cresting); two halves back-to-back form
+# the complete roof, gable ends landing at opposite ends
+base_slab(4.0, 12.6, 19.0, 7.6)
+objs = import_piece("SM_Roof04.fbx")
+place(objs, 90, (-5.14, 9.12, 2.76)); bake(objs)
+objs = import_piece("SM_Roof04.fbx")
+place(objs, 270, (-5.14, 9.12, 2.76)); bake(objs)
+for px in (-4.0, 4.0, 12.0):
+    for py in (9.55, 15.65):
+        post("CarPost", px, py, 2.04, 3.55)
+prism("CarBeam", [(-5.0, 9.2), (13.0, 9.2), (13.0, 9.45), (-5.0, 9.45)], 3.48, 3.70, wood_mat)
+prism("CarBeam", [(-5.0, 15.75), (13.0, 15.75), (13.0, 16.0), (-5.0, 16.0)], 3.48, 3.70, wood_mat)
+steps("CarSteps", 4.0, 8.8, 0, -1)
+print("  carport built (Roof04 pair)")
+
+# kiosk (west garden): four hip corners + cap
+base_slab(-14.5, 0.5, 11.4, 11.4)
+KC = (-14.5, 0.5)
+for th, (vx, vy), cuts in [
+        (0,   (-19.5, -4.5), [((-14.5, 0, 0), (1, 0, 0)), ((0, 0.5, 0), (0, 1, 0))]),
+        (90,  (-9.5, -4.5),  [((-14.5, 0, 0), (-1, 0, 0)), ((0, 0.5, 0), (0, 1, 0))]),
+        (180, (-9.5, 5.5),   [((-14.5, 0, 0), (-1, 0, 0)), ((0, 0.5, 0), (0, -1, 0))]),
+        (270, (-19.5, 5.5),  [((-14.5, 0, 0), (1, 0, 0)), ((0, 0.5, 0), (0, -1, 0))])]:
+    objs = import_piece("SM_Roof_corner01.fbx")
+    place_vertex(objs, th, vx, vy, 3.1)
+    bake(objs)
+    for co, no in cuts:
+        bisect_cut(objs, co, no)
+for dx in (-4.6, 4.6):
+    for dy in (-4.6, 4.6):
+        post("KioPost", KC[0] + dx, KC[1] + dy, 2.04, 3.9)
+prism("KioCap", [(KC[0] - 1.8, KC[1] - 1.8), (KC[0] + 1.8, KC[1] - 1.8),
+                 (KC[0] + 1.8, KC[1] + 1.8), (KC[0] - 1.8, KC[1] + 1.8)], 5.35, 5.60, roof_mat)
+steps("KioSteps", -8.8, 0.5, 1, 0)
+print("  kiosk built (corner01 x4)")
+
+# entrance gate (south garden): Roof07 is a complete small hip cap (bell
+# slopes + flat rusty deck + eave beam) - it roofs the gate whole, on piers
+objs = import_piece("SM_Roof07.fbx")
+place(objs, 0, (-3.87, -25.91, 3.1)); bake(objs)
+def pier(name, cx, cy):
+    ob = prism(name, [(cx - 0.55, cy - 0.55), (cx + 0.55, cy - 0.55),
+                      (cx + 0.55, cy + 0.55), (cx - 0.55, cy + 0.55)], 0.0, 3.3, brick)
+    # prism() maps UVs from (x, y) - right for caps, smeared on tall Y faces;
+    # remap this pier's sides from (horizontal, z) so the brick courses read
+    me = ob.data
+    uv = me.uv_layers.active
+    for poly in me.polygons:
+        n = poly.normal
+        if abs(n.y) <= 0.5 and abs(n.x) <= 0.5:
+            continue
+        for k, vi in enumerate(poly.vertices):
+            v = me.vertices[vi]
+            if abs(n.y) > 0.5:
+                uv.data[poly.loop_start + k].uv = (v.co.x * 0.22, v.co.z * 0.22)
+            else:
+                uv.data[poly.loop_start + k].uv = (v.co.y * 0.22, v.co.z * 0.22)
+    return ob
+def profile_plate(name, x0, x1, outline_yz, mat):
+    """Thin plate closing a roof cut end: outline_yz = [(y, z), ...] simple
+    polygon tracing the roof's outer profile at the cut, extruded x0..x1.
+    Outline ordered CCW in the (y, z) plot."""
+    n = len(outline_yz)
+    verts = [(x0, y, z) for y, z in outline_yz] + [(x1, y, z) for y, z in outline_yz]
+    faces = [tuple(range(n)), tuple(reversed(range(n, 2 * n)))]
+    for i in range(n):
+        j = (i + 1) % n
+        faces.append((i, j, n + j, n + i))
+    me = bpy.data.meshes.new(name)
+    me.from_pydata(verts, [], faces)
+    me.materials.append(mat)
+    uv = me.uv_layers.new(name="UVMap")
+    for poly in me.polygons:
+        for li in range(poly.loop_start, poly.loop_start + poly.loop_total):
+            v = me.vertices[me.loops[li].vertex_index]
+            uv.data[li].uv = (v.co.y * 0.22, v.co.z * 0.22)
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.collection.objects.link(ob)
+    return ob
+
+pier("GatePier", -2.6, -23.5)
+pier("GatePier", 4.4, -23.5)
+print("  entrance gate built (Roof07)")
+
+# entry porch: corner02 is a mansard roof END module (brick gable + both
+# slopes + crested deck, ridge along its length) - one module roofs the
+# porch, gable to the street, open end cut into the facade, east slope cut
+# clear of the bay
+objs = import_piece("SM_Roof_corner02.fbx")
+place(objs, 0, (-5.63, -11.3, 4.61)); bake(objs)
+bisect_cut(objs, (0, -5.9, 0), (0, 1, 0))
+bisect_cut(objs, (3.8, 0, 0), (1, 0, 0))
+prism("PorchBeam", [(3.68, -11.2), (3.8, -11.2), (3.8, -6.0), (3.68, -6.0)], 6.55, 6.85, wood_mat)
+post("PorchPost", -5.5, -8.6, 0.0, 5.4)
+post("PorchPost", 3.65, -8.6, 0.0, 6.55)
+print("  entry porch built (corner02)")
+
+# east pavilion: corner03 is a morphing end module (pitched cross-gable at
+# its brick-gable end, bell half-section at the far end) - the folly keeps
+# the gable bay only, its cut end closed by a timber profile plate on posts
+base_slab(22.85, 0.5, 7.6, 11.8)
+objs = import_piece("SM_Roof_corner03.fbx")
+mn, mx = place(objs, 270, (0.0, 0.0, 3.66))
+dy = 0.5 - (mn.y + mx.y) / 2
+dx = 19.6 - mn.x
+if abs(dx) > 1e-4 or abs(dy) > 1e-4:
+    mn, mx = place(objs, 0, (mn.x + dx, mn.y + dy, mn.z))
+bake(objs)
+bisect_cut(objs, (26.1, 0, 0), (1, 0, 0))
+bb = combined_bbox(objs)
+print(f"  east pavilion roof: x {bb[0].x:.2f}..{bb[1].x:.2f} y {bb[0].y:.2f}..{bb[1].y:.2f} z {bb[0].z:.2f}..{bb[1].z:.2f}")
+profile_plate("EastPavGable", 25.94, 26.10,
+              [(6.06, 4.50), (5.45, 5.00), (4.45, 5.80), (3.45, 6.70),
+               (2.45, 6.90), (1.45, 7.60), (0.45, 8.15), (-0.55, 8.75),
+               (-1.55, 8.54), (-2.55, 7.50), (-3.55, 6.95), (-4.55, 6.88),
+               (-5.07, 6.88), (-5.07, 4.50)], wood_mat)
+for px in (20.2, 25.5):
+    for py in (-4.55, 5.55):
+        post("EastPavPost", px, py, 2.04, 4.45)
+steps("EastPavSteps", 19.05, 0.5, -1, 0)
+print("  east pavilion built (corner03)")
+
+# Roof02 hood over the east garden door (door centre y 0.90): the fragment's
+# sloped band (local y 6.2..9.2, z 2.9..5.7) sliced to a 1.6-deep hood, its
+# top edge against the facade at z 6.6, drip edge at x 16.65, z ~5.1
+objs = import_piece("SM_Roof02.fbx")
+place(objs, 90, (9.25, -0.85, 3.77)); bake(objs)
+bisect_cut(objs, (16.65, 0, 0), (1, 0, 0))
+bisect_cut(objs, (15.0, 0, 0), (-1, 0, 0))
+for py in (-0.6, 2.4):
+    prism("HoodCorbel", [(14.83, py - 0.12), (15.11, py - 0.12), (15.11, py + 0.12), (14.83, py + 0.12)], 5.35, 6.15, wood_mat)
+print("  garden-door hood built (Roof02 band)")
 
 # ---------------------------------------------------------------- ground ----
 bpy.ops.mesh.primitive_plane_add(size=90, location=(0, 0, -0.03))

@@ -39,33 +39,27 @@ node recipe (same approach as the indoor room and Roof01).
   follow the measured roof profile (sampled from a plain Roof01 only — the
   dormer module's cap tiles corrupt the profile bins).
 
-## Pieces: 30 of 50 used (85 placements)
+## Pieces: 50 of 50 used (180 placements)
 
-Used: Roof01 ×7, Trim01 ×8, internal wall03 ×8, wall02 ×6, Baseflor
-WindowFrame01 ×5, SecondFloor WindowFrame01/02 ×4 each, internal
-DoorFrame01 ×4, Trim01_Corner ×4, FloorPlank01 ×3, every exterior corner ×2
-per floor, Baseflor DoorFrame01 ×2 (front + garden doors), Baseflor wall01 /
-WindowFrame02 ×2, SecondFloor wall01 ×2, FloorPlank02 ×2, internal
-corner01 ×2, Wood_External_Floor01/03 ×2 each (platform), Internal_Stairs01,
+Every FBX in the building kit is placed at least once. The original
+build used 30 pieces (85 placements): Roof01 ×7, Trim01 ×8, internal
+wall03 ×8, wall02 ×6, Baseflor WindowFrame01 ×5, SecondFloor
+WindowFrame01/02 ×4 each, internal DoorFrame01 ×4, Trim01_Corner ×4,
+FloorPlank01 ×3, every exterior corner ×2 per floor, Baseflor
+DoorFrame01 ×2 (front + garden doors), Baseflor wall01 / WindowFrame02
+×2, SecondFloor wall01 ×2, FloorPlank02 ×2, internal corner01 ×2,
+Wood_External_Floor01/03 ×2 each (platform), Internal_Stairs01,
 External_Stairs01, Roof03 dormer, and all five internal floor slabs
 (Wood01/02/03, Ceramic01/02).
 
-Not used, with reasons:
-
-- **Damage variants** — wall01_torn, wall01_torn02, Wood_Internal_Floor04,
-  and Internal_Stair02 (also a 16.4 m mansion-hall piece; torn carpet).
-- **WindowFrame03 (both floors)** — curved turret/bay sections; they cannot
-  join the rectangular wall grid.
-- **SecondFloor DoorFrame01** — an upper door needs a balcony/terrace to
-  serve; the kit has no balcony piece.
-- **Internal wall01** — its 6.0 m length fit no partition run without
-  blocking a needed arch opening; wall02/wall03/DoorFrame01 cover every run.
-- **Wood_External_Floor02** — ~11% of faces carry the unassigned
-  "Fbx Default Material"; Floor01/03 cover the platform.
-- **Roof02/04/05** — complete pre-built roofs for a different 14 × 8
-  footprint; **Roof06/07** are fragments in source-mansion coordinates;
-  **Roof08/09/10 + Roof_corner01/02/03** are an alternative roof family the
-  Roof01/03 module system already closes.
+The "use every kit piece" pass (stages 1–3 + the mansard/site stage,
+below) added the remaining 20: WindowFrame03 ×2 (the bay, both floors),
+SecondFloor DoorFrame01 (balcony), Internal_Stair02 (mezzanine flight),
+internal wall01 ×2 + wall01_torn ×3 + wall01_torn02 (spines + decay
+room), Wood_Internal_Floor04 (decay-room ceiling), Wood_External_Floor02
+×2 (bay floors), and the whole mansard family — Roof08 ×4, Roof09 ×4,
+Roof10 ×2, Roof_corner01 ×4, Roof02/05/06/07 + Roof_corner02/03 ×1 each,
+Roof04 ×2 — while Roof01 rose to ×11 as the mansard's upper tier.
 
 ## Kit defect found: Corner02 vertex detection
 
@@ -263,3 +257,65 @@ A full audit of the merged build (169 objects), with one real defect found and f
   closet arch, the balcony door) regenerated; new
   `two_story_house_int_decay_ceiling.png` shows the Floor04 ceiling from the decay
   room — cracked plaster, cornice, and the torn walls' peeled tops.
+
+## Mansard conversion + site structures (2026-10-03)
+
+Stage 2 of the "use every kit piece" pass — the mansard family and the
+remaining roof pieces, all placed from LOD0 geometry measured in
+Blender (see the LOD warning at the end):
+
+- **Main roof → mansard.** The kit's mansard sections (Roof09 eave,
+  Roof08 dormer, Roof10 dormer, Roof08, Roof09 per side) form a steep
+  bell-cast lower tier on both slopes, eaves at the wall line, cut at
+  the spring line (|y| 2.15) where the bell curve meets the existing
+  Roof01 slope plane — the Roof01 modules (×11, incl. the Roof03 dormer
+  module) continue as the shallow upper tier to the unchanged ridge
+  (16.28). The gable ends are re-profiled to the same curve (sampled
+  from the pieces, dense to the spring line, analytic above it).
+- **Pavilion (south garden).** Roof05 is a complete mansard roof for a
+  ~14 × 8 building: set on six posts over a Floor03 plinth, glazed
+  dormer to the garden. A Roof06 slope band, sliced from the fragment,
+  cantilevers a canopy off its north eave on two posts.
+- **Carport (north garden).** Roof04 is a mansard *half*-section (one
+  slope + flat deck + one brick gable end + cresting); two halves
+  back-to-back on six posts + twin beams form the complete roof —
+  verified by a raycast heightmap of the finished footprint (paired
+  slopes, central deck, eaves both sides).
+- **Kiosk (west garden).** Four Roof_corner01 hip corners quartered to
+  a centre point make a slate pyramid roof on posts, closed by a cap
+  prism.
+- **Entrance gate (south).** Roof07 is a complete small hip cap (bell
+  slopes, rusty deck, timber eave beam) — set whole over two brick
+  piers. The piers are built by a dedicated helper that remaps the
+  brick UVs per face; the generic prism UVs (from plan x/y) smear on
+  tall faces.
+- **Entry porch.** Roof_corner02 is a mansard *end module*: brick
+  gable + pitched cross-gable bay that morphs into a half-section
+  along its length (its LOD0 sections were measured station by
+  station). One module roofs the porch — gable to the street, open end
+  embedded in the facade, east slope sliced clear of the bay with the
+  cut edge landed on a raised beam + post (raycast-verified closure).
+- **East pavilion.** Roof_corner03 (the morphing twin) as an open
+  garden folly: only the gable bay is kept, the cut end closed by a
+  timber profile plate (`profile_plate`, outline traced from the
+  measured section) carried on posts — a raw bisect end on these
+  shell pieces leaves the roof cavity open, as the first attempt
+  showed.
+- **Garden-door hood.** Roof02 is mostly void in source coordinates;
+  its one solid sloped band is sliced into a hood over the east garden
+  door on two wood corbels.
+
+Final build: 256 objects, 180 imports — 50 of 50 pieces placed.
+
+**LOD warning (cost a day):** the kit's LOD1+ meshes *simplify away
+the corner modules' morphing sections* — LOD1 of Roof_corner03 is a
+uniform half-section its whole length, while LOD0 transitions from a
+pitched cross-gable to the bell section. Any probe that imports an
+FBX and raycasts the whole stack measures the simplified LODs, not
+the geometry the build actually places (LOD0). All fit-checks for
+build geometry must isolate LOD0.
+
+Proof renders: refreshed `two_story_house_ext_front_se.png`,
+`two_story_house_ext_front.png`, `two_story_house_ext_back_nw.png`,
+plus new `two_story_house_site_structures.png` and
+`two_story_house_east_pavilion.png`.

@@ -168,3 +168,43 @@ Proof renders: `two_story_house_ext_front_se.png`,
 `two_story_house_ext_back_nw.png`, `two_story_house_east_elevation.png`
 and `two_story_house_int_hall_upper.png` (regenerated), plus new
 `two_story_house_int_family.png` and `two_story_house_int_primary.png`.
+
+## Bay window + primary balcony (2026-10-03)
+
+Stage 1 of the "use every kit piece" pass — placements derived from
+geometry measured off the FBXs (fit-check, 2026-10-03), not from the
+file names:
+
+- **Two-story canted bay (WindowFrame03, both floors).** The piece is
+  not the corner turret its name suggests: it is a 10.0 m bay wall —
+  flat three-window front, angled facets, short straight returns —
+  brick outside, damask inside. One per floor, stacked on the south
+  facade from x ≈ 3.94 to the SE corner, back plane flush with the
+  interior face so the bay projects ≈ 1.85 m past the facade line. It
+  serves the kitchen + family room below (the arch wall between them
+  stops at the old facade line, so the bay reads as one open sun-bay)
+  and the main bath + primary suite above. Kit-true floors: the ground
+  bay floor is two `Wood_External_Floor02` pieces bisect-cut to the bay
+  trapezoid (the tool first reassigns the piece's ~1% of faces on
+  "Fbx Default Material" to its own wood material); the upper bay floor
+  is two Wood02 slabs cut the same way. The bay projects past the main
+  roof's eave line, so it carries a flat trapezoid lid (`BayCap`, roof
+  material) just above its wall top; the south string-course trim stops
+  at the bay, as real bays break the course.
+- **Primary balcony (SecondFloor DoorFrame01).** Swapped into the
+  upper east run — DoorFrame01 + wall01 + WindowFrame01 tiles the run
+  exactly — opening from the primary suite's walk-in closet end. The
+  deck is a `Wood_External_Floor01` slab cut to 1.40 × 4.61 m (its
+  platform skirt bisected away) carried on two timber posts and a beam;
+  the railing is built from prisms in the deck's wood material.
+
+Object count 149 → 163. Verified: no geometry protrudes past the outer
+envelope outside the designed projections (bay, balcony, roof, terrace,
+stairs); outside-in rays seal at the bay facets and returns (the window
+apertures are open frames, like every window piece in the kit); the
+balcony rails are hit at their design heights.
+
+Proof renders: `two_story_house_ext_front_se.png` and
+`two_story_house_east_elevation.png` (regenerated), plus new
+`two_story_house_int_bay_family.png` and
+`two_story_house_int_primary_bay.png`.

@@ -14,6 +14,11 @@ Layout (kit grid, meters, house centered at origin, front = -Y/south):
   south strip, main bath SE of the west block (ceramic, over kitchen), suite
   (bedroom S + ensuite N) mid-east, primary suite in the east wing (bedroom
   + walk-in closet S, dressing + ensuite + sitting N).
+  Two-story canted bay (WindowFrame03, both floors) on the south facade
+  serving the kitchen/family room below and the main bath/primary bedroom
+  above; the bay carries its own trapezoid floors and a flat roof lid.
+  A SecondFloor DoorFrame01 in the east wall opens from the primary bedroom
+  onto a small timber balcony (kit floor deck on posts, prism rails).
 Materials: real kit materials from matlib_building_kit.json (polish recipe).
 Texture paths are stored relative to the .blend so it opens in any checkout.
 
@@ -239,11 +244,14 @@ ext_corner("SM_ExternalWall_Baseflor_Corner01.fbx", 'NE', Z0)
 ext_corner("SM_ExternalWall_Baseflor_Corner02.fbx", 'NW', Z0)
 end = ext_wall_run(["SM_ExternalWall_Baseflor_WindowFrame01.fbx",
                     "SM_ExternalWall_Baseflor_DoorFrame01.fbx",
-                    "SM_ExternalWall_Baseflor_WindowFrame01.fbx",
-                    "SM_ExternalWall_Baseflor_WindowFrame01.fbx",
-                    "SM_ExternalWall_Baseflor_DoorFrame01.fbx"],
+                    "SM_ExternalWall_Baseflor_wall01.fbx"],
                    0, 1, -WY, False, -6.07, Z0, "S-ground")
-print(f"  S-ground ends {end:.3f} (SE corner starts ~13.93)")
+print(f"  S-ground ends {end:.3f} - bay takes over to the SE corner")
+bay_x = end
+objs = import_piece("SM_ExternalWall_Baseflor_WindowFrame03.fbx")
+place(objs, 0, (bay_x, -7.97, Z0))
+bake(objs)
+print(f"  south bay (ground) x {bay_x:.2f}..{bay_x + 10:.2f}, front y -7.97")
 end = ext_wall_run(["SM_ExternalWall_Baseflor_wall01.fbx",
                     "SM_ExternalWall_Baseflor_WindowFrame01.fbx",
                     "SM_ExternalWall_Baseflor_WindowFrame02.fbx",
@@ -266,13 +274,14 @@ ext_corner("SM_ExternalWall_SecondFloor_Corner01.fbx", 'SW', Z1)
 ext_corner("SM_ExternalWall_SecondFloor_Corner02.fbx", 'SE', Z1)
 ext_corner("SM_ExternalWall_SecondFloor_Corner01.fbx", 'NE', Z1)
 ext_corner("SM_ExternalWall_SecondFloor_Corner02.fbx", 'NW', Z1)
-ext_wall_run(["SM_ExternalWall_SecondFloor_WindowFrame02.fbx",
-              "SM_ExternalWall_SecondFloor_WindowFrame01.fbx",
-              "SM_ExternalWall_SecondFloor_wall01.fbx",
-              "SM_ExternalWall_SecondFloor_WindowFrame01.fbx",
-              "SM_ExternalWall_SecondFloor_wall01.fbx",
-              "SM_ExternalWall_SecondFloor_wall01.fbx"],
-             0, 1, -WY, False, -6.07, Z1, "S-upper")
+end = ext_wall_run(["SM_ExternalWall_SecondFloor_WindowFrame02.fbx",
+                    "SM_ExternalWall_SecondFloor_WindowFrame01.fbx"],
+                   0, 1, -WY, False, -6.07, Z1, "S-upper")
+bay_xu = end
+objs = import_piece("SM_ExternalWall_SecondFloor_WindowFrame03.fbx")
+place(objs, 0, (bay_xu, -7.97, 7.25))   # piece has a 0.25 below-floor tail
+bake(objs)
+print(f"  south bay (upper) x {bay_xu:.2f}..{bay_xu + 10:.2f}")
 ext_wall_run(["SM_ExternalWall_SecondFloor_WindowFrame01.fbx",
               "SM_ExternalWall_SecondFloor_WindowFrame02.fbx",
               "SM_ExternalWall_SecondFloor_wall01.fbx",
@@ -282,14 +291,15 @@ ext_wall_run(["SM_ExternalWall_SecondFloor_WindowFrame01.fbx",
 ext_wall_run(["SM_ExternalWall_SecondFloor_WindowFrame01.fbx",
               "SM_ExternalWall_SecondFloor_WindowFrame02.fbx"],
              -90, 0, -WX, False, -5.10, Z1, "W-upper")
-ext_wall_run(["SM_ExternalWall_SecondFloor_WindowFrame02.fbx",
+ext_wall_run(["SM_ExternalWall_SecondFloor_DoorFrame01.fbx",
+              "SM_ExternalWall_SecondFloor_wall01.fbx",
               "SM_ExternalWall_SecondFloor_WindowFrame01.fbx"],
              90, 0, WXE, True, -5.10, Z1, "E-upper")
 
 # string-course trim between floors
 print("== trim")
-for theta, ty in ((0, -WY - 0.20), (180, WY - 0.003)):
-    for k in range(6):
+for theta, ty, krange in ((0, -WY - 0.20, range(2)), (180, WY - 0.003, range(6))):
+    for k in krange:
         objs = import_piece("SM_Trim01.fbx")
         place(objs, theta, (-6.45 + 3.227 * k, ty, 7.24))
         bake(objs)
@@ -443,6 +453,45 @@ slab("SM_Ceramic_Internal_Floor02.fbx", 10.65, -0.99,
 slab("SM_Wood_Internal_Floor03.fbx", 10.65, 2.06,
      [((14.65, 0, 0), (1, 0, 0)), ((0, 5.66, 0), (0, 1, 0))])
 
+# bay floors (ground, Floor02) + bay slabs (upper, Wood02): trapezoid pieces
+# cut to the bay outline A(bay_x+0.5,-5.66) B(+3.0,-7.92) C(+7.0,-7.92) D(+9.5,-5.66)
+print("== bay floors and slabs")
+import math as _math
+_fn = _math.hypot(2.5, 2.26)
+W_FACET = (((bay_x + 0.5), -5.66, 0), (-2.26 / _fn, -2.5 / _fn, 0))
+E_FACET = (((bay_x + 7.0), -7.92, 0), (2.26 / _fn, -2.5 / _fn, 0))
+CHORD = ((0, -5.66, 0), (0, 1, 0))
+FRONT = ((0, -7.92, 0), (0, -1, 0))
+
+def fix_floor02(objs):
+    """Floor02 ships ~1% of faces on 'Fbx Default Material' - reassign to wood."""
+    for ob in objs:
+        if ob.type != 'MESH':
+            continue
+        names = [m.name if m else "" for m in ob.data.materials]
+        if "MI_Wood_ExteriorFloor" not in names or "Fbx Default Material" not in names:
+            continue
+        wood = names.index("MI_Wood_ExteriorFloor")
+        bad = names.index("Fbx Default Material")
+        for p in ob.data.polygons:
+            if p.material_index == bad:
+                p.material_index = wood
+
+objs = import_piece("SM_Wood_External_Floor02.fbx")
+fix_floor02(objs)
+place(objs, 0, (bay_x - 0.6, -7.97, Z0)); bake(objs)
+for co, no in [CHORD, FRONT, W_FACET, ((bay_x + 5, 0, 0), (1, 0, 0))]:
+    bisect_cut(objs, co, no)
+objs = import_piece("SM_Wood_External_Floor02.fbx")
+fix_floor02(objs)
+place(objs, 0, (bay_x + 4.4, -7.97, Z0)); bake(objs)
+for co, no in [CHORD, FRONT, E_FACET, ((bay_x + 5, 0, 0), (-1, 0, 0))]:
+    bisect_cut(objs, co, no)
+slab("SM_Wood_Internal_Floor02.fbx", bay_x - 0.6, -7.97,
+     [CHORD, FRONT, W_FACET, ((bay_x + 5, 0, 0), (1, 0, 0))])
+slab("SM_Wood_Internal_Floor02.fbx", bay_x + 4.4, -7.97,
+     [CHORD, FRONT, E_FACET, ((bay_x + 5, 0, 0), (-1, 0, 0))])
+
 print("== planks")
 for k in range(3):
     objs = import_piece("SM_FloorPlank01.fbx")
@@ -551,6 +600,70 @@ def seam_plug(x0, x1, y0, y1):
 seam_plug(13.93, 14.09, 5.66, WY)        # NE corner, north face
 seam_plug(14.65, WXE, 4.89, 5.12)        # NE corner, east face
 seam_plug(-WX, -6.65, 4.89, 4.96)        # NW corner, west face
+
+# ---------------------------------------------------- bay cap + balcony ----
+# The bay projects past the main roof's eave line, so it gets a flat
+# trapezoid lid just above its wall top (13.04), north edge tucked to the
+# eave. The upper-east DoorFrame01 opens onto a small timber balcony.
+print("== bay cap + balcony")
+roof_mat = None
+wood_mat = None
+for m in bpy.data.materials:
+    if m.name.split('.')[0] == "MI_Roof":
+        roof_mat = m
+    if m.name.split('.')[0] == "MI_Wood_ExteriorFloor":
+        wood_mat = m
+
+def prism(name, outline, z0, z1, mat):
+    bm = bmesh.new()
+    lo = [bm.verts.new((x, y, z0)) for x, y in outline]
+    hi = [bm.verts.new((x, y, z1)) for x, y in outline]
+    n = len(outline)
+    bm.faces.new(tuple(reversed(lo)))
+    bm.faces.new(tuple(hi))
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new((lo[i], lo[j], hi[j], hi[i]))
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me); bm.free()
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    if mat:
+        me.materials.append(mat)
+    uv = me.uv_layers.new(name="UVMap")
+    for loop in me.loops:
+        v = me.vertices[loop.vertex_index]
+        uv.data[loop.index].uv = (v.co.x * 0.22, v.co.y * 0.22)
+    bpy.context.view_layer.update()
+    bake([ob])
+    return ob
+
+prism("BayCap", [(bay_x + 0.3, -5.90), (bay_x + 2.9, -8.02),
+                 (bay_x + 7.1, -8.02), (bay_x + 9.7, -5.90)],
+      13.02, 13.14, roof_mat)
+
+deck = import_piece("SM_Wood_External_Floor01.fbx")
+place(deck, 0, (WXE, -5.30, 5.45)); bake(deck)
+bisect_cut(deck, (16.51, 0, 0), (1, 0, 0))
+bisect_cut(deck, (0, -0.69, 0), (0, 1, 0))
+bisect_cut(deck, (0, 0, 7.13), (0, 0, -1))   # drop the platform skirt, keep the deck slab
+# posts + beam under the deck's outer edge, railing uprights + rails
+prism("BalconyPost", [(16.27, -5.30), (16.51, -5.30), (16.51, -5.06), (16.27, -5.06)], 2.04, 5.45, wood_mat)
+prism("BalconyPost", [(16.27, -0.93), (16.51, -0.93), (16.51, -0.69), (16.27, -0.69)], 2.04, 5.45, wood_mat)
+prism("BalconyBeam", [(16.11, -5.30), (16.51, -5.30), (16.51, -0.69), (16.11, -0.69)], 5.13, 5.45, wood_mat)
+for ux, uy in ((16.41, -5.25), (16.41, -3.0), (16.41, -0.79)):
+    prism("RailPost", [(ux - 0.05, uy - 0.05), (ux + 0.05, uy - 0.05),
+                       (ux + 0.05, uy + 0.05), (ux - 0.05, uy + 0.05)], 7.50, 8.58, wood_mat)
+prism("RailTop", [(16.39, -5.32), (16.53, -5.32), (16.53, -0.67), (16.39, -0.67)], 8.46, 8.58, wood_mat)
+prism("RailMid", [(16.44, -5.32), (16.52, -5.32), (16.52, -0.67), (16.44, -0.67)], 8.02, 8.12, wood_mat)
+prism("RailLow", [(16.44, -5.32), (16.52, -5.32), (16.52, -0.67), (16.44, -0.67)], 7.62, 7.72, wood_mat)
+for y0, y1 in ((-5.31, -5.19), (-0.85, -0.73)):
+    prism("RailTop", [(15.11, y0), (16.45, y0), (16.45, y1), (15.11, y1)], 8.46, 8.58, wood_mat)
+for y0, y1 in ((-5.29, -5.21), (-0.83, -0.75)):
+    prism("RailMid", [(15.11, y0), (16.45, y0), (16.45, y1), (15.11, y1)], 8.02, 8.12, wood_mat)
+    prism("RailLow", [(15.11, y0), (16.45, y0), (16.45, y1), (15.11, y1)], 7.62, 7.72, wood_mat)
+print("  bay cap + balcony built")
 
 # ---------------------------------------------------------------- ground ----
 bpy.ops.mesh.primitive_plane_add(size=90, location=(0, 0, -0.03))

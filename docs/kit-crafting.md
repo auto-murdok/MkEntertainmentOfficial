@@ -21,9 +21,14 @@ Rule: nothing joins the mansion until its joint is proven below.
 
 - Ground-floor slab: `SM_Wood_Internal_Floor01` (6.71 x 6.36 solid interior
   slab — the external Floor0x pieces are 2 m tall open deck platforms, wrong
-  for interiors) tiled + cut to the starter footprint **14.09 x 12.25**.
+  for interiors) tiled + cut to the starter footprint **14.08 x 12.25**.
   Footprint derives from the wall-run module sum
-  (1.04 + 4.00 + 4.01 + 4.00 + 1.04); slab cuts are buried under walls only.
+  (1.04 + 4.00 + 4.01 + 4.00 + 1.03 — right corner counts 1.03 rotated).
+  Tile grid shifted +0.33 in x so the unavoidable remainders become narrow
+  perimeter strips buried under wall bands, never slices across open floor.
+- Cut-cap lesson: `edgenet_fill` caps are born UV-less (single-texel sample
+  = white patches). `repair_cap_uvs` gives zero-UV-area faces a top-down
+  planar map — rule for every future bisect.
 - Raised living floor (kit pattern): slab top at **z 2.05** — the Baseflor
   door opening sills at ~2.05, served by the 2.02-tall exterior stairs.
   Walls rise from grade (z 0) as the plinth.
@@ -33,18 +38,25 @@ Rule: nothing joins the mansion until its joint is proven below.
 
 ## South wall + entrance (step 2 — done, verified)
 
-- Run (whole pieces, exact closure): `Corner01` + 2x `wall01` + `DoorFrame01`
-  (centered) + 2x `wall01` + `Corner01` = 14.09, 7 pieces, zero residuals.
-  Bisected filler strips removed with the rule change.
-- Corners point-symmetric (left rot 0, right rot 180); exempt from the
-  show-face assert (brick wraps the pier, 0.05 quoin asymmetry).
+- Run (whole pieces, exact closure): `Corner01` + `WindowFrame01` +
+  `DoorFrame01` (centered) + `WindowFrame01` + `Corner01` = 14.08,
+  5 pieces, zero residuals. Windows (4.00) swap 1:1 for wall pairs.
+- `Corner01` is HANDED (probed): finished outer faces S+W, receiving
+  rebates N+E — left rot 0, right rot 90 (outers S+E, rebates N+W into both
+  runs). `Corner02` probed same-hand (bigger variant, 1.18) — held in
+  reserve, no mirror-hand corner exists in the kit.
+- Corners exempt from the show-face assert (brick wraps the pier).
+  The "pocket" seen earlier was the rot-180 misorientation, now gone.
 - Footing check (all bases z 0) + doorway ray (open passage) pass in-build.
 - Entrance stairs: `External_Stairs01` centered, landing at the wall face,
   top 2.02 vs sill 2.05.
-- Watch items: (a) hairline sliver left of the arch — confirm in GUI;
-  (b) right corner shows a recessed pocket with interior finish on its south
-  face (raycast proves solid behind — no through-gap; likely the rebate for
-  the future perpendicular wall run, confirmed at that step).
+- Window finding: opening ~2.5 m wide, sill ~2.9, NO glass in the kit piece
+  (open hole, sky through). Raycast anomaly: fresh-import rays report the
+  opening blocked and face inspection shows wild triangles + impossible
+  areas near the jamb — yet all renders show a clean opening. Renders are
+  truth for this piece; raycast not trusted on it until the triangles are
+  explained. Glass stays a later pass (kit ships none for wall windows).
+- Watch item: hairline sliver left of the arch — confirm in GUI.
 
 ## Pair matrix (stage 1)
 
@@ -53,9 +65,9 @@ Rule: nothing joins the mansion until its joint is proven below.
 | 1 | floor + wall01 (footing) | clean (bases z 0, 7 pcs) | `_blender/polish/new_mansion_south.png` |
 | 1b | wall + DoorFrame01 (entrance) | clean (opening ~2.5m, sill 2.05, stairs land 2.02) + facing fix: door bbox min is trim at local y −0.11, shift −0.11 so brick show-faces land coplanar (both face min-y, no turn; first attempt used the wrong sign) | `_blender/polish/new_mansion_door.png`, `_blender/polish/new_mansion_top.png` |
 | 2 | wall01 + wall01 (straight run) | pending | — |
-| 3 | wall01 + corner01 (right angle) | placed both ends (point-symmetric), SW joint clean; SE shows recessed pocket, raycast solid behind — perpendicular-run rebate suspected, verdict at that step | nm2_sw, nm3_se_s |
+| 3 | wall01 + corner01 (right angle) | clean — left rot 0, right rot 90 (handed piece, rebates N+W into both runs); quoins read both ends | nm2_sw, nm3_se_s |
+| 5 | wall + WindowFrame01 (opening) | clean — 4.00 swaps 1:1 for wall pairs, opening ~2.5m sill ~2.9, no kit glass; raycast anomaly documented (renders are truth) | nm4_win |
 | 4 | Baseflor wall01 + SecondFloor wall01 (stacked) | pending | — |
-| 5 | wall + WindowFrame01 (opening) | pending | — |
 | 6 | Roof01 + Roof01 (slope continuation) | pending | — |
 
 Method per pair: LOD0 import, snap on the kit grid on the real slab,

@@ -20,12 +20,16 @@ OUT_BLEND = os.path.join(REPO, "_blender/tests/new_mansion.blend")
 matmap = json.load(open(MATLIB))
 
 # Starter footprint (m): DERIVED from the wall-run module sum (golden rule —
-# dimensions flow piece->design). South run: corner + 2 walls + door +
-# 2 walls + corner = 1.04 + 4.00 + 4.01 + 4.00 + 1.04 = 14.09.
-# Raised living floor (kit pattern, proven by the old mansion): interior slab
-# top at z 2.05 — the Baseflor door opening sills at ~2.05, served by the
-# 2.02-tall exterior stairs. Walls rise from grade (z 0) as the plinth.
-FP_W = 2 * (1.04 + 2 * 2.00 + 4.01 / 2)  # 14.09, closes exactly
+# dimensions flow piece->design). South run, whole pieces, exact closure:
+# Corner01 + 2 walls + door + 2 walls + Corner01.
+# Corner01 is HANDED (probed): finished outer faces S+W, receiving rebates
+# N+E — left corner rot 0; right corner rot 90 (outers S+E, rebates N+W).
+# Rotated footprint along x is 1.03, hence per-side halves.
+# Total: 1.04 + 4.00 + 4.01 + 4.00 + 1.03 = 14.08.
+CORNER_L, CORNER_R, WALL_W, DOOR_W = 1.04, 1.03, 2.00, 4.01
+HALF_L = CORNER_L + 2 * WALL_W + DOOR_W / 2
+HALF_R = CORNER_R + 2 * WALL_W + DOOR_W / 2
+FP_W = HALF_L + HALF_R  # 14.08
 FP_D = 12.25
 SLAB_TOP = 2.05
 
@@ -94,10 +98,15 @@ def bisect_cut(objs, plane_co, plane_no):
     bpy.context.view_layer.update()
 
 # ------------------------------------------------------------ step 1: slab --
+# Tile grid shifted so the unavoidable tile remainders become narrow
+# perimeter strips buried under the wall bands (west/east under the future
+# side walls, north under the future north wall, south under this step's
+# wall) — never slices across open floor.
 print("== step 1: ground-floor slab")
 slab_objs = []
 SLAB_FBX, TILE_X, TILE_Y = "SM_Wood_Internal_Floor01.fbx", 6.71, 6.36
-x = -FP_W / 2
+EDGE_X = (FP_W - 2 * TILE_X) / 2  # 0.33: buried under side walls later
+x = -FP_W / 2 - TILE_X + EDGE_X
 while x < FP_W / 2 - 0.01:
     y = -FP_D / 2
     while y < FP_D / 2 - 0.01:
@@ -109,6 +118,26 @@ while x < FP_W / 2 - 0.01:
 for co, no in [((FP_W / 2, 0, 0), (1, 0, 0)), ((-FP_W / 2, 0, 0), (-1, 0, 0)),
                ((0, FP_D / 2, 0), (0, 1, 0)), ((0, -FP_D / 2, 0), (0, -1, 0))]:
     bisect_cut(slab_objs, co, no)
+
+def repair_cap_uvs(objs, scale=0.15):
+    # edgenet_fill caps are born without UVs (all loops at one texel ->
+    # white patches). Give zero-UV-area faces a top-down planar map so cut
+    # faces sample real wood instead of a single pale texel.
+    for o in objs:
+        me = o.data
+        uv = me.uv_layers.active
+        if uv is None:
+            continue
+        for p in me.polygons:
+            loops = [uv.data[i].uv for i in range(p.loop_start, p.loop_start + p.loop_total)]
+            umin = min(u[0] for u in loops); umax = max(u[0] for u in loops)
+            vmin = min(u[1] for u in loops); vmax = max(u[1] for u in loops)
+            if (umax - umin) + (vmax - vmin) < 1e-6:
+                for i in range(p.loop_start, p.loop_start + p.loop_total):
+                    v = me.vertices[me.loops[i].vertex_index]
+                    uv.data[i].uv = (v.co.x * scale, v.co.y * scale)
+repair_cap_uvs(slab_objs)
+print("  cap UVs repaired")
 # rest slab top exactly on SLAB_TOP
 mn, mx = combined_bbox(slab_objs)
 dz = SLAB_TOP - mx.z
@@ -152,9 +181,7 @@ if misses:
 # residuals distribute symmetrically and are documented, not cut away.
 print("== step 2: south wall + entrance")
 SLAB_EDGE = -FP_D / 2
-CORNER_W, WALL_W, DOOR_W = 1.04, 2.00, 4.01  # probed module widths
-HALF = CORNER_W + 2 * WALL_W + DOOR_W / 2
-assert abs(FP_W - 2 * HALF) < 0.01, f"footprint {FP_W} != run sum {2 * HALF}"
+assert abs(FP_W - (HALF_L + HALF_R)) < 0.01, f"footprint {FP_W} != run sum"
 wall_objs = []
 
 def run_piece(fbx, x0, theta=0):
@@ -186,17 +213,15 @@ def assert_showface(label):
             raise RuntimeError(f"{label}: show-face off plane on {o.name}")
     print(f"  {label}: show-faces coplanar")
 
-# corners point-symmetric: left rot 0, right rot 180
-run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", -HALF, theta=0)
-# left of door
-run_piece("SM_ExternalWall_Baseflor_wall01.fbx", -HALF + CORNER_W)
-run_piece("SM_ExternalWall_Baseflor_wall01.fbx", -HALF + CORNER_W + WALL_W)
+# corners: left rot 0, right rot 90 (handed piece — see footprint note)
+run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", -HALF_L, theta=0)
+# left of door: window (4.00 = 2 wall modules, exact swap)
+run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", -HALF_L + CORNER_L)
 # entrance
 run_piece("SM_ExternalWall_Baseflor_DoorFrame01.fbx", -DOOR_W / 2)
-# right of door
-run_piece("SM_ExternalWall_Baseflor_wall01.fbx", DOOR_W / 2)
-run_piece("SM_ExternalWall_Baseflor_wall01.fbx", DOOR_W / 2 + WALL_W)
-run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", HALF - CORNER_W, theta=180)
+# right of door: window + corner
+run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", DOOR_W / 2)
+run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", HALF_R - CORNER_R, theta=90)
 assert_showface("south run")
 
 # footing check: every wall base must sit on the slab (z 0, no daylight)

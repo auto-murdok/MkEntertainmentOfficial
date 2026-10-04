@@ -19,11 +19,14 @@ MATLIB = os.path.join(REPO, "_blender/polish/matlib_building_kit.json")
 OUT_BLEND = os.path.join(REPO, "_blender/tests/new_mansion.blend")
 matmap = json.load(open(MATLIB))
 
-# Starter footprint (m): west-block size, room to grow east later.
+# Starter footprint (m): DERIVED from the wall-run module sum (golden rule —
+# dimensions flow piece->design). South run: corner + 2 walls + door +
+# 2 walls + corner = 1.04 + 4.00 + 4.01 + 4.00 + 1.04 = 14.09.
 # Raised living floor (kit pattern, proven by the old mansion): interior slab
 # top at z 2.05 — the Baseflor door opening sills at ~2.05, served by the
 # 2.02-tall exterior stairs. Walls rise from grade (z 0) as the plinth.
-FP_W, FP_D = 14.22, 12.25
+FP_W = 2 * (1.04 + 2 * 2.00 + 4.01 / 2)  # 14.09, closes exactly
+FP_D = 12.25
 SLAB_TOP = 2.05
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -143,37 +146,58 @@ if misses:
     raise RuntimeError(f"slab has {len(misses)} through-slots — fix before walls")
 
 # --------------------------------------- step 2: south wall run + entrance --
-# Baseflor wall01 (2.00 wide) + DoorFrame01 (4.01 = 2 modules) centered at
-# x 0; residual 1.105 strips each side are bisected wall01 modules.
-# Outer faces flush with the slab edge (y -6.125).
+# GOLDEN RULE: whole pieces only — no bisecting, no scaling, no filler.
+# The run closes on module sums: corner + 2 walls + door + 2 walls + corner.
+# The footprint derives from the pieces (never the reverse). Sub-cm
+# residuals distribute symmetrically and are documented, not cut away.
 print("== step 2: south wall + entrance")
 SLAB_EDGE = -FP_D / 2
-DOOR_W = 4.01
-STRIP_W = (FP_W - DOOR_W) / 2 - 2 * 2.00  # 1.105 each side
+CORNER_W, WALL_W, DOOR_W = 1.04, 2.00, 4.01  # probed module widths
+HALF = CORNER_W + 2 * WALL_W + DOOR_W / 2
+assert abs(FP_W - 2 * HALF) < 0.01, f"footprint {FP_W} != run sum {2 * HALF}"
 wall_objs = []
 
-def run_piece(fbx, x0, cut_w=None):
+def run_piece(fbx, x0, theta=0):
     objs = import_piece(fbx)
-    # facing convention (probed): brick show-face at local y 0 for both, but
-    # the door piece's bbox min is trim at y -0.11 — shift it SOUTH so the
-    # BRICK faces land coplanar (trim ends 0.11 proud: the door surround)
+    # facing convention (probed): brick show-face at local y 0 for walls and
+    # door; the door piece's bbox min is trim at y -0.11 — shift it SOUTH so
+    # the BRICK faces land coplanar (trim ends 0.11 proud: the door surround)
     y_off = -0.11 if "DoorFrame01" in fbx else 0.0
-    place(objs, 0, (x0, SLAB_EDGE + y_off, 0.0)); bake(objs)
-    if cut_w is not None:
-        bisect_cut(objs, (x0 + cut_w, 0, 0), (1, 0, 0))
+    place(objs, theta, (x0, SLAB_EDGE + y_off, 0.0)); bake(objs)
     wall_objs.extend(objs)
     return objs
 
+def assert_showface(label):
+    # every run piece's brick show-face must sit on the slab edge plane —
+    # except corner piers (brick wraps them; near-square 1.04 x 1.03 with
+    # 0.05 quoin asymmetry, so the plane test can't apply — verified
+    # visually instead)
+    for o in wall_objs:
+        if "Corner" in o.name:
+            continue
+        slots = [s.material for s in o.material_slots]
+        ys = []
+        for p in o.data.polygons:
+            m = slots[p.material_index] if p.material_index < len(slots) else None
+            if m and "Brick" in m.name:
+                for vi in p.vertices:
+                    ys.append((o.matrix_world @ o.data.vertices[vi].co).y)
+        if ys and abs(min(ys) - SLAB_EDGE) > 0.02:
+            raise RuntimeError(f"{label}: show-face off plane on {o.name}")
+    print(f"  {label}: show-faces coplanar")
+
+# corners point-symmetric: left rot 0, right rot 180
+run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", -HALF, theta=0)
 # left of door
-run_piece("SM_ExternalWall_Baseflor_wall01.fbx", -FP_W / 2)
-run_piece("SM_ExternalWall_Baseflor_wall01.fbx", -FP_W / 2 + 2.00)
-run_piece("SM_ExternalWall_Baseflor_wall01.fbx", -FP_W / 2 + 4.00, cut_w=STRIP_W)
+run_piece("SM_ExternalWall_Baseflor_wall01.fbx", -HALF + CORNER_W)
+run_piece("SM_ExternalWall_Baseflor_wall01.fbx", -HALF + CORNER_W + WALL_W)
 # entrance
 run_piece("SM_ExternalWall_Baseflor_DoorFrame01.fbx", -DOOR_W / 2)
 # right of door
-run_piece("SM_ExternalWall_Baseflor_wall01.fbx", DOOR_W / 2, cut_w=STRIP_W)
-run_piece("SM_ExternalWall_Baseflor_wall01.fbx", DOOR_W / 2 + STRIP_W)
-run_piece("SM_ExternalWall_Baseflor_wall01.fbx", DOOR_W / 2 + STRIP_W + 2.00)
+run_piece("SM_ExternalWall_Baseflor_wall01.fbx", DOOR_W / 2)
+run_piece("SM_ExternalWall_Baseflor_wall01.fbx", DOOR_W / 2 + WALL_W)
+run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", HALF - CORNER_W, theta=180)
+assert_showface("south run")
 
 # footing check: every wall base must sit on the slab (z 0, no daylight)
 bpy.context.view_layer.update()

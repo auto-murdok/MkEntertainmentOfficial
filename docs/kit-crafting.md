@@ -31,8 +31,8 @@ Rule: nothing joins the mansion until its joint is proven below.
 
 | # | Pair | Verdict | Proof |
 |---|------|---------|-------|
-| 1 | floor + wall01 (footing) | clean (bases z 0, 7 pcs) | nm_south |
-| 1b | wall + DoorFrame01 (entrance) | clean (opening ~2.5m, sill 2.05, stairs land 2.02) + facing fix: door bbox min is trim at local y −0.11, shift −0.11 so brick show-faces land coplanar (both face min-y, no turn; first attempt used the wrong sign) | nm_door, door_top |
+| 1 | floor + wall01 (footing) | clean (bases z 0, 7 pcs) | `_blender/polish/new_mansion_south.png` |
+| 1b | wall + DoorFrame01 (entrance) | clean (opening ~2.5m, sill 2.05, stairs land 2.02) + facing fix: door bbox min is trim at local y −0.11, shift −0.11 so brick show-faces land coplanar (both face min-y, no turn; first attempt used the wrong sign) | `_blender/polish/new_mansion_door.png`, `_blender/polish/new_mansion_top.png` |
 | 2 | wall01 + wall01 (straight run) | pending | — |
 | 3 | wall01 + corner01 (right angle) | pending | — |
 | 4 | Baseflor wall01 + SecondFloor wall01 (stacked) | pending | — |

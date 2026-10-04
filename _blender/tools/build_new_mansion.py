@@ -155,8 +155,9 @@ wall_objs = []
 def run_piece(fbx, x0, cut_w=None):
     objs = import_piece(fbx)
     # facing convention (probed): brick show-face at local y 0 for both, but
-    # the door piece has trim reaching y -0.11 — shift it so BRICK faces align
-    y_off = 0.11 if "DoorFrame01" in fbx else 0.0
+    # the door piece's bbox min is trim at y -0.11 — shift it SOUTH so the
+    # BRICK faces land coplanar (trim ends 0.11 proud: the door surround)
+    y_off = -0.11 if "DoorFrame01" in fbx else 0.0
     place(objs, 0, (x0, SLAB_EDGE + y_off, 0.0)); bake(objs)
     if cut_w is not None:
         bisect_cut(objs, (x0 + cut_w, 0, 0), (1, 0, 0))

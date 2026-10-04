@@ -20,8 +20,11 @@ OUT_BLEND = os.path.join(REPO, "_blender/tests/new_mansion.blend")
 matmap = json.load(open(MATLIB))
 
 # Starter footprint (m): west-block size, room to grow east later.
+# Raised living floor (kit pattern, proven by the old mansion): interior slab
+# top at z 2.05 — the Baseflor door opening sills at ~2.05, served by the
+# 2.02-tall exterior stairs. Walls rise from grade (z 0) as the plinth.
 FP_W, FP_D = 14.22, 12.25
-SLAB_TOP = 0.0
+SLAB_TOP = 2.05
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
@@ -120,13 +123,14 @@ print(f"  slab: x {mn.x:.2f}..{mx.x:.2f} y {mn.y:.2f}..{mx.y:.2f} top z {mx.z:.3
 bpy.context.view_layer.update()
 deps = bpy.context.evaluated_depsgraph_get()
 slab_names = set(o.name for o in slab_objs)
+# interior grid only (inset past the wall band) — slab-only hits count
 misses = []
-gx = -FP_W / 2 + 0.25
-while gx < FP_W / 2:
-    gy = -FP_D / 2 + 0.25
-    while gy < FP_D / 2:
+gx = -FP_W / 2 + 0.75
+while gx < FP_W / 2 - 0.5:
+    gy = -FP_D / 2 + 0.75
+    while gy < FP_D / 2 - 0.5:
         hit, loc, no, idx, ob, mat = bpy.context.scene.ray_cast(
-            deps, Vector((gx, gy, 5.0)), Vector((0, 0, -1)))
+            deps, Vector((gx, gy, 8.0)), Vector((0, 0, -1)))
         # only slab hits count — ground-plane hits are gaps, not floor
         if not hit or ob.name not in slab_names:
             misses.append((round(gx, 2), round(gy, 2)))
@@ -137,6 +141,66 @@ for m in misses[:10]:
     print(f"    miss at {m}")
 if misses:
     raise RuntimeError(f"slab has {len(misses)} through-slots — fix before walls")
+
+# --------------------------------------- step 2: south wall run + entrance --
+# Baseflor wall01 (2.00 wide) + DoorFrame01 (4.01 = 2 modules) centered at
+# x 0; residual 1.105 strips each side are bisected wall01 modules.
+# Outer faces flush with the slab edge (y -6.125).
+print("== step 2: south wall + entrance")
+SLAB_EDGE = -FP_D / 2
+DOOR_W = 4.01
+STRIP_W = (FP_W - DOOR_W) / 2 - 2 * 2.00  # 1.105 each side
+wall_objs = []
+
+def run_piece(fbx, x0, cut_w=None):
+    objs = import_piece(fbx)
+    place(objs, 0, (x0, SLAB_EDGE, 0.0)); bake(objs)
+    if cut_w is not None:
+        bisect_cut(objs, (x0 + cut_w, 0, 0), (1, 0, 0))
+    wall_objs.extend(objs)
+    return objs
+
+# left of door
+run_piece("SM_ExternalWall_Baseflor_wall01.fbx", -FP_W / 2)
+run_piece("SM_ExternalWall_Baseflor_wall01.fbx", -FP_W / 2 + 2.00)
+run_piece("SM_ExternalWall_Baseflor_wall01.fbx", -FP_W / 2 + 4.00, cut_w=STRIP_W)
+# entrance
+run_piece("SM_ExternalWall_Baseflor_DoorFrame01.fbx", -DOOR_W / 2)
+# right of door
+run_piece("SM_ExternalWall_Baseflor_wall01.fbx", DOOR_W / 2, cut_w=STRIP_W)
+run_piece("SM_ExternalWall_Baseflor_wall01.fbx", DOOR_W / 2 + STRIP_W)
+run_piece("SM_ExternalWall_Baseflor_wall01.fbx", DOOR_W / 2 + STRIP_W + 2.00)
+
+# footing check: every wall base must sit on the slab (z 0, no daylight)
+bpy.context.view_layer.update()
+for o in wall_objs:
+    ws = [o.matrix_world @ Vector(c) for c in o.bound_box]
+    base = min(v.z for v in ws)
+    if abs(base) > 0.02:
+        raise RuntimeError(f"footing gap under {o.name}: base z {base:.3f}")
+print(f"  {len(wall_objs)} wall pieces, footings on slab")
+
+# doorway check: a ray through the entrance at walking height above the
+# raised slab (sill ~2.05 + 1.5) must cross the interior without hitting
+# any wall (no north wall yet — open passage)
+deps = bpy.context.evaluated_depsgraph_get()
+wall_names = set(o.name for o in wall_objs)
+hit, loc, no, idx, ob, mat = bpy.context.scene.ray_cast(
+    deps, Vector((0.0, -14.0, SLAB_TOP + 1.5)), Vector((0, 1, 0)))
+print(f"  doorway ray: hit {ob.name if hit else 'nothing'}")
+if hit and ob.name in wall_names:
+    raise RuntimeError(f"doorway blocked by {ob.name} — entrance not open")
+print("  entrance open")
+
+# exterior stairs: run along y, low end south, top landing (z 2.0) meeting
+# the doorway sill (2.05)
+print("== step 2b: entrance stairs")
+stair_objs = import_piece("SM_External_Stairs01.fbx")
+place(stair_objs, 0, (-3.835, SLAB_EDGE - 5.37, 0.0)); bake(stair_objs)
+mn, mx = combined_bbox(stair_objs)
+print(f"  stairs: x {mn.x:.2f}..{mx.x:.2f} y {mn.y:.2f}..{mx.y:.2f} top z {mx.z:.2f}")
+if abs(mx.z - 2.02) > 0.1:
+    raise RuntimeError(f"stairs top {mx.z:.2f} != sill 2.05 — landing mismatch")
 
 # ---------------------------------------------------------------- ground ----
 bpy.ops.mesh.primitive_plane_add(size=120, location=(0, 0, -2.05))
@@ -229,7 +293,7 @@ for mat in list(bpy.data.materials):
 print("MATERIALS DONE")
 
 # ------------------------------------------------- view setup (lights) ----
-# Top-down default camera: this scene starts as a floor plan.
+# 3/4 view from the south-east: wall run + entrance in frame.
 bpy.ops.object.light_add(type='SUN', location=(25.0, -35.0, 45.0))
 sun = bpy.context.active_object
 sun.name = "ViewSun"
@@ -243,10 +307,10 @@ w.use_nodes = True
 w.node_tree.nodes["Background"].inputs["Color"].default_value = (0.55, 0.65, 0.80, 1)
 w.node_tree.nodes["Background"].inputs["Strength"].default_value = 1.0
 bpy.context.scene.world = w
-bpy.ops.object.camera_add(location=(0.01, -0.01, 45.0))
+bpy.ops.object.camera_add(location=(16.0, -28.0, 11.0))
 cam = bpy.context.active_object
 cam.name = "ViewCamera"
-aim = Vector((0.0, 0.0, 0.0)) - Vector(cam.location)
+aim = Vector((0.0, -4.0, 3.5)) - Vector(cam.location)
 cam.rotation_euler = aim.to_track_quat('-Z', 'Y').to_euler()
 bpy.context.scene.camera = cam
 print("  view setup: 2 suns + world + top-down camera built")

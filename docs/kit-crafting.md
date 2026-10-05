@@ -64,6 +64,16 @@ Rule: nothing joins the mansion until its joint is proven below.
   explained. Glass stays a later pass (kit ships none for wall windows).
 - Watch item: hairline sliver left of the arch — confirm in GUI.
 
+## Corner caps (investigated — no defect)
+
+- The pale L-caps on wall/corner tops are `MI_Concrete_Wall_Details` coping
+  trim (textured, normals +z 0.99 on all four corners) — kit design awaiting
+  the upper floor, not offsets and not untextured faces.
+- The dark tab on the NE top was sun shading: re-rendered with the key sun
+  flipped north-high and it reads pale like the others
+  (`new_mansion_corner_NE_noon.png`). Closed; the real resolution is pair #4
+  (stacked walls land on these caps).
+
 ## Full perimeter (step 3 — done, verified)
 
 - West run (faces −x, theta −90): window + wall + window between the SW

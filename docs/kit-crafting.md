@@ -82,6 +82,10 @@ Rule: nothing joins the mansion until its joint is proven below.
 - North run (faces +y, theta 180): 3 windows between NW/NE corners.
   Span 12.01 vs 12.00 of glass modules: centered, 5 mm each side (rule 5 —
   the 1 cm is the door's surplus showing up where no door sits).
+- Wall inset 0.15 (foundation ledge): straight runs sit inside the slab
+  edges, corners stay flush (proud quoin piers). Corner/straight butt laps
+  grow 0.15 — embedded, never gaps. Stairs shifted with the south run
+  (landing still meets the wall face, top 2.02 vs sill 2.05 re-verified).
 - Corner rotation table (chiral piece, all four used exactly once):
   SW rot 0 (outers S+W), SE rot 90 (S+E), NE rot 180 (N+E), NW rot 270 (W+N).
 - Measurement finding: plain `matrix_world` reads can lag data transforms a

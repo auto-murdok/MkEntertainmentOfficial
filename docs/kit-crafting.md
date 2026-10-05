@@ -99,6 +99,26 @@ Rule: nothing joins the mansion until its joint is proven below.
 - Slab strips verified buried: top view shows continuous wood, legitimate
   tile seams only.
 
+## Build state + next (continuity checkpoint)
+
+Exact state of `new_mansion.blend` as of this branch:
+
+- Footprint 14.08 (x −7.04…7.04) x 12.07 (slab edge −6.125, north edge 5.945).
+- Slab top z 2.05; 4 whole Floor01 tiles (x −6.71…6.71) + buried perimeter
+  trims; seal scan 0 misses; trenches open under side-wall bands by design.
+- 16 wall pieces from grade (bases z 0): S corner+win+door+win+corner,
+  W/E win+wall+win + corners, N 3 windows. Inset 0.025, corners flush.
+- Stairs centered on door, landing at the shifted face, top 2.02 vs sill 2.05.
+- Key heights: wall tops 7.5 (coping caps awaiting floor 2); door sill 2.05,
+  opening ~2.5 wide; window sills ~2.9; interior walking surface 2.05.
+- Open threads: (a) hairline sliver left of the arch — GUI confirm;
+  (b) pair 2 — no straight wall+wall joint exists yet; (c) WindowFrame01
+  raycast anomaly (renders are truth); (d) no glass anywhere (kit ships none
+  for wall windows).
+- Next rank: pair 4 stacked second-floor joint (covers the coping caps) >
+  pair 2 straight joint (needs a wall+wall span somewhere) > glass pass >
+  pair 6 roof modules.
+
 ## Piece datasheets (all probed, LOD0, meters)
 
 | Piece | BBox (x y z) | Module role | Facing | Quirks | Status |

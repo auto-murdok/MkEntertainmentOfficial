@@ -39,6 +39,14 @@ SLAB_TOP = 2.05
 SLAB_EDGE = -6.125
 NORTH_EDGE = SLAB_EDGE + FP_D  # 5.945
 WEST_EDGE, EAST_EDGE = -FP_W / 2, FP_W / 2  # -7.04 .. 7.04
+# Wall inset: runs sit 0.15 inside the slab edges (foundation ledge), corners
+# stay flush (proud quoin piers). Corners overlap the shifted runs by 0.15
+# extra lap — embedded, never a gap.
+INSET = 0.15
+SOUTH_PLANE = SLAB_EDGE + INSET
+NORTH_PLANE = NORTH_EDGE - INSET
+WEST_PLANE = WEST_EDGE + INSET
+EAST_PLANE = EAST_EDGE - INSET
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
@@ -276,46 +284,49 @@ def seat_corners(label, specs):
                 raise RuntimeError(f"{label}: corner off plane {o.name} (got {got:.4f})")
     print(f"  {label}: corners seated")
 
-# south run (brick faces -y): corner + window + door + window + corner
+# south run (brick faces -y): corner + window + door + window + corner.
+# Straight pieces on SOUTH_PLANE; corners stay on the slab edges (proud).
 sq = []
 cSW = run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", -HALF_L, SLAB_EDGE, theta=0)
 sq += cSW
-sq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", -HALF_L + CORNER_L, SLAB_EDGE)
-sq += run_piece("SM_ExternalWall_Baseflor_DoorFrame01.fbx", -DOOR_W / 2, SLAB_EDGE)
-sq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", DOOR_W / 2, SLAB_EDGE)
+sq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", -HALF_L + CORNER_L, SOUTH_PLANE)
+sq += run_piece("SM_ExternalWall_Baseflor_DoorFrame01.fbx", -DOOR_W / 2, SOUTH_PLANE)
+sq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", DOOR_W / 2, SOUTH_PLANE)
 cSE = run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", HALF_R - CORNER_R, SLAB_EDGE, theta=90)
 sq += cSE
-assert_showface("south run", sq, 1, SLAB_EDGE, -1)
+assert_showface("south run", sq, 1, SOUTH_PLANE, -1)
 
 print("== step 3: west + east runs (bury the slab strips)")
-# west run faces -x (theta=-90: local brick min-y -> world min-x)
+# west run faces -x (theta=-90: local brick min-y -> world min-x).
+# Straight pieces on WEST_PLANE; corners stay.
 SW_TOP = SLAB_EDGE + 1.03  # SW corner (rot 0) north extent
 wq = []
-wq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", WEST_EDGE, SW_TOP, theta=-90)
-wq += run_piece("SM_ExternalWall_Baseflor_wall01.fbx", WEST_EDGE, SW_TOP + 4.00, theta=-90)
-wq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", WEST_EDGE, SW_TOP + 6.00, theta=-90)
+wq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", WEST_PLANE, SW_TOP, theta=-90)
+wq += run_piece("SM_ExternalWall_Baseflor_wall01.fbx", WEST_PLANE, SW_TOP + 4.00, theta=-90)
+wq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", WEST_PLANE, SW_TOP + 6.00, theta=-90)
 cNW = run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", WEST_EDGE, SW_TOP + 10.00, theta=270)
 wq += cNW
-assert_showface("west run", wq, 0, WEST_EDGE, -1)
+assert_showface("west run", wq, 0, WEST_PLANE, -1)
 # east run faces +x (theta=+90: local brick min-y -> world max-x)
 SE_TOP = SLAB_EDGE + 1.04  # SE corner (rot 90) north extent
 eq = []
-eq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", EAST_EDGE - THICK, SE_TOP, theta=90)
-eq += run_piece("SM_ExternalWall_Baseflor_wall01.fbx", EAST_EDGE - THICK, SE_TOP + 4.00, theta=90)
-eq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", EAST_EDGE - THICK, SE_TOP + 6.00, theta=90)
+eq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", EAST_PLANE - THICK, SE_TOP, theta=90)
+eq += run_piece("SM_ExternalWall_Baseflor_wall01.fbx", EAST_PLANE - THICK, SE_TOP + 4.00, theta=90)
+eq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", EAST_PLANE - THICK, SE_TOP + 6.00, theta=90)
 cNE = run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", EAST_EDGE - 1.04, SE_TOP + 10.00, theta=180)
 eq += cNE
-assert_showface("east run", eq, 0, EAST_EDGE, +1)
+assert_showface("east run", eq, 0, EAST_PLANE, +1)
 
 print("== step 4: north run (3 windows between the new corners)")
 # north run faces +y (theta=180: local brick min-y -> world max-y).
 # Infill span 12.01 vs 3 windows 12.00: centered, 5 mm each side (rule 5).
+# Straight pieces on NORTH_PLANE; corners stay.
 nq = []
 NX0 = -6.01 + 0.005
 for i in range(3):
     nq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx",
-                    NX0 + i * 4.00, NORTH_EDGE - THICK, theta=180)
-assert_showface("north run", nq, 1, NORTH_EDGE, +1)
+                    NX0 + i * 4.00, NORTH_PLANE - THICK, theta=180)
+assert_showface("north run", nq, 1, NORTH_PLANE, +1)
 
 # NOTE (tried + reverted): seating corners by raw brick extremes is invalid —
 # quoin relief (±3 cm) dominates the extreme, so "seating" drags whole piers
@@ -344,10 +355,10 @@ if not hit or ob.name not in wall_names or loc.y < 0:
 print("  entrance passage proven end to end")
 
 # exterior stairs: run along y, low end south, top landing (z 2.0) meeting
-# the doorway sill (2.05)
+# the doorway sill (2.05). Shifted with the south run (landing on SOUTH_PLANE).
 print("== step 2b: entrance stairs")
 stair_objs = import_piece("SM_External_Stairs01.fbx")
-place(stair_objs, 0, (-3.835, SLAB_EDGE - 5.37, 0.0)); bake(stair_objs)
+place(stair_objs, 0, (-3.835, SOUTH_PLANE - 5.37, 0.0)); bake(stair_objs)
 mn, mx = combined_bbox(stair_objs)
 print(f"  stairs: x {mn.x:.2f}..{mx.x:.2f} y {mn.y:.2f}..{mx.y:.2f} top z {mx.z:.2f}")
 if abs(mx.z - 2.02) > 0.1:

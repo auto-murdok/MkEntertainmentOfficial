@@ -31,13 +31,12 @@ HALF_L = CORNER_L + 2 * WALL_W + DOOR_W / 2
 HALF_R = CORNER_R + 2 * WALL_W + DOOR_W / 2
 FP_W = HALF_L + HALF_R  # 14.08
 # Depth derives from the SIDE runs the same way: corner + window + wall +
-# window + corner = 1.03 + 4 + 2 + 4 + 1.04 = 12.07 (corner y-extents are
-# rotation-dependent: rot0/180 span 1.03, rot90/270 span 1.04).
-FP_D = 1.03 + 4.00 + 2.00 + 4.00 + 1.04  # 12.07
+# wall + window + corner = 1.03 + 4 + 2 + 2 + 4 + 1.04 = 14.07.
+FP_D = 1.03 + 4.00 + 2.00 + 2.00 + 4.00 + 1.04  # 14.07
 SLAB_TOP = 2.05
 # South edge pinned (door/stairs/verified work); growth absorbs north.
 SLAB_EDGE = -6.125
-NORTH_EDGE = SLAB_EDGE + FP_D  # 5.945
+NORTH_EDGE = SLAB_EDGE + FP_D  # 7.945
 WEST_EDGE, EAST_EDGE = -FP_W / 2, FP_W / 2  # -7.04 .. 7.04
 # Wall inset: runs sit inside the slab edges (foundation ledge), corners
 # stay flush (proud quoin piers). INSET equals the measured quoin relief
@@ -113,29 +112,23 @@ def bisect_cut(objs, plane_co, plane_no):
         bm.to_mesh(o.data); bm.free(); o.data.update()
     bpy.context.view_layer.update()
 
-# ------------------------------------------------------------ step 1: slab --
-# Tile grid shifted so the unavoidable tile remainders become narrow
-# perimeter strips buried under the wall bands (west/east under the future
-# side walls, north under the future north wall, south under this step's
-# wall) — never slices across open floor.
-print("== step 1: ground-floor slab")
+# ------------------------------------------- step 1: terrace platform --
+# The slab is DECOUPLED from the wall footprint: a 3x3 grid of WHOLE tiles,
+# zero cuts, building sitting on top with a terrace margin (the old mansion's
+# pattern). Wall modules (2.00/4.01/1.04) and slab tiles (6.71/6.36) are
+# incommensurate — no shared span closes on both, so the platform overhangs
+# instead of matching. Stairs land on the terrace (top steps merge flush).
+print("== step 1: terrace platform (3x3 whole tiles, zero cuts)")
 slab_objs = []
 SLAB_FBX, TILE_X, TILE_Y = "SM_Wood_Internal_Floor01.fbx", 6.71, 6.36
-EDGE_X = (FP_W - 2 * TILE_X) / 2  # 0.33: side columns OMITTED (no cut
-# pieces, per design decision) — leaves open trenches under the future
-# side-wall bands, recorded by the trench check below
-x = WEST_EDGE + EDGE_X
-while x + TILE_X <= EAST_EDGE + 0.01:  # whole tiles only
-    y = SLAB_EDGE
-    while y < NORTH_EDGE - 0.01:
+PLAT_X0, PLAT_Y0 = -10.065, -6.2  # centered x; south edge just off the wall
+for ix in range(3):
+    for iy in range(3):
         objs = import_piece(SLAB_FBX)
-        place(objs, 0, (x, y, -2.0)); bake(objs)
+        place(objs, 0, (PLAT_X0 + ix * TILE_X, PLAT_Y0 + iy * TILE_Y, -2.0))
+        bake(objs)
         slab_objs += objs
-        y += TILE_Y
-    x += TILE_X
-for co, no in [((EAST_EDGE, 0, 0), (1, 0, 0)), ((WEST_EDGE, 0, 0), (-1, 0, 0)),
-               ((0, NORTH_EDGE, 0), (0, 1, 0)), ((0, SLAB_EDGE, 0), (0, -1, 0))]:
-    bisect_cut(slab_objs, co, no)
+assert len(slab_objs) == 9, f"platform must be 9 whole tiles, got {len(slab_objs)}"
 
 def repair_cap_uvs(objs, scale=0.15):
     # edgenet_fill caps are born without UVs (all loops at one texel ->
@@ -154,8 +147,8 @@ def repair_cap_uvs(objs, scale=0.15):
                 for i in range(p.loop_start, p.loop_start + p.loop_total):
                     v = me.vertices[me.loops[i].vertex_index]
                     uv.data[i].uv = (v.co.x * scale, v.co.y * scale)
-repair_cap_uvs(slab_objs)
-print("  cap UVs repaired")
+repair_cap_uvs(slab_objs)  # no-op safeguard: no bisect ran, no caps exist
+print("  slab: 9 whole tiles, zero cuts")
 # rest slab top exactly on SLAB_TOP
 mn, mx = combined_bbox(slab_objs)
 dz = SLAB_TOP - mx.z
@@ -173,12 +166,12 @@ print(f"  slab: x {mn.x:.2f}..{mx.x:.2f} y {mn.y:.2f}..{mx.y:.2f} top z {mx.z:.3
 bpy.context.view_layer.update()
 deps = bpy.context.evaluated_depsgraph_get()
 slab_names = set(o.name for o in slab_objs)
-# interior grid only (inset past the wall band) — slab-only hits count
+# seal scan over the whole platform: whole tiles => any miss is a bad tile
 misses = []
-gx = WEST_EDGE + 0.75
-while gx < EAST_EDGE - 0.5:
-    gy = SLAB_EDGE + 0.75
-    while gy < NORTH_EDGE - 0.5:
+gx = PLAT_X0 + 0.75
+while gx < PLAT_X0 + 3 * TILE_X - 0.5:
+    gy = PLAT_Y0 + 0.75
+    while gy < PLAT_Y0 + 3 * TILE_Y - 0.5:
         hit, loc, no, idx, ob, mat = bpy.context.scene.ray_cast(
             deps, Vector((gx, gy, 8.0)), Vector((0, 0, -1)))
         # only slab hits count — ground-plane hits are gaps, not floor
@@ -192,13 +185,10 @@ for m in misses[:10]:
 if misses:
     raise RuntimeError(f"slab has {len(misses)} through-slots — fix before walls")
 
-# trench check: the omitted side columns must read as open voids (no slab),
-# confirming the script matches the designed no-cut state
-for tx, tlabel in [(-6.9, "west"), (6.9, "east")]:
-    thit, _, _, _, tob, _ = bpy.context.scene.ray_cast(
-        deps, Vector((tx, 0.0, 8.0)), Vector((0, 0, -1)))
-    on_slab = thit and tob.name in slab_names
-    print(f"  trench {tlabel} at x {tx}: {'SLAB (unexpected!)' if on_slab else 'open as designed'}")
+# platform coverage: building must sit on the platform with terrace margin
+mn, mx = combined_bbox(slab_objs)
+print(f"  platform: x {mn.x:.2f}..{mx.x:.2f} y {mn.y:.2f}..{mx.y:.2f}")
+assert mn.x < WEST_EDGE - 2.5 and mx.x > EAST_EDGE + 2.5, "terrace margins"
 
 # --------------------------------------- step 2: south wall run + entrance --
 # GOLDEN RULE: whole pieces only — no bisecting, no scaling, no filler.
@@ -207,7 +197,7 @@ for tx, tlabel in [(-6.9, "west"), (6.9, "east")]:
 # residuals distribute symmetrically and are documented, not cut away.
 print("== step 2: south wall + entrance")
 assert abs(FP_W - (HALF_L + HALF_R)) < 0.01, f"footprint {FP_W} != run sum"
-assert abs(FP_D - (1.03 + 4.00 + 2.00 + 4.00 + 1.04)) < 0.01, "depth != side sum"
+assert abs(FP_D - (1.03 + 4.00 + 2.00 + 2.00 + 4.00 + 1.04)) < 0.01, "depth != side sum"
 wall_objs = []
 
 THICK = 0.46  # wall/window piece thickness
@@ -304,8 +294,9 @@ SW_TOP = SLAB_EDGE + 1.03  # SW corner (rot 0) north extent
 wq = []
 wq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", WEST_PLANE, SW_TOP, theta=-90)
 wq += run_piece("SM_ExternalWall_Baseflor_wall01.fbx", WEST_PLANE, SW_TOP + 4.00, theta=-90)
-wq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", WEST_PLANE, SW_TOP + 6.00, theta=-90)
-cNW = run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", WEST_EDGE, SW_TOP + 10.00, theta=270)
+wq += run_piece("SM_ExternalWall_Baseflor_wall01.fbx", WEST_PLANE, SW_TOP + 6.00, theta=-90)
+wq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", WEST_PLANE, SW_TOP + 8.00, theta=-90)
+cNW = run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", WEST_EDGE, SW_TOP + 12.00, theta=270)
 wq += cNW
 assert_showface("west run", wq, 0, WEST_PLANE, -1)
 # east run faces +x (theta=+90: local brick min-y -> world max-x)
@@ -313,8 +304,9 @@ SE_TOP = SLAB_EDGE + 1.04  # SE corner (rot 90) north extent
 eq = []
 eq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", EAST_PLANE - THICK, SE_TOP, theta=90)
 eq += run_piece("SM_ExternalWall_Baseflor_wall01.fbx", EAST_PLANE - THICK, SE_TOP + 4.00, theta=90)
-eq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", EAST_PLANE - THICK, SE_TOP + 6.00, theta=90)
-cNE = run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", EAST_EDGE - 1.04, SE_TOP + 10.00, theta=180)
+eq += run_piece("SM_ExternalWall_Baseflor_wall01.fbx", EAST_PLANE - THICK, SE_TOP + 6.00, theta=90)
+eq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", EAST_PLANE - THICK, SE_TOP + 8.00, theta=90)
+cNE = run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", EAST_EDGE - 1.04, SE_TOP + 12.00, theta=180)
 eq += cNE
 assert_showface("east run", eq, 0, EAST_PLANE, +1)
 
@@ -364,6 +356,10 @@ mn, mx = combined_bbox(stair_objs)
 print(f"  stairs: x {mn.x:.2f}..{mx.x:.2f} y {mn.y:.2f}..{mx.y:.2f} top z {mx.z:.2f}")
 if abs(mx.z - 2.02) > 0.1:
     raise RuntimeError(f"stairs top {mx.z:.2f} != sill 2.05 — landing mismatch")
+# terrace junction: stair top must lap onto the platform (no gap, no step)
+if not (mx.y - PLAT_Y0 > 0.05 and abs(mx.z - SLAB_TOP) < 0.06):
+    raise RuntimeError("stairs do not land on the terrace")
+print("  stairs land on the terrace")
 
 # ---------------------------------------------------------------- ground ----
 bpy.ops.mesh.primitive_plane_add(size=120, location=(0, 0, -2.05))
@@ -470,10 +466,10 @@ w.use_nodes = True
 w.node_tree.nodes["Background"].inputs["Color"].default_value = (0.55, 0.65, 0.80, 1)
 w.node_tree.nodes["Background"].inputs["Strength"].default_value = 1.0
 bpy.context.scene.world = w
-bpy.ops.object.camera_add(location=(26.0, -40.0, 18.0))
+bpy.ops.object.camera_add(location=(30.0, -50.0, 22.0))
 cam = bpy.context.active_object
 cam.name = "ViewCamera"
-aim = Vector((0.0, -2.0, 4.0)) - Vector(cam.location)
+aim = Vector((0.0, 0.0, 4.0)) - Vector(cam.location)
 cam.rotation_euler = aim.to_track_quat('-Z', 'Y').to_euler()
 bpy.context.scene.camera = cam
 print("  view setup: 2 suns + world + top-down camera built")

@@ -19,15 +19,18 @@ Rule: nothing joins the mansion until its joint is proven below.
 
 ## Foundation (step 1 — done, verified)
 
-- Ground-floor slab: `SM_Wood_Internal_Floor01` (6.71 x 6.36 solid interior
-  slab — the external Floor0x pieces are 2 m tall open deck platforms, wrong
-  for interiors) tiled + cut to the starter footprint **14.08 x 12.07**.
-  Footprint derives from wall-run module sums: south/north
-  (1.04 + 4.00 + 4.01 + 4.00 + 1.03), depth from the side runs
-  (1.03 + 4.00 + 2.00 + 4.00 + 1.04 — corner spans are rotation-dependent).
+- Terrace platform (zero cuts): 3x3 whole `SM_Wood_Internal_Floor01` tiles
+  (20.13 x 19.08), building sitting on top. Wall modules and slab tiles are
+  incommensurate — no span closes on both grids — so the slab overhangs
+  instead of matching (the old mansion's pattern). Stairs land on the
+  terrace (top-step/platform lap + heights verified in-build).
+
+- Ground floor: `SM_Wood_Internal_Floor01` (6.71 x 6.36 solid interior slab —
+  the external Floor0x pieces are 2 m tall open deck platforms, wrong for
+  interiors). Wall footprint **14.08 x 14.07** derives from module sums:
+  south/north (1.04 + 4.00 + 4.01 + 4.00 + 1.03), depth from the side runs
+  (1.03 + 4.00 + 2.00 + 2.00 + 4.00 + 1.04 — corner spans rotation-dependent).
   South edge pinned at −6.125 (door/stairs/verified work); growth absorbs north.
-  Tile grid shifted +0.33 in x so the unavoidable remainders become narrow
-  perimeter strips buried under wall bands, never slices across open floor.
 - Cut-cap lesson: `edgenet_fill` caps are born UV-less (single-texel sample
   = white patches). `repair_cap_uvs` gives zero-UV-area faces a top-down
   planar map — rule for every future bisect.

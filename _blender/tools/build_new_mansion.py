@@ -112,9 +112,11 @@ def bisect_cut(objs, plane_co, plane_no):
 print("== step 1: ground-floor slab")
 slab_objs = []
 SLAB_FBX, TILE_X, TILE_Y = "SM_Wood_Internal_Floor01.fbx", 6.71, 6.36
-EDGE_X = (FP_W - 2 * TILE_X) / 2  # 0.33: buried under side walls later
-x = WEST_EDGE - TILE_X + EDGE_X
-while x < EAST_EDGE - 0.01:
+EDGE_X = (FP_W - 2 * TILE_X) / 2  # 0.33: side columns OMITTED (no cut
+# pieces, per design decision) — leaves open trenches under the future
+# side-wall bands, recorded by the trench check below
+x = WEST_EDGE + EDGE_X
+while x + TILE_X <= EAST_EDGE + 0.01:  # whole tiles only
     y = SLAB_EDGE
     while y < NORTH_EDGE - 0.01:
         objs = import_piece(SLAB_FBX)
@@ -180,6 +182,14 @@ for m in misses[:10]:
     print(f"    miss at {m}")
 if misses:
     raise RuntimeError(f"slab has {len(misses)} through-slots — fix before walls")
+
+# trench check: the omitted side columns must read as open voids (no slab),
+# confirming the script matches the designed no-cut state
+for tx, tlabel in [(-6.9, "west"), (6.9, "east")]:
+    thit, _, _, _, tob, _ = bpy.context.scene.ray_cast(
+        deps, Vector((tx, 0.0, 8.0)), Vector((0, 0, -1)))
+    on_slab = thit and tob.name in slab_names
+    print(f"  trench {tlabel} at x {tx}: {'SLAB (unexpected!)' if on_slab else 'open as designed'}")
 
 # --------------------------------------- step 2: south wall run + entrance --
 # GOLDEN RULE: whole pieces only — no bisecting, no scaling, no filler.

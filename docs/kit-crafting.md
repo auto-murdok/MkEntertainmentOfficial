@@ -58,6 +58,24 @@ Rule: nothing joins the mansion until its joint is proven below.
   explained. Glass stays a later pass (kit ships none for wall windows).
 - Watch item: hairline sliver left of the arch — confirm in GUI.
 
+## Piece datasheets (all probed, LOD0, meters)
+
+| Piece | BBox (x y z) | Module role | Facing | Quirks | Status |
+|---|---|---|---|---|---|
+| `SM_Wood_Internal_Floor01` | 6.71 x 6.36 x 0.30 | slab tile unit | top = walking surface | cuts bury under walls only; caps need `repair_cap_uvs` | in slab, sealed 0 misses |
+| `SM_ExternalWall_Baseflor_wall01` | 2.00 x 0.46 x 7.50, base z 0 | 2.00 run module | brick show-face local y 0 (min side), no offset | — | clean (retired from run by window swap, math unchanged) |
+| `SM_ExternalWall_Baseflor_DoorFrame01` | 4.01 x 0.60 x 7.50, base z 0 | 4.01 opening module (= 2 walls + 1 cm, symmetric) | brick local y 0; trim to −0.11 → −0.11y offset | opening ~2.5 wide centered, sill ~2.05 (raised-floor driver) | clean, centered |
+| `SM_ExternalWall_Baseflor_Corner01` | 1.04 x 1.03 x 7.53, base z 0 | run ends | **handed:** outers S+W, rebates N+E; left rot 0, right rot 90 (counts 1.03 along run) | exempt from plane assert (brick wraps pier); quoin asymmetry 0.05 | clean both ends |
+| `SM_ExternalWall_Baseflor_Corner02` | 1.18 x 1.21 x 7.52, base z 0 | — | same hand as Corner01 (bigger variant; no mirror hand exists in kit) | — | reserve, unplaced |
+| `SM_ExternalWall_Baseflor_WindowFrame01` | 4.00 x 0.46 x 7.50, base z 0 | 4.00 opening module, 1:1 wall-pair swap | brick min-y, no offset | opening ~2.5, sill ~2.9, NO kit glass; raycast anomaly (renders are truth) | clean, 2 placed |
+| `SM_External_Stairs01` | 7.67 wide x 5.37 run x 2.02, run along local y, landing on top | entrance stair | low end south, landing north to the sill | top 2.02 vs sill 2.05 = 5 cm lip | clean, centered on door |
+| `SM_ExternalWall_Baseflor_WindowFrame02` | 6.00 x 0.50 x 7.50 | — | — | breaks the 4.0 module | rejected for this run (reason recorded) |
+| `SM_ExternalWall_Baseflor_WindowFrame03` | 10.00 x 2.31 x 7.50-ish bay | — | — | curved bay, not a flat-run piece | rejected for this run (reason recorded) |
+
+Other floor tiles, measured for later (unplaced): internal Wood02/03 and
+Ceramic01/02 ≈ 6.7 x 6.35 x 0.3 class; external Floor01/02/03 = 7.4 x 6.42
+x 2.05 open deck platforms (interiors never); FloorPlanks are loose boards.
+
 ## Pair matrix (stage 1)
 
 | # | Pair | Verdict | Proof |
@@ -65,8 +83,8 @@ Rule: nothing joins the mansion until its joint is proven below.
 | 1 | floor + wall01 (footing) | clean (bases z 0, 7 pcs) | `_blender/polish/new_mansion_south.png` |
 | 1b | wall + DoorFrame01 (entrance) | clean (opening ~2.5m, sill 2.05, stairs land 2.02) + facing fix: door bbox min is trim at local y −0.11, shift −0.11 so brick show-faces land coplanar (both face min-y, no turn; first attempt used the wrong sign) | `_blender/polish/new_mansion_door.png`, `_blender/polish/new_mansion_top.png` |
 | 2 | wall01 + wall01 (straight run) | pending | — |
-| 3 | wall01 + corner01 (right angle) | clean — left rot 0, right rot 90 (handed piece, rebates N+W into both runs); quoins read both ends | nm2_sw, nm3_se_s |
-| 5 | wall + WindowFrame01 (opening) | clean — 4.00 swaps 1:1 for wall pairs, opening ~2.5m sill ~2.9, no kit glass; raycast anomaly documented (renders are truth) | nm4_win |
+| 3 | wall01 + corner01 (right angle) | clean — left rot 0, right rot 90 (handed piece, rebates N+W into both runs); quoins read both ends | `_blender/polish/new_mansion_sw_corner.png`, `_blender/polish/new_mansion_se_corner.png` |
+| 5 | wall + WindowFrame01 (opening) | clean — 4.00 swaps 1:1 for wall pairs, opening ~2.5m sill ~2.9, no kit glass; raycast anomaly documented (renders are truth) | `_blender/polish/new_mansion_window.png` |
 | 4 | Baseflor wall01 + SecondFloor wall01 (stacked) | pending | — |
 | 6 | Roof01 + Roof01 (slope continuation) | pending | — |
 

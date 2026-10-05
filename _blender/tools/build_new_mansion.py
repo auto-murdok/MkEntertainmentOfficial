@@ -39,10 +39,11 @@ SLAB_TOP = 2.05
 SLAB_EDGE = -6.125
 NORTH_EDGE = SLAB_EDGE + FP_D  # 5.945
 WEST_EDGE, EAST_EDGE = -FP_W / 2, FP_W / 2  # -7.04 .. 7.04
-# Wall inset: runs sit 0.15 inside the slab edges (foundation ledge), corners
-# stay flush (proud quoin piers). Corners overlap the shifted runs by 0.15
-# extra lap — embedded, never a gap.
-INSET = 0.15
+# Wall inset: runs sit inside the slab edges (foundation ledge), corners
+# stay flush (proud quoin piers). INSET equals the measured quoin relief
+# (0.024): wall flats land coplanar with corner flats, quoins stand uniformly
+# proud. Corners overlap the shifted runs — embedded, never a gap.
+INSET = 0.025
 SOUTH_PLANE = SLAB_EDGE + INSET
 NORTH_PLANE = NORTH_EDGE - INSET
 WEST_PLANE = WEST_EDGE + INSET

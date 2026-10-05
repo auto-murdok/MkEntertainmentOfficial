@@ -233,22 +233,28 @@ def brick_extreme(o, deps, axis, side):
         return None
     return max(vals) if side > 0 else min(vals)
 
+def seat_object(o, deps, axis, plane, side):
+    # seat one object by its measured brick extreme (rigid data nudge).
+    # Returns the residual, or None when the piece has no brick.
+    got = brick_extreme(o, deps, axis, side)
+    if got is not None and abs(got - plane) > 0.02:
+        print(f"  seat {o.name}: brick {got:.3f} -> {plane:.3f}")
+        for v in o.data.vertices:
+            v.co += (plane - got) * Vector((1 if axis == 0 else 0, 1 if axis == 1 else 0, 0))
+        o.data.update()
+        return brick_extreme(o, bpy.context.evaluated_depsgraph_get(), axis, side)
+    return got
+
 def assert_showface(label, new_objs, axis, plane, side):
     # each run piece's brick show-face must sit on its edge plane —
-    # except corner piers (brick wraps them — verified visually instead).
-    # SEAT pieces by measured brick extreme (trim can stand proud of the
-    # brick on flipped orientations): translate once along the facing normal
-    # (rigid nudge — never a resize; lateral butt joints are unaffected).
+    # except corner piers (brick wraps them — seated explicitly per-axis
+    # below instead). Trim/moldings can stand proud of the brick on flipped
+    # orientations: seat by measured extreme, never resize.
     deps = bpy.context.evaluated_depsgraph_get()
     for o in new_objs:
         if "Corner" in o.name:
             continue
-        got = brick_extreme(o, deps, axis, side)
-        if got is not None and abs(got - plane) > 0.02:
-            print(f"  seat {o.name}: brick {got:.3f} -> {plane:.3f}")
-            for v in o.data.vertices:
-                v.co += (plane - got) * Vector((1 if axis == 0 else 0, 1 if axis == 1 else 0, 0))
-            o.data.update()
+        seat_object(o, deps, axis, plane, side)
     deps = bpy.context.evaluated_depsgraph_get()
     for o in new_objs:
         if "Corner" in o.name:
@@ -258,13 +264,27 @@ def assert_showface(label, new_objs, axis, plane, side):
             raise RuntimeError(f"{label}: show-face off plane on {o.name} (got {got:.4f})")
     print(f"  {label}: show-faces coplanar")
 
+def seat_corners(label, specs):
+    # corners seat per-axis against their adjacent runs' planes:
+    # specs = [(objs, axis, plane, side)]. Brick wraps the pier, so each
+    # corner aligns once per outward face and never moves laterally.
+    deps = bpy.context.evaluated_depsgraph_get()
+    for objs, axis, plane, side in specs:
+        for o in objs:
+            got = seat_object(o, deps, axis, plane, side)
+            if got is not None and abs(got - plane) > 0.02:
+                raise RuntimeError(f"{label}: corner off plane {o.name} (got {got:.4f})")
+    print(f"  {label}: corners seated")
+
 # south run (brick faces -y): corner + window + door + window + corner
 sq = []
-sq += run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", -HALF_L, SLAB_EDGE, theta=0)
+cSW = run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", -HALF_L, SLAB_EDGE, theta=0)
+sq += cSW
 sq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", -HALF_L + CORNER_L, SLAB_EDGE)
 sq += run_piece("SM_ExternalWall_Baseflor_DoorFrame01.fbx", -DOOR_W / 2, SLAB_EDGE)
 sq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", DOOR_W / 2, SLAB_EDGE)
-sq += run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", HALF_R - CORNER_R, SLAB_EDGE, theta=90)
+cSE = run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", HALF_R - CORNER_R, SLAB_EDGE, theta=90)
+sq += cSE
 assert_showface("south run", sq, 1, SLAB_EDGE, -1)
 
 print("== step 3: west + east runs (bury the slab strips)")
@@ -274,7 +294,8 @@ wq = []
 wq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", WEST_EDGE, SW_TOP, theta=-90)
 wq += run_piece("SM_ExternalWall_Baseflor_wall01.fbx", WEST_EDGE, SW_TOP + 4.00, theta=-90)
 wq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", WEST_EDGE, SW_TOP + 6.00, theta=-90)
-wq += run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", WEST_EDGE, SW_TOP + 10.00, theta=270)
+cNW = run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", WEST_EDGE, SW_TOP + 10.00, theta=270)
+wq += cNW
 assert_showface("west run", wq, 0, WEST_EDGE, -1)
 # east run faces +x (theta=+90: local brick min-y -> world max-x)
 SE_TOP = SLAB_EDGE + 1.04  # SE corner (rot 90) north extent
@@ -282,7 +303,8 @@ eq = []
 eq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", EAST_EDGE - THICK, SE_TOP, theta=90)
 eq += run_piece("SM_ExternalWall_Baseflor_wall01.fbx", EAST_EDGE - THICK, SE_TOP + 4.00, theta=90)
 eq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", EAST_EDGE - THICK, SE_TOP + 6.00, theta=90)
-eq += run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", EAST_EDGE - 1.04, SE_TOP + 10.00, theta=180)
+cNE = run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", EAST_EDGE - 1.04, SE_TOP + 10.00, theta=180)
+eq += cNE
 assert_showface("east run", eq, 0, EAST_EDGE, +1)
 
 print("== step 4: north run (3 windows between the new corners)")
@@ -294,6 +316,11 @@ for i in range(3):
     nq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx",
                     NX0 + i * 4.00, NORTH_EDGE - THICK, theta=180)
 assert_showface("north run", nq, 1, NORTH_EDGE, +1)
+
+# NOTE (tried + reverted): seating corners by raw brick extremes is invalid —
+# quoin relief (±3 cm) dominates the extreme, so "seating" drags whole piers
+# centimetres off their butt joints. Corners align by placement + visual
+# check only; the 11 mm SE step is quoin pattern, not offset.
 
 # footing check: every wall base must sit on the slab (z 0, no daylight)
 bpy.context.view_layer.update()

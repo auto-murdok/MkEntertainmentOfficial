@@ -48,6 +48,10 @@ Rule: nothing joins the mansion until its joint is proven below.
   runs). `Corner02` probed same-hand (bigger variant, 1.18) — held in
   reserve, no mirror-hand corner exists in the kit.
 - Corners exempt from the show-face assert (brick wraps the pier).
+  Tried + reverted: seating corners by raw brick extremes drags whole piers
+  ~3 cm off their butt joints — quoin relief dominates the extreme. Corners
+  align by placement + visual/top-ortho check only. The 11 mm SE step is
+  quoin pattern relief, not offset (joint audit: all interfaces ≤3 mm).
   The "pocket" seen earlier was the rot-180 misorientation, now gone.
 - Footing check (all bases z 0) + doorway ray (open passage) pass in-build.
 - Entrance stairs: `External_Stairs01` centered, landing at the wall face,

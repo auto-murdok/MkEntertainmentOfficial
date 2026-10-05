@@ -30,8 +30,15 @@ CORNER_L, CORNER_R, WALL_W, DOOR_W = 1.04, 1.03, 2.00, 4.01
 HALF_L = CORNER_L + 2 * WALL_W + DOOR_W / 2
 HALF_R = CORNER_R + 2 * WALL_W + DOOR_W / 2
 FP_W = HALF_L + HALF_R  # 14.08
-FP_D = 12.25
+# Depth derives from the SIDE runs the same way: corner + window + wall +
+# window + corner = 1.03 + 4 + 2 + 4 + 1.04 = 12.07 (corner y-extents are
+# rotation-dependent: rot0/180 span 1.03, rot90/270 span 1.04).
+FP_D = 1.03 + 4.00 + 2.00 + 4.00 + 1.04  # 12.07
 SLAB_TOP = 2.05
+# South edge pinned (door/stairs/verified work); growth absorbs north.
+SLAB_EDGE = -6.125
+NORTH_EDGE = SLAB_EDGE + FP_D  # 5.945
+WEST_EDGE, EAST_EDGE = -FP_W / 2, FP_W / 2  # -7.04 .. 7.04
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
@@ -106,17 +113,17 @@ print("== step 1: ground-floor slab")
 slab_objs = []
 SLAB_FBX, TILE_X, TILE_Y = "SM_Wood_Internal_Floor01.fbx", 6.71, 6.36
 EDGE_X = (FP_W - 2 * TILE_X) / 2  # 0.33: buried under side walls later
-x = -FP_W / 2 - TILE_X + EDGE_X
-while x < FP_W / 2 - 0.01:
-    y = -FP_D / 2
-    while y < FP_D / 2 - 0.01:
+x = WEST_EDGE - TILE_X + EDGE_X
+while x < EAST_EDGE - 0.01:
+    y = SLAB_EDGE
+    while y < NORTH_EDGE - 0.01:
         objs = import_piece(SLAB_FBX)
         place(objs, 0, (x, y, -2.0)); bake(objs)
         slab_objs += objs
         y += TILE_Y
     x += TILE_X
-for co, no in [((FP_W / 2, 0, 0), (1, 0, 0)), ((-FP_W / 2, 0, 0), (-1, 0, 0)),
-               ((0, FP_D / 2, 0), (0, 1, 0)), ((0, -FP_D / 2, 0), (0, -1, 0))]:
+for co, no in [((EAST_EDGE, 0, 0), (1, 0, 0)), ((WEST_EDGE, 0, 0), (-1, 0, 0)),
+               ((0, NORTH_EDGE, 0), (0, 1, 0)), ((0, SLAB_EDGE, 0), (0, -1, 0))]:
     bisect_cut(slab_objs, co, no)
 
 def repair_cap_uvs(objs, scale=0.15):
@@ -157,10 +164,10 @@ deps = bpy.context.evaluated_depsgraph_get()
 slab_names = set(o.name for o in slab_objs)
 # interior grid only (inset past the wall band) — slab-only hits count
 misses = []
-gx = -FP_W / 2 + 0.75
-while gx < FP_W / 2 - 0.5:
-    gy = -FP_D / 2 + 0.75
-    while gy < FP_D / 2 - 0.5:
+gx = WEST_EDGE + 0.75
+while gx < EAST_EDGE - 0.5:
+    gy = SLAB_EDGE + 0.75
+    while gy < NORTH_EDGE - 0.5:
         hit, loc, no, idx, ob, mat = bpy.context.scene.ray_cast(
             deps, Vector((gx, gy, 8.0)), Vector((0, 0, -1)))
         # only slab hits count — ground-plane hits are gaps, not floor
@@ -180,49 +187,103 @@ if misses:
 # The footprint derives from the pieces (never the reverse). Sub-cm
 # residuals distribute symmetrically and are documented, not cut away.
 print("== step 2: south wall + entrance")
-SLAB_EDGE = -FP_D / 2
 assert abs(FP_W - (HALF_L + HALF_R)) < 0.01, f"footprint {FP_W} != run sum"
+assert abs(FP_D - (1.03 + 4.00 + 2.00 + 4.00 + 1.04)) < 0.01, "depth != side sum"
 wall_objs = []
 
-def run_piece(fbx, x0, theta=0):
+THICK = 0.46  # wall/window piece thickness
+
+def run_piece(fbx, x0, y0, theta=0):
     objs = import_piece(fbx)
-    # facing convention (probed): brick show-face at local y 0 for walls and
-    # door; the door piece's bbox min is trim at y -0.11 — shift it SOUTH so
-    # the BRICK faces land coplanar (trim ends 0.11 proud: the door surround)
-    y_off = -0.11 if "DoorFrame01" in fbx else 0.0
-    place(objs, theta, (x0, SLAB_EDGE + y_off, 0.0)); bake(objs)
+    # facing convention (probed): brick show-face at local y 0 for walls,
+    # windows and door; the door piece's bbox min is trim at y -0.11 — shift
+    # it so the BRICK faces land coplanar (trim ends proud: the surround)
+    if "DoorFrame01" in fbx:
+        if theta == 0:
+            y0 -= 0.11
+    place(objs, theta, (x0, y0, 0.0)); bake(objs)
     wall_objs.extend(objs)
     return objs
 
-def assert_showface(label):
-    # every run piece's brick show-face must sit on the slab edge plane —
-    # except corner piers (brick wraps them; near-square 1.04 x 1.03 with
-    # 0.05 quoin asymmetry, so the plane test can't apply — verified
-    # visually instead)
-    for o in wall_objs:
+def brick_extreme(o, deps, axis, side):
+    # truthful world-frame brick extreme via the evaluated mesh (plain
+    # matrix_world reads can lag data transforms a step behind in
+    # background mode — evaluation IS the refresh, so this can't be stale)
+    o_eval = o.evaluated_get(deps)
+    mesh = o_eval.to_mesh()
+    vals = []
+    slots = [s.material for s in o.material_slots]
+    for p in mesh.polygons:
+        m = slots[p.material_index] if p.material_index < len(slots) else None
+        if m and "Brick" in m.name:
+            for vi in p.vertices:
+                vals.append(mesh.vertices[vi].co[axis])
+    o_eval.to_mesh_clear()
+    if not vals:
+        return None
+    return max(vals) if side > 0 else min(vals)
+
+def assert_showface(label, new_objs, axis, plane, side):
+    # each run piece's brick show-face must sit on its edge plane —
+    # except corner piers (brick wraps them — verified visually instead).
+    # SEAT pieces by measured brick extreme (trim can stand proud of the
+    # brick on flipped orientations): translate once along the facing normal
+    # (rigid nudge — never a resize; lateral butt joints are unaffected).
+    deps = bpy.context.evaluated_depsgraph_get()
+    for o in new_objs:
         if "Corner" in o.name:
             continue
-        slots = [s.material for s in o.material_slots]
-        ys = []
-        for p in o.data.polygons:
-            m = slots[p.material_index] if p.material_index < len(slots) else None
-            if m and "Brick" in m.name:
-                for vi in p.vertices:
-                    ys.append((o.matrix_world @ o.data.vertices[vi].co).y)
-        if ys and abs(min(ys) - SLAB_EDGE) > 0.02:
-            raise RuntimeError(f"{label}: show-face off plane on {o.name}")
+        got = brick_extreme(o, deps, axis, side)
+        if got is not None and abs(got - plane) > 0.02:
+            print(f"  seat {o.name}: brick {got:.3f} -> {plane:.3f}")
+            for v in o.data.vertices:
+                v.co += (plane - got) * Vector((1 if axis == 0 else 0, 1 if axis == 1 else 0, 0))
+            o.data.update()
+    deps = bpy.context.evaluated_depsgraph_get()
+    for o in new_objs:
+        if "Corner" in o.name:
+            continue
+        got = brick_extreme(o, deps, axis, side)
+        if got is not None and abs(got - plane) > 0.02:
+            raise RuntimeError(f"{label}: show-face off plane on {o.name} (got {got:.4f})")
     print(f"  {label}: show-faces coplanar")
 
-# corners: left rot 0, right rot 90 (handed piece — see footprint note)
-run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", -HALF_L, theta=0)
-# left of door: window (4.00 = 2 wall modules, exact swap)
-run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", -HALF_L + CORNER_L)
-# entrance
-run_piece("SM_ExternalWall_Baseflor_DoorFrame01.fbx", -DOOR_W / 2)
-# right of door: window + corner
-run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", DOOR_W / 2)
-run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", HALF_R - CORNER_R, theta=90)
-assert_showface("south run")
+# south run (brick faces -y): corner + window + door + window + corner
+sq = []
+sq += run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", -HALF_L, SLAB_EDGE, theta=0)
+sq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", -HALF_L + CORNER_L, SLAB_EDGE)
+sq += run_piece("SM_ExternalWall_Baseflor_DoorFrame01.fbx", -DOOR_W / 2, SLAB_EDGE)
+sq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", DOOR_W / 2, SLAB_EDGE)
+sq += run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", HALF_R - CORNER_R, SLAB_EDGE, theta=90)
+assert_showface("south run", sq, 1, SLAB_EDGE, -1)
+
+print("== step 3: west + east runs (bury the slab strips)")
+# west run faces -x (theta=-90: local brick min-y -> world min-x)
+SW_TOP = SLAB_EDGE + 1.03  # SW corner (rot 0) north extent
+wq = []
+wq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", WEST_EDGE, SW_TOP, theta=-90)
+wq += run_piece("SM_ExternalWall_Baseflor_wall01.fbx", WEST_EDGE, SW_TOP + 4.00, theta=-90)
+wq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", WEST_EDGE, SW_TOP + 6.00, theta=-90)
+wq += run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", WEST_EDGE, SW_TOP + 10.00, theta=270)
+assert_showface("west run", wq, 0, WEST_EDGE, -1)
+# east run faces +x (theta=+90: local brick min-y -> world max-x)
+SE_TOP = SLAB_EDGE + 1.04  # SE corner (rot 90) north extent
+eq = []
+eq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", EAST_EDGE - THICK, SE_TOP, theta=90)
+eq += run_piece("SM_ExternalWall_Baseflor_wall01.fbx", EAST_EDGE - THICK, SE_TOP + 4.00, theta=90)
+eq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx", EAST_EDGE - THICK, SE_TOP + 6.00, theta=90)
+eq += run_piece("SM_ExternalWall_Baseflor_Corner01.fbx", EAST_EDGE - 1.04, SE_TOP + 10.00, theta=180)
+assert_showface("east run", eq, 0, EAST_EDGE, +1)
+
+print("== step 4: north run (3 windows between the new corners)")
+# north run faces +y (theta=180: local brick min-y -> world max-y).
+# Infill span 12.01 vs 3 windows 12.00: centered, 5 mm each side (rule 5).
+nq = []
+NX0 = -6.01 + 0.005
+for i in range(3):
+    nq += run_piece("SM_ExternalWall_Baseflor_WindowFrame01.fbx",
+                    NX0 + i * 4.00, NORTH_EDGE - THICK, theta=180)
+assert_showface("north run", nq, 1, NORTH_EDGE, +1)
 
 # footing check: every wall base must sit on the slab (z 0, no daylight)
 bpy.context.view_layer.update()
@@ -233,17 +294,17 @@ for o in wall_objs:
         raise RuntimeError(f"footing gap under {o.name}: base z {base:.3f}")
 print(f"  {len(wall_objs)} wall pieces, footings on slab")
 
-# doorway check: a ray through the entrance at walking height above the
-# raised slab (sill ~2.05 + 1.5) must cross the interior without hitting
-# any wall (no north wall yet — open passage)
+# doorway check: the entrance ray must now TERMINATE on the north run
+# (proving the passage crosses the whole interior). Aim below the north
+# windows' sill (~2.9) so the ray meets masonry, not the far opening.
 deps = bpy.context.evaluated_depsgraph_get()
 wall_names = set(o.name for o in wall_objs)
 hit, loc, no, idx, ob, mat = bpy.context.scene.ray_cast(
-    deps, Vector((0.0, -14.0, SLAB_TOP + 1.5)), Vector((0, 1, 0)))
+    deps, Vector((0.0, -14.0, SLAB_TOP + 0.5)), Vector((0, 1, 0)))
 print(f"  doorway ray: hit {ob.name if hit else 'nothing'}")
-if hit and ob.name in wall_names:
-    raise RuntimeError(f"doorway blocked by {ob.name} — entrance not open")
-print("  entrance open")
+if not hit or ob.name not in wall_names or loc.y < 0:
+    raise RuntimeError("doorway ray did not terminate on the north run")
+print("  entrance passage proven end to end")
 
 # exterior stairs: run along y, low end south, top landing (z 2.0) meeting
 # the doorway sill (2.05)
@@ -346,7 +407,7 @@ for mat in list(bpy.data.materials):
 print("MATERIALS DONE")
 
 # ------------------------------------------------- view setup (lights) ----
-# 3/4 view from the south-east: wall run + entrance in frame.
+# 3/4 aerial from the south-east: full perimeter in frame.
 bpy.ops.object.light_add(type='SUN', location=(25.0, -35.0, 45.0))
 sun = bpy.context.active_object
 sun.name = "ViewSun"
@@ -360,10 +421,10 @@ w.use_nodes = True
 w.node_tree.nodes["Background"].inputs["Color"].default_value = (0.55, 0.65, 0.80, 1)
 w.node_tree.nodes["Background"].inputs["Strength"].default_value = 1.0
 bpy.context.scene.world = w
-bpy.ops.object.camera_add(location=(16.0, -28.0, 11.0))
+bpy.ops.object.camera_add(location=(26.0, -40.0, 18.0))
 cam = bpy.context.active_object
 cam.name = "ViewCamera"
-aim = Vector((0.0, -4.0, 3.5)) - Vector(cam.location)
+aim = Vector((0.0, -2.0, 4.0)) - Vector(cam.location)
 cam.rotation_euler = aim.to_track_quat('-Z', 'Y').to_euler()
 bpy.context.scene.camera = cam
 print("  view setup: 2 suns + world + top-down camera built")

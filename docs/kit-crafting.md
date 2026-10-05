@@ -21,9 +21,11 @@ Rule: nothing joins the mansion until its joint is proven below.
 
 - Ground-floor slab: `SM_Wood_Internal_Floor01` (6.71 x 6.36 solid interior
   slab — the external Floor0x pieces are 2 m tall open deck platforms, wrong
-  for interiors) tiled + cut to the starter footprint **14.08 x 12.25**.
-  Footprint derives from the wall-run module sum
-  (1.04 + 4.00 + 4.01 + 4.00 + 1.03 — right corner counts 1.03 rotated).
+  for interiors) tiled + cut to the starter footprint **14.08 x 12.07**.
+  Footprint derives from wall-run module sums: south/north
+  (1.04 + 4.00 + 4.01 + 4.00 + 1.03), depth from the side runs
+  (1.03 + 4.00 + 2.00 + 4.00 + 1.04 — corner spans are rotation-dependent).
+  South edge pinned at −6.125 (door/stairs/verified work); growth absorbs north.
   Tile grid shifted +0.33 in x so the unavoidable remainders become narrow
   perimeter strips buried under wall bands, never slices across open floor.
 - Cut-cap lesson: `edgenet_fill` caps are born UV-less (single-texel sample
@@ -58,6 +60,26 @@ Rule: nothing joins the mansion until its joint is proven below.
   explained. Glass stays a later pass (kit ships none for wall windows).
 - Watch item: hairline sliver left of the arch — confirm in GUI.
 
+## Full perimeter (step 3 — done, verified)
+
+- West run (faces −x, theta −90): window + wall + window between the SW
+  corner and a NEW NW corner (rot 270: outers W+N). East run mirrored
+  (theta +90, NEW NE corner rot 180: outers N+E). 16 wall pieces total.
+- North run (faces +y, theta 180): 3 windows between NW/NE corners.
+  Span 12.01 vs 12.00 of glass modules: centered, 5 mm each side (rule 5 —
+  the 1 cm is the door's surplus showing up where no door sits).
+- Corner rotation table (chiral piece, all four used exactly once):
+  SW rot 0 (outers S+W), SE rot 90 (S+E), NE rot 180 (N+E), NW rot 270 (W+N).
+- Measurement finding: plain `matrix_world` reads can lag data transforms a
+  step behind in background mode (chased a phantom 5 cm offset through three
+  theories). `brick_extreme` measures via the evaluated mesh — evaluation IS
+  the refresh. The seating nudge built on top never triggers (all runs pass
+  unseated); kept as harness for future flipped pieces.
+- Doorway ray now terminates ON the north run masonry (aimed below the
+  window sill — at walking height it flies through both openings).
+- Slab strips verified buried: top view shows continuous wood, legitimate
+  tile seams only.
+
 ## Piece datasheets (all probed, LOD0, meters)
 
 | Piece | BBox (x y z) | Module role | Facing | Quirks | Status |
@@ -82,7 +104,7 @@ x 2.05 open deck platforms (interiors never); FloorPlanks are loose boards.
 |---|------|---------|-------|
 | 1 | floor + wall01 (footing) | clean (bases z 0, 7 pcs) | `_blender/polish/new_mansion_south.png` |
 | 1b | wall + DoorFrame01 (entrance) | clean (opening ~2.5m, sill 2.05, stairs land 2.02) + facing fix: door bbox min is trim at local y −0.11, shift −0.11 so brick show-faces land coplanar (both face min-y, no turn; first attempt used the wrong sign) | `_blender/polish/new_mansion_door.png`, `_blender/polish/new_mansion_top.png` |
-| 2 | wall01 + wall01 (straight run) | pending | — |
+| 2 | wall01 + wall01 (straight run) | pending — no straight wall joint exists yet (side runs pair wall with windows, never wall-to-wall) | — |
 | 3 | wall01 + corner01 (right angle) | clean — left rot 0, right rot 90 (handed piece, rebates N+W into both runs); quoins read both ends | `_blender/polish/new_mansion_sw_corner.png`, `_blender/polish/new_mansion_se_corner.png` |
 | 5 | wall + WindowFrame01 (opening) | clean — 4.00 swaps 1:1 for wall pairs, opening ~2.5m sill ~2.9, no kit glass; raycast anomaly documented (renders are truth) | `_blender/polish/new_mansion_window.png` |
 | 4 | Baseflor wall01 + SecondFloor wall01 (stacked) | pending | — |

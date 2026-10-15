@@ -276,14 +276,16 @@ before touching UE import/export work.
   `blender` on PATH (`/opt/homebrew/bin/blender` command wrapper). Never hunt for
   or re-download ad-hoc portable Blender builds; never install the conflicting
   `blender@lts` cask alongside it.
-- **Full environment record + every hard-won pitfall: `docs/blender_cli_macos.md`.**
-  Read it before Blender work. Highlights: run
-  `.agents/skills/unity-fbx-polish/bin/probe_blender.py` after any Blender
-  upgrade (confirms legacy `io_scene_fbx` import/export ops still behave; do not
-  switch helpers to the 5.x `wm.fbx_import` without re-validating cm scale and
-  material/UV names); headless renders need **absolute** output paths; pip on
-  this box needs `-i https://pypi.org/simple` (corporate mirror unreachable);
-  `worldspace_preview.py` + repair helpers live in the `unity-fbx-polish` skill.
+- **Full environment record + every hard-won pitfall:** sibling
+  `blender-playground/docs/blender_cli_macos.md` (moved 2026-10-15). Read it
+  before Blender work. Highlights: run
+  `../blender-playground/.agents/skills/unity-fbx-polish/bin/probe_blender.py`
+  after any Blender upgrade (confirms legacy `io_scene_fbx` import/export ops
+  still behave; do not switch helpers to the 5.x `wm.fbx_import` without
+  re-validating cm scale and material/UV names); headless renders need
+  **absolute** output paths; pip on this box needs `-i https://pypi.org/simple`
+  (corporate mirror unreachable); `worldspace_preview.py` + repair helpers live
+  in the playground's `unity-fbx-polish` skill.
 - **Windows side:** portable Blender **5.2.2 LTS** in sibling
   `blender-playground/tools/ueimport/vendor/blender`
   (setup-prereqs.ps1, same pin as macOS/Linux); keep `bin/*.py` helpers

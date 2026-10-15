@@ -13,7 +13,13 @@ from mathutils import Vector, Matrix
 
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(TOOLS_DIR, "..", ".."))
-MESHDIR = os.path.join(REPO, "Assets/ImportedContent/Building_kit/Meshes")
+# Kit lives outside the repo (blender-playground); override with BUILDING_KIT_DIR.
+KIT_DIR = os.environ.get("BUILDING_KIT_DIR",
+                          os.path.join(REPO, "Assets/ImportedContent/Building_kit"))
+MESHDIR = os.path.join(KIT_DIR, "Meshes")
+if not os.path.isdir(MESHDIR):
+    raise SystemExit("MESHDIR missing: " + MESHDIR
+                     + " — set BUILDING_KIT_DIR to the kit root.")
 MATLIB = os.path.join(REPO, "_blender/polish/matlib_building_kit.json")
 OUT_BLEND = os.path.join(REPO, "_blender/tests/kit_overview.blend")
 matmap = json.load(open(MATLIB))

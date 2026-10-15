@@ -27,12 +27,30 @@ from collections import Counter
 
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(TOOLS_DIR, "..", ".."))
+# Kit lives outside the repo (blender-playground); override with BUILDING_KIT_DIR.
+KIT_DIR = os.environ.get("BUILDING_KIT_DIR",
+                          os.path.join(REPO, "Assets/ImportedContent/Building_kit"))
+_KIT_PREFIX = "Assets/ImportedContent/Building_kit/"
+def kit_resolve(rel):
+    """Resolve a matlib texture path: repo-relative (old JSON/layout),
+    kit-relative (rebuilt JSON), or absolute."""
+    if os.path.isabs(rel):
+        return rel
+    p = os.path.join(REPO, rel)
+    if os.path.exists(p):
+        return p
+    if rel.startswith(_KIT_PREFIX):
+        return os.path.join(KIT_DIR, rel[len(_KIT_PREFIX):])
+    return os.path.join(KIT_DIR, rel)
 BLEND_IN = os.path.join(REPO, "_blender/tests/indoor_room.blend")
 BLEND_OUT = os.path.join(REPO, "_blender/tests/indoor_room_real.blend")
 OUTDIR = os.path.join(REPO, "_blender/polish")
 matmap = json.load(open(os.path.join(REPO, "_blender/polish/matlib_building_kit.json")))
 
-MESHDIR = os.path.join(REPO, "Assets/ImportedContent/Building_kit/Meshes")
+MESHDIR = os.path.join(KIT_DIR, "Meshes")
+if not os.path.isdir(MESHDIR):
+    raise SystemExit("MESHDIR missing: " + MESHDIR
+                     + " — set BUILDING_KIT_DIR to the kit root.")
 CANON_FBX = {
     "SM_Internal_Wall_DoorFrame01_LOD0": "SM_Internal_Wall_DoorFrame01.fbx",
     "SM_Internal_Wall_wall01_LOD0": "SM_Internal_Wall_wall01.fbx",
@@ -69,7 +87,7 @@ for lod0_name, fbx_file in CANON_FBX.items():
 
 # ---- build real materials ---------------------------------------------------
 def load_img(rel, noncolor=False):
-    im = bpy.data.images.load(os.path.join(REPO, rel))
+    im = bpy.data.images.load(kit_resolve(rel))
     if noncolor:
         im.colorspace_settings.name = "Non-Color"
     return im

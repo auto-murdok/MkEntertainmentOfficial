@@ -76,9 +76,9 @@ headless mesh ops use `bmesh`, not `bpy.ops`.
 
 | Path | Contents |
 |---|---|
-| `_blender/tools/` | `inspect_fbx.py`, `inspect_all.py`, `inspect_rig.py` (audit), `build_matlib.py` (material library from real `.mat` textures), `polish_render.py` (QA render pipeline), `rebuild_indoor_room.py`, `build_character_lods.py` (POC 1 productised), `strip_dead_ucx.py` (POC 3), `build_kit_overview.py` (kit census), `build_new_mansion.py` (current mansion) |
+| `_blender/tools/` | `inspect_fbx.py`, `inspect_all.py`, `inspect_rig.py` (audit), `build_matlib.py` (material library from real `.mat` textures), `polish_render.py` (QA render pipeline), `rebuild_indoor_room.py`, `build_character_lods.py` (POC 1 productised), `strip_dead_ucx.py` (POC 3) — kit census + mansion builders moved to `blender-playground/tests/` 2026-10-15 |
 | `_blender/polish/` | Committed session output: material libraries (`matlib_building_kit.json`, `matmap_*.json`, `fbx_slots.json`), packed roughness textures, `repaired_normals/`, and curated proof renders (normal-fix before/after, flipped-faces join, indoor room, mansion set, `zombie_lod_compare.png`). `_blender/**/renders/` is gitignored — proof images go directly in `polish/` |
-| `_blender/tests/` | Test scenes: `indoor_room.blend` (+ build script), `indoor_room_real.blend` (real-materials rebuild), `kit_overview.blend` (all 50 pieces, labelled 10×5), `new_mansion.blend` (current build) |
+| `_blender/tests/` | Test scenes: `indoor_room.blend` (+ build script), `indoor_room_real.blend` (real-materials rebuild) — `kit_overview` + `new_mansion` moved to `blender-playground/tests/` 2026-10-15 |
 | `.agents/skills/unity-fbx-polish/` | The skill: `SKILL.md` + `bin/` helpers — `uv_rotate90.py`, `uv_scale.py`, `worldspace_preview.py`, `remove_degenerate.py`, `flip_faces.py`, `probe_blender.py` |
 
 ## 4. Initial audit — 2026-10-01 (landed as inspection tooling)
@@ -217,16 +217,17 @@ The house build was **removed from `main`** at the author's direction to
 restart the mansion from scratch: `build_two_story_house.py`, the house doc,
 the `.blend` and the 15 proof renders are gone from `main` (recoverable from
 git history at 8b76d2d; the stage-2 final blend is also backed up
-workspace-side). Added instead: `_blender/tools/build_kit_overview.py` +
-`_blender/tests/kit_overview.blend` — the kit census: all 50 pieces, LOD0,
-labelled 10×5 grid, real materials. This census is the reference the new
-mansion is built against.
+workspace-side). Census + mansion builds moved to `blender-playground/tests/`
+2026-10-15 (`tests/kit_overview/`, `tests/new_mansion/` — the kit census: all
+50 pieces, LOD0, labelled 10×5 grid, real materials). This census is the
+reference the new mansion is built against.
 
 ### 9d. New mansion (PRs #29–#32, landed — current build)
 
 Bottom-up, pair-by-pair, whole pieces only. Full record, datasheets and the
-pair matrix: `docs/kit-crafting.md`. Build:
-`_blender/tools/build_new_mansion.py` → `_blender/tests/new_mansion.blend`.
+pair matrix: `docs/kit-crafting.md`. Build (moved 2026-10-15):
+`blender-playground/tests/new_mansion/build_new_mansion.py` →
+`blender-playground/tests/new_mansion/new_mansion.blend`.
 
 - **#29 Step 1** — Foundation + south wall: `Wood_Internal_Floor01` slab
   (external Floor0x rejected — open deck platforms), living floor z 2.05,

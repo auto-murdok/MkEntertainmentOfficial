@@ -32,3 +32,9 @@ Files:
   shader and are not reproduced here.
 - The floor can show stripe artifacts in the headless renders from leftover
   LOD meshes z-fighting; this goes away once the LOD clutter is deleted.
+
+## Moved out (2026-10-15)
+
+`kit_overview` + `new_mansion` (blends + build scripts) now live in
+`blender-playground/tests/kit_overview/` and
+`blender-playground/tests/new_mansion/`.

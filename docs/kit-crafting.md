@@ -1,7 +1,7 @@
 # Kit crafting list — bottom-up construction of the new mansion
 
-Reference: `_blender/tests/kit_overview.blend` (all 50 pieces, labeled).
-Build: `_blender/tools/build_new_mansion.py` → `_blender/tests/new_mansion.blend`.
+Reference: `blender-playground/tests/kit_overview/kit_overview.blend` (all 50 pieces, labeled — moved 2026-10-15).
+Build: `blender-playground/tests/new_mansion/build_new_mansion.py` → `blender-playground/tests/new_mansion/new_mansion.blend`.
 Rule: nothing joins the mansion until its joint is proven below.
 
 ## Golden rule — pieces snap, sizes never adjust

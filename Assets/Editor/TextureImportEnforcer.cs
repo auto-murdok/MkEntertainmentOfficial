@@ -44,7 +44,7 @@ public class TextureImportEnforcer : AssetPostprocessor
             if (def.maxTextureSize > 1024)
             {
                 def.maxTextureSize = 1024;
-                importer.SetDefaultPlatformTextureSettings(def);
+                importer.SetPlatformTextureSettings(def);
             }
 
             var standalone = importer.GetPlatformTextureSettings("Standalone");

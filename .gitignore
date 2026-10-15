@@ -146,3 +146,7 @@ Assets/ImportedContent/*
 # blender-playground 2026-10-15, which ignores its own renders/)
 
 opencode.json
+
+# UEImport C# build outputs (regenerable via dotnet build; sources moved to blender-playground)
+Tools/UEImport/cue4parse/Cue4ParseExport/bin/
+Tools/UEImport/cue4parse/Cue4ParseExport/obj/

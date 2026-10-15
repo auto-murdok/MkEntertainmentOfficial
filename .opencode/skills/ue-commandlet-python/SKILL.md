@@ -8,7 +8,8 @@ description: Automate Unreal Editor via headless pythonscript commandlets (Unrea
 Headless UE automation runs `UnrealEditor-Cmd.exe "<uproject>" -run=pythonscript
 -script="<script.py>" -unattended -nop4 -nosplash -stdout`. Add
 `-AllowCommandletRendering` only when the script renders (SceneCapture etc.).
-This is how the UEI pipeline (`Tools/UEImport/`) runs its exporter; these
+This is how the UEI pipeline (`tools/ueimport/` in the sibling
+`blender-playground` repo) runs its exporter; these
 patterns are engine-version-hardened against UE 5.8.
 
 ## The rules that keep this from being painful

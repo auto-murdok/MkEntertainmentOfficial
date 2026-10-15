@@ -1,4 +1,4 @@
----
+﻿---
 name: ue-unity-import
 description: Import or investigate Unreal Engine .uasset/.umap content into this Unity project (Mansion/Building_kit style meshes) - use when the user mentions uasset, Unreal, UE, CUE4Parse, cooked/cook, FBX export, glTF, import Unreal assets, or textures/materials from UE kits. Covers the decision tree, exact commands, and known pitfalls.
 ---
@@ -7,9 +7,11 @@ description: Import or investigate Unreal Engine .uasset/.umap content into this
 
 Batch-convert Unreal `StaticMesh` content to FBX + textures + a material
 manifest, then import into Unity with URP/Lit materials wired. Full reference:
-`docs/ue_content_import.md`. Tooling: `Tools/UEImport/`. Unity menu:
+`docs/ue_content_import.md`. Export tooling lives in the sibling
+`blender-playground` repo (`tools/ueimport/` — run those commands from that
+checkout; outputs still land next to the `.uproject`). Unity menu:
 `Tools ▸ UE Import ▸ Import FBX Folder...` (or headless via the eval helpers
-in `Tools/UEImport/unity/`).
+in `Tools/UEImport/unity/`, which stay here).
 
 UE commandlet/pythonscript automation patterns (boot flags, log sinks, detach,
 5.8 API renames) live in the **`ue-commandlet-python`** skill.
@@ -39,7 +41,7 @@ asset** (route 3 unless the owning project exists).
 ## Leg #1 commands
 
 ```powershell
-Tools\UEImport\Run-Export.ps1 `
+tools\ueimport\Run-Export.ps1 `
   -UProject "C:\Users\me\Documents\Unreal Projects\MyProject\MyProject.uproject" `
   -AssetPath "/Game/<path>/<to>/<folder>" `   # folder or single mesh
   -Filter "roof"                               # optional name filter
@@ -53,9 +55,9 @@ Unity kit name (`Assets/ImportedContent/<KitName>/`).
 ## Leg #2 commands
 
 ```powershell
-Tools\UEImport\cue4parse\setup-prereqs.ps1                  # once (vendor/, gitignored)
-Tools\UEImport\cook\Start-Cook.ps1 -UProject "C:\...\<Proj>.uproject"
-Tools\UEImport\cue4parse\Convert-Cooked.ps1 `
+tools\ueimport\cue4parse\setup-prereqs.ps1                  # once (vendor/, gitignored)
+tools\ueimport\cook\Start-Cook.ps1 -UProject "C:\...\<Proj>.uproject"
+tools\ueimport\cue4parse\Convert-Cooked.ps1 `
   -CookedContent "C:\...\<Proj>\Saved\Cooked\Windows\<Proj>\Content" `
   -Filter "Building_kit" -OutDir "C:\...\<Proj>\Exports\cue4parse_fbx"
 ```
@@ -107,7 +109,7 @@ Match `-Game`/`--game` (default `GAME_UE5_8`) to the cooking engine version.
   (`WorldAlignedTexture`/`WorldAlignedNormal` inside `MF_GrungeMaterial`, verified by
   recursive graph traversal). A world-aligned URP shader was evaluated and DROPPED
   (quality loss, orientation unchanged - don't retry). **Working fix**:
-  `Tools\UEImport\Apply-UvFixes.ps1` (manual step after export) - headless
+  `tools\ueimport\Apply-UvFixes.ps1` (manual step after export) - headless
   Blender evaluates 3D differential tangents ($\vec{T}_U, \vec{T}_V$) in `mode: "auto"`
   per `uvfixes.json` and rotates only faces where $U$ is vertical around $(0.5, 0.5)$
   (idempotent via .orig backups; preserves unrotated faces like top walls and
@@ -130,7 +132,7 @@ Match `-Game`/`--game` (default `GAME_UE5_8`) to the cooking engine version.
 - Tests: EditMode suite must stay green (`unity command run_tests --mode
   editmode --async_tests`, poll `test_status`).
 - **End of session**: kill the headless runtime with
-  `Tools\UEImport\Cleanup-Runtime.ps1` (kills the `-automated` editor tree,
+  `tools\ueimport\Cleanup-Runtime.ps1` (kills the `-automated` editor tree,
   the unity-cli identity helper, and any bun server; leaves interactive
   editors, Unity Hub and MCP servers alone). Process snapshots of real runs
   confirmed the pipeline spawns nothing else persistent, and that "bun"

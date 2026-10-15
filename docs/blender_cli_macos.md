@@ -1,5 +1,8 @@
 # Headless Blender CLI on macOS — 3D model polish (FBX) environment
 
+> Historical record: scripts referenced here moved to `blender-playground/tools/`
+> on 2026-10-15. This doc stays as environment history.
+
 Recorded 2026-10-02 after the initial macOS setup. Follow-up sessions: read this
 BEFORE looking for Blender or hand-editing FBX meshes. Companion workflow rules
 live in the `unity-fbx-polish` skill (`.agents/skills/unity-fbx-polish/SKILL.md`).

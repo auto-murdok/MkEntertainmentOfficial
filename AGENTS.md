@@ -261,7 +261,8 @@ Tests: `GameCliArgsTests` (EditMode) covers parser, mode/connect aliases, auto-q
 ## 🏗️ UE → Unity Content Import (UEI pipeline)
 
 Unreal kit content (Mansion/Building_kit style) is imported via
-`Tools/UEImport/` — full reference: `docs/ue_content_import.md`. New agents:
+`tools/ueimport/` in the sibling `blender-playground` repo (moved 2026-10-15)
+— full reference: `docs/ue_content_import.md`. New agents:
 the `ue-unity-import` and `ue-commandlet-python` skills cover the decision
 tree, exact commands, and every hard-won pitfall (Zen-store cooks, UE 5.8
 python API renames, commandlet log sinks, world-aligned materials). Read them
@@ -283,7 +284,8 @@ before touching UE import/export work.
   material/UV names); headless renders need **absolute** output paths; pip on
   this box needs `-i https://pypi.org/simple` (corporate mirror unreachable);
   `worldspace_preview.py` + repair helpers live in the `unity-fbx-polish` skill.
-- **Windows side:** portable Blender **5.2.2 LTS** in `Tools/UEImport/vendor/blender`
+- **Windows side:** portable Blender **5.2.2 LTS** in sibling
+  `blender-playground/tools/ueimport/vendor/blender`
   (setup-prereqs.ps1, same pin as macOS/Linux); keep `bin/*.py` helpers
   4.x-compatible (e.g. `use_nodes`, only deprecated until 6.0) so they run
   unmodified on every pinned install.

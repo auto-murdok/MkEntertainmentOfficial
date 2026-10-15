@@ -14,8 +14,9 @@ in-game look.
 
 ## Tooling
 - Headless Blender **5.2.2 LTS** on all platforms (macOS Apple Silicon:
-  Homebrew cask `blender` on PATH; Windows: portable in
-  `Tools/UEImport/vendor/blender` via setup-prereqs.ps1; Linux: portable).
+  Homebrew cask `blender` on PATH; Windows: portable in sibling
+  `blender-playground/tools/ueimport/vendor/blender` via setup-prereqs.ps1;
+  Linux: portable).
   Helpers stay 4.x-compatible (e.g. keep `use_nodes`; it only *warns* on 5.2,
   removal is slated for 6.0).
 - Verified on 5.2.2 (2026-10-02, Building_kit corner-wall round-trip): the

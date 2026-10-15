@@ -109,8 +109,9 @@ for fbx in order:
         print('UVFIX step: importing ' + fbx)
         bpy.ops.import_scene.fbx(filepath=fbx)
         print('UVFIX step: imported')
-        # Blender 4.2's FBX importer writes ID properties onto imported data
-        # that its exporter then rejects ("this type doesn't support
+        # The legacy FBX importer writes ID properties onto imported data
+        # (observed on 4.2; verified harmless to strip on 5.2.2) that its
+        # exporter then rejects ("this type doesn't support
         # IDProperties") - strip them from every data block
         for coll in (bpy.data.objects, bpy.data.meshes, bpy.data.materials,
                      bpy.data.images, bpy.data.curves, bpy.data.cameras, bpy.data.lights):
@@ -140,9 +141,10 @@ for fbx in order:
                 if not mesh.uv_layers:
                     print('UVFIX: no UV layers on ' + obj.name)
                     continue
-                # bulk API: bypasses Blender 4.2's per-element UV wrappers, which
-                # raise "this type doesn't support IDProperties" on
-                # C++-imported FBX
+                # bulk API: bypasses the legacy importer's per-element UV
+                # wrappers, which raise "this type doesn't support
+                # IDProperties" on C++-imported FBX (observed on 4.2,
+                # retained defensively on 5.2.2)
                 uvl = mesh.uv_layers[0]
                 n = len(mesh.loops)
                 flat = [0.0] * (n * 2)

@@ -61,7 +61,7 @@ deliberately taken out (recoverable from git history).
 |---|---|---|
 | macOS (owner's machine, Apple Silicon) | **5.2.2 LTS** via Homebrew cask | `blender` on PATH; the repo's primary Blender. Full record: `docs/blender_cli_macos.md` |
 | Linux VM (agent machine) | **5.2.2 LTS** portable | Started on portable 4.0.2 (Batch 1/2, 2026-10-01), upgraded to 5.2.2 LTS portable 2026-10-02; 4.0.2 removed. `trimesh` 5.1.0 + `pygltflib`, ImageMagick 6 |
-| Windows (UE import pipeline) | 4.2 LTS portable | `Tools/UEImport/vendor/blender`; stays until deliberately bumped, so skill helpers remain 4.x-compatible (e.g. `use_nodes`) |
+| Windows (UE import pipeline) | **5.2.2 LTS** portable | `Tools/UEImport/vendor/blender` (setup-prereqs.ps1); standardised to 5.2.2 on 2026-10-15 — probe green on Windows (legacy `io_scene_fbx` ops, cm scale, UV names, full helper dry-run + triplanar render). Helpers stay 4.x-compatible (e.g. `use_nodes`) so they run unmodified everywhere |
 
 Verified on 5.2.2: the legacy `io_scene_fbx` add-on is still bundled and
 factory-enabled, so all helpers (`bpy.ops.import_scene.fbx` /

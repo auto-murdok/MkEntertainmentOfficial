@@ -1,5 +1,9 @@
 # Blender work — complete overview (2026-10-01 → 2026-10-14)
 
+> Historical record: `_blender/` moved to `blender-playground` on 2026-10-15
+> (tests, tools, material libraries, proof renders). This doc stays as history;
+> live Blender work is documented there.
+
 One record of **all** Blender work done for `MkEntertainmentOfficial`: the FBX
 polish batches, the `unity-fbx-polish` skill, the indoor test room, the
 performance POCs, both house builds, and the Blender-side experiments that

@@ -287,11 +287,11 @@ before touching UE import/export work.
   (setup-prereqs.ps1, same pin as macOS/Linux); keep `bin/*.py` helpers
   4.x-compatible (e.g. `use_nodes`, only deprecated until 6.0) so they run
   unmodified on every pinned install.
-- **`_blender/` is the Blender working tree** (PR #13): `tools/` working scripts
-  (resolve repo root from `__file__`, never hardcode a machine path), `polish/`
-  committed outputs + **curated proof renders**, `tests/` test scenes.
-  `_blender/**/renders/` is gitignored — proof images belong directly under
-  `_blender/polish/`, not in a `renders/` subfolder.
+- **Blender work lives in the sibling `blender-playground` repo** (moved from
+  `_blender/` 2026-10-15): `tools/` working scripts (resolve repo root from
+  `__file__`, never hardcode a machine path), `models/building_kit/`
+  material libraries, `tests/` test scenes, `docs/archive/` curated proof
+  renders. Lab `renders/` output stays gitignored.
 
 ---
 

@@ -7,7 +7,8 @@
 //    per set) and DefaultTexturePlatform was UNCAPPED 4096 (~89 MB).
 //    Rule: max 1024 on every platform, explicit BC formats.
 //    A/B render proof (4096 vs 1024 textures, prop filling the frame):
-//    visually identical, RMSE 0.56% — see _blender/polish/poc4 tex proof.
+//    visually identical, RMSE 0.56% — see blender-playground/docs/archive/
+//    poc4_ammocase_texture_ab.png.
 //
 //  * The 4096x4096 building-kit sources are already capped correctly on
 //    Standalone (normals/albedo 2048 BC5/BC7, ORM 1024 BC7) — do NOT touch

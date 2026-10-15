@@ -238,6 +238,47 @@ their renderer disabled and a convex `MeshCollider` (postprocessor scoped to
 Re-running with the same folder is **idempotent**: assets are overwritten in
 place, material asset GUIDs are preserved.
 
+## Level layout dump + batch export (mansion estate)
+
+Beyond single-folder mesh export, two scripts cover whole-estate work:
+
+**Actor inventory** (`ue/export_level_actors.py` via `Run-ExportActors.ps1`):
+
+```powershell
+Tools\UEImport\Run-ExportActors.ps1 -UProject "C:\...\MyProject.uproject" `
+    -MapPath "/Game/Mansion/Levels/LV_Haunted_Mansion"
+# -> <uproject>\Exports\level_actors\<Map>_actors.json
+```
+
+Loads the map in a commandlet and records every visible actor: label, class,
+mesh + mesh path, location (cm), rotator, scale, plus light
+(intensity/color/attenuation/cones) and CineCamera (focal/sensor) properties.
+`kind` is `staticmesh`, `instanced` (ISM/HISM with per-instance transforms),
+or `other`. **World Partition caveat**: actors that are not streamed in are
+invisible to the dump — compare the total against the map's
+`__ExternalActors__` file count; if short, rerun with the map open in the
+editor UI. StaticMeshActors with no readable mesh are flagged `mesh_missing`
+(missing/renamed assets — verified skips, not export bugs).
+
+**Batch mesh export** (`ue/export_fbx_batch.py` via `Run-ExportBatch.ps1`):
+
+```powershell
+Tools\UEImport\Run-ExportBatch.ps1 -UProject "C:\...\MyProject.uproject" `
+    -AssetPaths @("/Game/.../Books", "/Game/.../Sconce01") `
+    -OutDir "C:\...\Exports\MansionProps"
+```
+
+Loops many folders in **one** commandlet boot into a single accumulating
+manifest (avoids ~2 min boot per folder). Per-folder failures don't stop the
+batch; verify FBX count + manifest rows after (a silent mid-list death shows
+up as missing tail folders — rerun just those into a second dir, manifests
+merge). Trim folder strings (a trailing newline breaks the generated
+bootstrap). The JSON dump doubles as a **spawn manifest** for rebuilding the
+level elsewhere: mesh + transform per actor, pivots UE-authored.
+
+The playground consumes both: `blender-playground/docs/mansion-rebuild.md`
+records the Blender-side faithful rebuild (2,615 actors placed via MCP).
+
 ## Troubleshooting / hard-won gotchas
 
 | Symptom | Cause / fix |

@@ -159,6 +159,46 @@ else:
                 base['kind'] = 'other'
                 if cls == 'StaticMeshActor':
                     base['mesh_missing'] = True
+                if cls in ('PointLight', 'RectLight', 'SpotLight'):
+                    try:
+                        lc = a.get_component_by_class(unreal.LightComponent)
+                    except Exception:
+                        lc = None
+                    if lc is not None:
+                        try:
+                            base['intensity'] = float(lc.get_editor_property('intensity'))
+                        except Exception:
+                            pass
+                        try:
+                            c = lc.get_editor_property('light_color')
+                            base['color'] = [float(c.r), float(c.g), float(c.b), float(c.a)]
+                        except Exception:
+                            pass
+                        for prop in ('attenuation_radius', 'source_radius',
+                                     'source_width', 'source_height',
+                                     'inner_cone_angle', 'outer_cone_angle'):
+                            try:
+                                base[prop] = float(lc.get_editor_property(prop))
+                            except Exception:
+                                pass
+                if cls == 'CineCameraActor':
+                    try:
+                        cc = a.get_component_by_class(unreal.CineCameraComponent)
+                    except Exception:
+                        cc = None
+                    if cc is not None:
+                        try:
+                            base['focal_length'] = float(
+                                cc.get_editor_property('current_focal_length'))
+                        except Exception:
+                            pass
+                        try:
+                            fb = cc.get_editor_property('filmback')
+                            base['sensor'] = [
+                                float(fb.get_editor_property('sensor_width')),
+                                float(fb.get_editor_property('sensor_height'))]
+                        except Exception:
+                            pass
                 items.append(base)
 
             counts = {}

@@ -51,8 +51,7 @@ Run: `blender --background --factory-startup --python <probe> -- <sample.fbx> <o
    path.** A relative path fails: `Render error ... cannot save: 'preview.png'`.
 2. **`Material.use_nodes` / `World.use_nodes` emit DeprecationWarnings** — they
    still work on 5.2, removal is slated for Blender 6.0. Keep helpers 4.x-compatible
-   (the Windows pipeline uses portable Blender 4.2 in `Tools/UEImport/vendor/blender`),
-   so leave `use_nodes` in until the Windows vendor is bumped too.
+   so they run unmodified on every pinned install — leave `use_nodes` in.
 3. **pip is preconfigured to an unreachable corporate mirror**
    (`artifactory.grubhub.com` → connect timeouts). Always pass
    `-i https://pypi.org/simple` for one-off Python packages.
@@ -91,10 +90,11 @@ Probe script kept at: `.agents/skills/unity-fbx-polish/bin/probe_blender.py` (§
 
 ## 5. Windows side (for context)
 
-`Tools/UEImport/cue4parse/setup-prereqs.ps1` installs portable Blender **4.2 LTS**
-into `Tools/UEImport/vendor/blender` (Windows-only zip path; 4.2 went EOL Jul 2026).
-Bumping it to 5.2 LTS is a separate, deliberate change — until then helpers must
-stay 4.x-compatible (see §3.2).
+`Tools/UEImport/cue4parse/setup-prereqs.ps1` installs portable Blender **5.2.2 LTS**
+into `Tools/UEImport/vendor/blender` (Windows-only zip path) — the same pin as
+macOS/Linux since the 5.2.2 standardisation (4.2 went EOL Jul 2026 and its vendor
+build was retired). Helpers stay 4.x-compatible (see §3.2) so they run unmodified
+on every pinned install.
 
 ## 6. Research sources (2026-10-02)
 

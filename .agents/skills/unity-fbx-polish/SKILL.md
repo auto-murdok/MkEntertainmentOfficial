@@ -13,14 +13,11 @@ replication of world-aligned triplanar shaders so previews show the true
 in-game look.
 
 ## Tooling
-- Headless Blender **5.2.2 LTS** (macOS Apple Silicon): Homebrew cask
-  `blender` links a CLI wrapper — use `blender` on PATH
-  (`/opt/homebrew/bin/blender` → `/Applications/Blender.app/Contents/MacOS/Blender`).
-  Run scripts with `blender --background --python <script> -- <args>`.
-  Windows keeps its portable Blender 4.2 LTS in
-  `Tools/UEImport/vendor/blender` (setup-prereqs.ps1), so helpers must stay
-  4.x-compatible (e.g. keep `use_nodes`; it only *warns* on 5.2, removal is
-  slated for 6.0).
+- Headless Blender **5.2.2 LTS** on all platforms (macOS Apple Silicon:
+  Homebrew cask `blender` on PATH; Windows: portable in
+  `Tools/UEImport/vendor/blender` via setup-prereqs.ps1; Linux: portable).
+  Helpers stay 4.x-compatible (e.g. keep `use_nodes`; it only *warns* on 5.2,
+  removal is slated for 6.0).
 - Verified on 5.2.2 (2026-10-02, Building_kit corner-wall round-trip): the
   legacy Python FBX I/O add-on `io_scene_fbx` is still bundled and
   factory-enabled, so `bpy.ops.import_scene.fbx` / `export_scene.fbx` — which

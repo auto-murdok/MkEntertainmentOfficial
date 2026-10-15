@@ -5,7 +5,7 @@
 .DESCRIPTION
     Downloads/installs, skipping anything already present:
       1. Portable .NET 10 SDK            -> vendor\dotnet
-      2. Portable Blender 4.2 LTS        -> vendor\blender
+      2. Portable Blender 5.2 LTS        -> vendor\blender
       3. CUE4Parse sources (recursive)   -> vendor\CUE4Parse
 
     Nothing is installed machine-wide; deleting the vendor folder removes
@@ -39,10 +39,10 @@ $blenderExe = Join-Path $VendorDir 'blender\blender.exe'
 if (Test-Path $blenderExe) {
     Write-Host "[skip] blender already present: $blenderExe"
 } else {
-    $ver = '4.2.9'
-    $zipUrl = "https://mirrors.dotsrc.org/blender/release/Blender4.2/blender-$ver-windows-x64.zip"
+    $ver = '5.2.2'
+    $zipUrl = "https://mirrors.dotsrc.org/blender/release/Blender5.2/blender-$ver-windows-x64.zip"
     $zip = Join-Path $VendorDir 'blender.zip'
-    Write-Host "[get ] blender $ver (~370 MB, dotsrc mirror) ..."
+    Write-Host "[get ] blender $ver (~386 MB, dotsrc mirror) ..."
     & curl.exe -L --retry 3 -o $zip $zipUrl
     if ($LASTEXITCODE -ne 0) { throw 'blender download failed' }
     Write-Host '[get ] extracting blender ...'

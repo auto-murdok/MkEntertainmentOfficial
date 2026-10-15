@@ -283,9 +283,10 @@ before touching UE import/export work.
   material/UV names); headless renders need **absolute** output paths; pip on
   this box needs `-i https://pypi.org/simple` (corporate mirror unreachable);
   `worldspace_preview.py` + repair helpers live in the `unity-fbx-polish` skill.
-- **Windows side:** portable Blender 4.2 stays in `Tools/UEImport/vendor/blender`
-  (setup-prereqs.ps1); keep `bin/*.py` helpers 4.x-compatible (e.g. `use_nodes`,
-  only deprecated until 6.0) until that vendor is deliberately bumped to 5.2 LTS.
+- **Windows side:** portable Blender **5.2.2 LTS** in `Tools/UEImport/vendor/blender`
+  (setup-prereqs.ps1, same pin as macOS/Linux); keep `bin/*.py` helpers
+  4.x-compatible (e.g. `use_nodes`, only deprecated until 6.0) so they run
+  unmodified on every pinned install.
 - **`_blender/` is the Blender working tree** (PR #13): `tools/` working scripts
   (resolve repo root from `__file__`, never hardcode a machine path), `polish/`
   committed outputs + **curated proof renders**, `tests/` test scenes.

@@ -16,7 +16,7 @@ folder.
 |---|---|---|
 | Unreal Engine 5.x + the source `.uproject` | Leg #1, cooking | Engine auto-discovered from the `.uproject` `EngineAssociation` |
 | Portable .NET 10 SDK | Leg #2 | `setup-prereqs.ps1` installs to `Tools/UEImport/vendor/dotnet` (gitignored) |
-| Portable Blender 4.2 | Leg #2 | glb→FBX conversion; `setup-prereqs.ps1` installs to `vendor/blender` |
+| Portable Blender 5.2.2 LTS | Leg #2 | glb→FBX conversion; `setup-prereqs.ps1` installs to `vendor/blender` |
 | CUE4Parse sources | Leg #2 | `setup-prereqs.ps1` clones to `vendor/CUE4Parse` |
 
 ## Which leg do I need?

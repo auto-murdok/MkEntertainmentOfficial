@@ -498,6 +498,10 @@ namespace Game.Editor
 
         public static int PurgeUnreferencedBuildingKitRawTextures()
         {
+            // Kit moved out of the project (blender-playground/models/building_kit):
+            // retired to a no-op. Kept for history; remove with the method if desired.
+            UnityEngine.Debug.Log("PurgeUnreferencedBuildingKitRawTextures: retired, kit lives in blender-playground.");
+            return 0;
             // Textures in ImportedContent/Building_kit/Textures/ that are NOT referenced by any material
             string[] matGuids = AssetDatabase.FindAssets("t:Material", new[] { "Assets" });
             var referenced = new HashSet<string>();

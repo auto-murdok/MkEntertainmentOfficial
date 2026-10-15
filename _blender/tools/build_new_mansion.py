@@ -14,7 +14,13 @@ from mathutils import Vector, Matrix
 
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(TOOLS_DIR, "..", ".."))
-MESHDIR = os.path.join(REPO, "Assets/ImportedContent/Building_kit/Meshes")
+# Kit lives outside the repo (blender-playground); override with BUILDING_KIT_DIR.
+KIT_DIR = os.environ.get("BUILDING_KIT_DIR",
+                          os.path.join(REPO, "Assets/ImportedContent/Building_kit"))
+MESHDIR = os.path.join(KIT_DIR, "Meshes")
+if not os.path.isdir(MESHDIR):
+    raise SystemExit("MESHDIR missing: " + MESHDIR
+                     + " — set BUILDING_KIT_DIR to the kit root.")
 MATLIB = os.path.join(REPO, "_blender/polish/matlib_building_kit.json")
 OUT_BLEND = os.path.join(REPO, "_blender/tests/new_mansion.blend")
 matmap = json.load(open(MATLIB))
@@ -387,8 +393,21 @@ for _o in [o for o in bpy.data.objects if o.type == 'MESH' and o.name.startswith
             _p.material_index = _dst
 print("  default-mat remap done")
 
-def load_img(rel, noncolor=False):
+# kit_resolve maps matlib texture paths (repo-relative or kit-relative) to disk.
+_KIT_PREFIX = "Assets/ImportedContent/Building_kit/"
+def kit_resolve(rel):
+    """Resolve a matlib texture path: repo-relative (old JSON/layout),
+    kit-relative (rebuilt JSON), or absolute."""
+    if os.path.isabs(rel):
+        return rel
     p = os.path.join(REPO, rel)
+    if os.path.exists(p):
+        return p
+    if rel.startswith(_KIT_PREFIX):
+        return os.path.join(KIT_DIR, rel[len(_KIT_PREFIX):])
+    return os.path.join(KIT_DIR, rel)
+def load_img(rel, noncolor=False):
+    p = kit_resolve(rel)
     for im in bpy.data.images:
         if os.path.abspath(im.filepath) == os.path.abspath(p):
             return im

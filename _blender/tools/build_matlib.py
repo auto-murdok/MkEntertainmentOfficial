@@ -10,19 +10,22 @@ import json, os, re, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))   # _blender/tools
 REPO = os.path.dirname(os.path.dirname(HERE))       # repo root
-MAT_DIR = os.path.join(REPO, 'Assets/ImportedContent/Building_kit/Materials')
+# Kit lives outside the repo (blender-playground); override with BUILDING_KIT_DIR.
+KIT_DIR = os.environ.get("BUILDING_KIT_DIR",
+                          os.path.join(REPO, 'Assets/ImportedContent/Building_kit'))
+MAT_DIR = os.path.join(KIT_DIR, 'Materials')
 OUT = os.path.join(REPO, '_blender/polish/matlib_building_kit.json')
 
 def build_guid_index():
     idx = {}
     out = subprocess.run(['grep', '-r', '--include=*.meta', '-H', '-m1', '^guid: ',
-                          os.path.join(REPO, 'Assets')],
+                          KIT_DIR],
                          capture_output=True, text=True).stdout
     for line in out.splitlines():
         path, _, guid = line.partition(':guid: ')
         guid = guid.strip()
         if guid:
-            idx[guid] = os.path.relpath(path[:-5], REPO)  # strip '.meta'
+            idx[guid] = os.path.relpath(path[:-5], KIT_DIR)  # strip '.meta'
     return idx
 
 def parse_mat(path):
@@ -40,7 +43,7 @@ def parse_mat(path):
 
 def classify_orm(path):
     """unity (R=metal/A=smooth) vs gltf (B=metal/G=rough) vs unknown."""
-    out = subprocess.run(['identify', '-verbose', os.path.join(REPO, path)],
+    out = subprocess.run(['identify', '-verbose', os.path.join(KIT_DIR, path)],
                          capture_output=True, text=True).stdout
     def stddev(ch):
         m = re.search(ch + r':\n(?:[^\n]*\n){0,4}?\s+standard deviation: ([0-9.e+-]+|-)', out)

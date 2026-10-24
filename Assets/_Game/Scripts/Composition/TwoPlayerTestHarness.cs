@@ -44,6 +44,7 @@ public class TwoPlayerTestHarness : MonoBehaviour
     private float _strafeSign = 1f;
     private uint _rawShotId = 100000;
     private int _honestShotsFired;
+    private int _shotsSinceReload;
     private int _rawShotsSent;
     private bool _targetDead;
     private string _phase = "boot";
@@ -340,10 +341,25 @@ public class TwoPlayerTestHarness : MonoBehaviour
             _phase = _targetDead ? "target dead - run complete" : "honest fire";
             if (t >= 3f && !_targetDead && Time.unscaledTime >= _nextShotTime && Mathf.Abs(yawError) < AimToleranceDegrees)
             {
-                myLocomotion.HandleShoot();
-                _honestShotsFired++;
-                _nextShotTime = Time.unscaledTime + FireInterval;
-                Debug.Log($"[TPTEST] honest shot #{_honestShotsFired} (yawErr {yawError:F1})");
+                if (_shotsSinceReload >= 5)
+                {
+                    // The handgun does not auto-reload (the game's HUD asks
+                    // for [R]): work the reload like a player would, through
+                    // the production path, and give the server-committed
+                    // reload its 2 s before firing again.
+                    myLocomotion.HandleReload();
+                    _shotsSinceReload = 0;
+                    _nextShotTime = Time.unscaledTime + 2.3f;
+                    Debug.Log("[TPTEST] reload (clip spent)");
+                }
+                else
+                {
+                    myLocomotion.HandleShoot();
+                    _honestShotsFired++;
+                    _shotsSinceReload++;
+                    _nextShotTime = Time.unscaledTime + FireInterval;
+                    Debug.Log($"[TPTEST] honest shot #{_honestShotsFired} (yawErr {yawError:F1})");
+                }
             }
             return;
         }

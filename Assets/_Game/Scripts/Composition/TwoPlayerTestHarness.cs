@@ -126,6 +126,16 @@ public class TwoPlayerTestHarness : MonoBehaviour
             return;
         }
 
+        // Quit check at the very top: after the host finishes and leaves,
+        // this peer's NetworkManager stops listening and every guard below
+        // would starve the quit forever.
+        if (_rangeReady && Time.unscaledTime - _t0 >= ScenarioLength)
+        {
+            Debug.Log("[TPTEST] scenario complete, quitting");
+            Application.Quit();
+            return;
+        }
+
         if (!_menuDriven)
         {
             DriveMenu();
@@ -146,15 +156,6 @@ public class TwoPlayerTestHarness : MonoBehaviour
         }
 
         float t = Time.unscaledTime - _t0;
-
-        // The quit check comes FIRST: when the target dies its shooter
-        // component can despawn, and the guards below would starve this.
-        if (t >= ScenarioLength)
-        {
-            Debug.Log("[TPTEST] scenario complete, quitting");
-            Application.Quit();
-            return;
-        }
 
         if (!_spawnerDisabled)
         {

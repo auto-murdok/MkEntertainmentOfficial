@@ -47,6 +47,8 @@ public class TwoPlayerTestHarness : MonoBehaviour
     private int _rawShotsSent;
     private bool _targetDead;
     private string _phase = "boot";
+    private int _framesSinceFpsLog;
+    private float _lastFpsLogAt;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
@@ -95,7 +97,11 @@ public class TwoPlayerTestHarness : MonoBehaviour
         };
         _simDelayMs = GetFloatArg("-simdelay", 0f);
         Application.runInBackground = true;
-        Debug.Log($"[TPTEST] harness active, role={_role}, simDelay={_simDelayMs}ms");
+        // Two game instances share this machine with the Editor: run the
+        // test builds at the lowest quality tier so the render load stays
+        // honest. (Also makes any fps collapse in the log unambiguous.)
+        QualitySettings.SetQualityLevel(0, applyExpensiveChanges: true);
+        Debug.Log($"[TPTEST] harness active, role={_role}, simDelay={_simDelayMs}ms, quality={QualitySettings.names[QualitySettings.GetQualityLevel()]}");
 
         if (_simDelayMs > 0f)
         {
@@ -124,6 +130,20 @@ public class TwoPlayerTestHarness : MonoBehaviour
         if (_role == Role.None)
         {
             return;
+        }
+
+        // Render-rate evidence: if a capture ever looks frozen, this log
+        // says whether the game itself stopped presenting frames.
+        _framesSinceFpsLog++;
+        if (Time.unscaledTime - _lastFpsLogAt >= 5f)
+        {
+            float span = Time.unscaledTime - _lastFpsLogAt;
+            if (_lastFpsLogAt > 0f)
+            {
+                Debug.Log($"[TPTEST] fps {(_framesSinceFpsLog / span):F1} (phase {_phase})");
+            }
+            _framesSinceFpsLog = 0;
+            _lastFpsLogAt = Time.unscaledTime;
         }
 
         // Quit check at the very top: after the host finishes and leaves,

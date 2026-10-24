@@ -3656,6 +3656,8 @@ GameObject:
   - component: {fileID: 135451146790745709}
   - component: {fileID: 6763533979837517273}
   - component: {fileID: 4320653987908449626}
+  - component: {fileID: 3098269015774702771}
+  - component: {fileID: 3541466781731205577}
   m_Layer: 6
   m_Name: FemaleCharacter
   m_TagString: Untagged
@@ -4031,6 +4033,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93c4cc7b1ff8c064aaf3717ff60379b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Game.Items::NetworkedDamageRelay
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3098269015774702771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7637503201366498390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5646ef1df22a1d84ea504f81e41c792c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Items::NetworkedShooter
+  ShowTopMostFoldoutHeaderGroup: 1
+  _weaponData: {fileID: 11400000, guid: 11daee24a678f9941a9c99fc1ba83919, type: 2}
+--- !u!114 &3541466781731205577
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7637503201366498390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7106f4e2dfcc7d74780eeb7f8cf5ba75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Items::HitHistoryRecorder
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &7654349148853518093
 GameObject:

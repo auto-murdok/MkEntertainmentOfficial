@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8b272ac5d5debc47abd02dc9cbc0c5f, type: 3}
+  m_Name: HandgunData
+  m_EditorClassIdentifier: Game.Items::WeaponData
+  _stats:
+    WeaponId: 1
+    Damage: 25
+    FireInterval: 0.2
+    ClipSize: 5
+    ReserveAmmo: 45
+    ReloadDuration: 2
+    Range: 30
+    SpreadDegrees: 0

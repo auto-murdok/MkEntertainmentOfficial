@@ -145,7 +145,7 @@ public class TwoPlayerTestHarness : MonoBehaviour
             return;
         }
 
-        float t = Time.time - _t0;
+        float t = Time.unscaledTime - _t0;
 
         // The quit check comes FIRST: when the target dies its shooter
         // component can despawn, and the guards below would starve this.
@@ -248,7 +248,7 @@ public class TwoPlayerTestHarness : MonoBehaviour
             };
         }
 
-        _t0 = Time.time;
+        _t0 = Time.unscaledTime;
         _nextShotTime = _t0 + 3f;
         _nextStrafeFlip = _t0 + 2f;
         _rangeReady = true;
@@ -287,10 +287,10 @@ public class TwoPlayerTestHarness : MonoBehaviour
             return;
         }
 
-        if (Time.time >= _nextStrafeFlip)
+        if (Time.unscaledTime >= _nextStrafeFlip)
         {
             _strafeSign = -_strafeSign;
-            _nextStrafeFlip = Time.time + StrafeFlipInterval;
+            _nextStrafeFlip = Time.unscaledTime + StrafeFlipInterval;
         }
         myLocomotion.setMovementInput(new Vector2(_strafeSign, 0f));
     }
@@ -310,11 +310,11 @@ public class TwoPlayerTestHarness : MonoBehaviour
         if (!cheater)
         {
             _phase = _targetDead ? "target dead - run complete" : "honest fire";
-            if (t >= 3f && !_targetDead && Time.time >= _nextShotTime && Mathf.Abs(yawError) < AimToleranceDegrees)
+            if (t >= 3f && !_targetDead && Time.unscaledTime >= _nextShotTime && Mathf.Abs(yawError) < AimToleranceDegrees)
             {
                 myLocomotion.HandleShoot();
                 _honestShotsFired++;
-                _nextShotTime = Time.time + FireInterval;
+                _nextShotTime = Time.unscaledTime + FireInterval;
                 Debug.Log($"[TPTEST] honest shot #{_honestShotsFired} (yawErr {yawError:F1})");
             }
             return;
@@ -338,20 +338,20 @@ public class TwoPlayerTestHarness : MonoBehaviour
         else if (t >= 9f && t < 13f)
         {
             _phase = "CHEAT: origin-spoofed requests";
-            if (Time.time >= _nextShotTime)
+            if (Time.unscaledTime >= _nextShotTime)
             {
                 SubmitRaw(myShooter, myGun, chest, spoofOrigin: true);
-                _nextShotTime = Time.time + 0.6f;
+                _nextShotTime = Time.unscaledTime + 0.6f;
             }
         }
         else if (t >= 15f)
         {
             _phase = _targetDead ? "target dead - run complete" : "honest fire (after cheat)";
-            if (!_targetDead && Time.time >= _nextShotTime && Mathf.Abs(yawError) < AimToleranceDegrees)
+            if (!_targetDead && Time.unscaledTime >= _nextShotTime && Mathf.Abs(yawError) < AimToleranceDegrees)
             {
                 myLocomotion.HandleShoot();
                 _honestShotsFired++;
-                _nextShotTime = Time.time + FireInterval;
+                _nextShotTime = Time.unscaledTime + FireInterval;
             }
         }
         else
@@ -448,7 +448,7 @@ public class TwoPlayerTestHarness : MonoBehaviour
         }
 
         // Sync flash: visible on both peers in the first seconds of the clock.
-        if (_rangeReady && Time.time - _t0 < 2f)
+        if (_rangeReady && Time.unscaledTime - _t0 < 2f)
         {
             GUIStyle banner = new GUIStyle(style) { fontSize = 54, alignment = TextAnchor.MiddleCenter };
             GUI.Label(new Rect(0, 150, Screen.width, 80), "— RUN START —", banner);

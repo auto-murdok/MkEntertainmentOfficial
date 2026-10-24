@@ -6,10 +6,16 @@ name: CI
 # guarded to same-repository branches only, and the workflow uses no
 # secrets beyond the default read-only GITHUB_TOKEN.
 #
-# Known baseline: GameCliArgsTests.IsAutomated_FalseForPlainLaunch fails
-# under ANY automated harness (it asserts a non-batchmode launch, and test
-# runs are batchmode by definition). It fails identically on unmodified
-# main; it is a suite issue to settle separately, not a CI exclusion.
+# Known batchmode baseline (verified identical on unmodified main,
+# 2026-10-24 — these are suite issues to settle separately, not CI
+# exclusions, and no test is filtered out):
+# - EditMode 107/108: GameCliArgsTests.IsAutomated_FalseForPlainLaunch
+#   asserts a non-batchmode launch; automated runs are batchmode by
+#   definition.
+# - PlayMode 134/136: BulletProjectilePlayTests
+#   .MaxTravelDistance_BulletIsReleasedIntoEmptySpace and
+#   PauseMenuControllerPlayTests.SetOpen_TogglesVisibilityAndCursor
+#   (the latter asserts cursor re-lock, impossible headless).
 
 on:
   pull_request:

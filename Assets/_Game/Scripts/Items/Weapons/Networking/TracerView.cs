@@ -25,6 +25,16 @@ public class TracerView : MonoBehaviour
     private readonly List<Tracer> _pool = new List<Tracer>();
     private Material _material;
 
+    // The tracer material, supplied by NetworkedShooter from a serialized
+    // asset reference on the player prefab. An asset-referenced shader can
+    // never be stripped from a build — unlike Shader.Find names, which the
+    // build strips when nothing references them (the reason the fallback
+    // chain below once produced a null shader and threw in standalone
+    // builds). The chain stays as a safety net for unwired contexts, and if
+    // every route fails the tracer renders with the primitive's default
+    // material instead of throwing: a grey tracer beats an exception.
+    public static Material SharedMaterial;
+
     public static void Spawn(Vector3 from, Vector3 to)
     {
         if (from == to)
@@ -46,16 +56,21 @@ public class TracerView : MonoBehaviour
         GameObject host = new GameObject(nameof(TracerView));
         DontDestroyOnLoad(host);
         _instance = host.AddComponent<TracerView>();
+        _instance._material = SharedMaterial != null ? SharedMaterial : CreateFallbackMaterial();
+    }
 
-        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-        if (shader == null)
+    private static Material CreateFallbackMaterial()
+    {
+        string[] shaderNames = { "Universal Render Pipeline/Unlit", "Unlit/Color", "Sprites/Default" };
+        foreach (string shaderName in shaderNames)
         {
-            shader = Shader.Find("Unlit/Color");
+            Shader shader = Shader.Find(shaderName);
+            if (shader != null)
+            {
+                return new Material(shader) { color = new Color(1f, 0.85f, 0.45f) };
+            }
         }
-        _instance._material = new Material(shader)
-        {
-            color = new Color(1f, 0.85f, 0.45f),
-        };
+        return null;
     }
 
     private void SpawnInternal(Vector3 from, Vector3 to)
@@ -80,7 +95,10 @@ public class TracerView : MonoBehaviour
             {
                 Destroy(collider); // visual only: must never enter physics
             }
-            go.GetComponent<MeshRenderer>().sharedMaterial = _material;
+            if (_material != null)
+            {
+                go.GetComponent<MeshRenderer>().sharedMaterial = _material;
+            }
             tracer = new Tracer { GameObject = go };
             _pool.Add(tracer);
         }

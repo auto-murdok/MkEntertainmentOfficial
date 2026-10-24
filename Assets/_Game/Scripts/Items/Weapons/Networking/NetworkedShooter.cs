@@ -33,6 +33,10 @@ public class NetworkedShooter : NetworkBehaviour
 {
     [SerializeField] private WeaponData _weaponData;
 
+    // Wired on the player prefab. Handed to TracerView so the tracer shader
+    // is asset-referenced and can never be stripped from a build.
+    [SerializeField] private Material _tracerMaterial;
+
     // Owner-only: raised when the server confirms this peer's shot hit
     // (true = the hit killed). The seam for hitmarker UI/audio.
     public event Action<bool> HitConfirmed;
@@ -50,6 +54,11 @@ public class NetworkedShooter : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        if (_tracerMaterial != null)
+        {
+            TracerView.SharedMaterial = _tracerMaterial;
+        }
+
         _handgun = GetComponentInChildren<Handgun>();
         if (_handgun == null)
         {

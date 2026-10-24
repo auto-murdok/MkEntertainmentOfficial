@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -9,6 +10,17 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
     [SerializeField] private GameObject _bulletPrefab;
     [SerializeField] private Transform _shootPoint;
     private FirearmEvents _firearmEvents; public FirearmEvents fireArmEvents { get { return _firearmEvents; } }
+
+    // Networked play (see NetworkedShooter): when a session is live the shot
+    // is resolved by the server as a hitscan, so no local projectile is
+    // launched — ShotLaunched carries the shot to the network layer instead.
+    // Offline and in tests useNetworkShot stays false and the pooled-bullet
+    // path below is exactly as before.
+    public bool useNetworkShot;
+    public event Action<Vector3, Vector3> ShotLaunched;
+    // Raised only when a reload actually starts (mirrors the gate in
+    // TriggerReload), so the network layer never reports phantom reloads.
+    public event Action ReloadStarted;
 
     // Amount of positional kick applied to the weapon when firing.
     private const int GunKickAmount = 5;
@@ -87,6 +99,18 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
     // Current reserve pool (read by HUD/tests).
     public int reserveAmmo => _context.reserveAmmo;
 
+    // The server's muzzle estimate for shot-origin validation
+    // (NetworkedShooter reads its own peer copy of this gun).
+    public Vector3 muzzleWorldPosition => _shootPoint != null ? _shootPoint.position : transform.position;
+
+    // Server reconciliation: the authority's ammo copy wins. Called on the
+    // owner when a shot or reload confirms (NetworkedShooter).
+    public void SyncAmmo(int clipSize, int reserveAmmo)
+    {
+        _context.clipSize = clipSize;
+        _context.reserveAmmo = reserveAmmo;
+    }
+
     // Ammo economy: ammo pickups and future systems add to the reserve pool.
     public void AddReserveAmmo(int amount)
     {
@@ -124,6 +148,7 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
         if (_context.clipSize < _context.maxClipSize && _context.reserveAmmo > 0)
         {
             _context.isReloading = true;
+            ReloadStarted?.Invoke();
         }
     }
 
@@ -141,6 +166,14 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
         // embedded in the gun geometry itself.
         spawnPos += direction * MuzzleExitOffset;
 
+        if (useNetworkShot)
+        {
+            // Server-resolved shot: no local projectile — its collision would
+            // double-apply damage through the legacy relay when it lands.
+            ShotLaunched?.Invoke(spawnPos, direction);
+            return true;
+        }
+
         BulletProjectile bullet = _bulletPool.Get();
         bullet.Launch(spawnPos, Quaternion.LookRotation(direction, Vector3.up), transform.root.gameObject);
         CombatLog.ReportImpact($"Bullet launched from {spawnPos:F2} dir {direction:F2}", CombatLog.EntryKind.Debug);
@@ -150,6 +183,38 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
     public void RegisterEvents(FirearmEvents fireArmEvents)
     {
         _firearmEvents = fireArmEvents;
+    }
+
+    // Remote peers play the gun's fire cycle from the confirmed-shot event:
+    // their local FSM is never driven (no input reaches it), so the state
+    // machine's cross-fades are mirrored here — into fakeGun_shoot on the
+    // shot, back to Idle after the rechamber interval, exactly like
+    // HandgunShootingState does for the owner (same hashes, same 0f fade).
+    private static readonly int ShootAnimationHash = Animator.StringToHash("fakeGun_shoot");
+    private static readonly int IdleAnimationHash = Animator.StringToHash("Idle");
+
+    public void PlayFireAnimation()
+    {
+        Animator animator = _context.animator;
+        if (animator == null)
+        {
+            return;
+        }
+
+        animator.CrossFade(ShootAnimationHash, 0f);
+        if (isActiveAndEnabled)
+        {
+            StartCoroutine(ReturnToIdleAfterRechamber());
+        }
+    }
+
+    private IEnumerator ReturnToIdleAfterRechamber()
+    {
+        yield return new WaitForSeconds(_context.fireRate);
+        if (_context.animator != null)
+        {
+            _context.animator.CrossFade(IdleAnimationHash, 0f);
+        }
     }
 
     private void LogStateChanged(HandgunState state) => Debug.Log($"[{gameObject.name}] -> {state}");

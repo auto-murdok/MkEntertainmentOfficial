@@ -91,6 +91,14 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
             if (_context.agent != null)
             {
                 _context.agent.radius = data.defaultAgentRadius;
+                // The shared prefab's NavMeshAgent is authored with speed,
+                // acceleration and angular speed all zero, and nothing else
+                // ever sets them — the agent pathfinds but never moves.
+                // Chasing is the only destination-driving state, so the
+                // agent runs at this archetype's chase speed.
+                _context.agent.speed = data.chaseSpeed;
+                _context.agent.acceleration = data.agentAcceleration;
+                _context.agent.angularSpeed = data.agentAngularSpeed;
             }
 
             if (data.animatorOverride != null && _context.animator != null)

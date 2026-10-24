@@ -46,6 +46,10 @@ public class ZombieData : ScriptableObject
     [Header("Locomotion")]
     [SerializeField] private float _walkSpeed = 1.5f;
     [SerializeField] private float _chaseSpeed = 3.5f;
+    [Tooltip("NavMeshAgent acceleration applied when this data is assigned. The shared zombie prefab ships with a zeroed agent, so locomotion values must come from this data.")]
+    [SerializeField] private float _agentAcceleration = 8f;
+    [Tooltip("NavMeshAgent angular speed (degrees/sec) applied when this data is assigned.")]
+    [SerializeField] private float _agentAngularSpeed = 120f;
 
     [Header("Ammo Drop (ammunition economy)")]
     [Tooltip("Pickup prefab instantiated at the corpse position on death. Null = no drop.")]
@@ -77,6 +81,8 @@ public class ZombieData : ScriptableObject
     public float handAttackDuration => _handAttackDuration;
     public float walkSpeed => _walkSpeed;
     public float chaseSpeed => _chaseSpeed;
+    public float agentAcceleration => _agentAcceleration;
+    public float agentAngularSpeed => _agentAngularSpeed;
     public GameObject ammoDropPrefab => _ammoDropPrefab;
     public float biteCooldown => _biteCooldown;
     public float handAttackCooldown => _handAttackCooldown;

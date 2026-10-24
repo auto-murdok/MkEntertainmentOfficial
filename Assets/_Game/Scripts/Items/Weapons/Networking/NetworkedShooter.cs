@@ -41,6 +41,16 @@ public class NetworkedShooter : NetworkBehaviour
     // (true = the hit killed). The seam for hitmarker UI/audio.
     public event Action<bool> HitConfirmed;
 
+    // Two-player test harness evidence (TwoPlayerTestHarness reads these on
+    // the server peer to burn the verdict stream into the proof videos).
+    public static int DebugShotsAccepted;
+    public static int DebugShotsRejected;
+    public static ShotRejection DebugLastRejection = ShotRejection.None;
+
+    // Test seam: lets the harness submit a hand-built request through the
+    // exact production RPC path (a cheating client would not use the FSM).
+    public void DebugSubmitShotForTest(ShotRequest request) => SubmitShotRpc(request);
+
     private WeaponStats Stats => _weaponData != null ? _weaponData.Stats : WeaponStats.Handgun;
 
     private Handgun _handgun;
@@ -153,8 +163,11 @@ public class NetworkedShooter : NetworkBehaviour
         ShotRejection verdict = ShotValidator.TryAccept(_serverState, Stats, now, request.Origin, serverMuzzle);
         if (verdict != ShotRejection.None)
         {
+            DebugShotsRejected++;
+            DebugLastRejection = verdict;
             return; // rejected silently: the owner's predicted tracer was cosmetic only
         }
+        DebugShotsAccepted++;
 
         Vector3 direction = request.Direction.normalized;
         ResolveShot(request, direction, out Vector3 endPoint, out NetworkObject victim, out bool killed);

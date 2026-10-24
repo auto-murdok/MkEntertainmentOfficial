@@ -101,6 +101,13 @@ public class TwoPlayerTestHarness : MonoBehaviour
         // test builds at the lowest quality tier so the render load stays
         // honest. (Also makes any fps collapse in the log unambiguous.)
         QualitySettings.SetQualityLevel(0, applyExpensiveChanges: true);
+        // VSync ON + a frame cap: an uncapped flip-model swapchain takes
+        // the independent-flip/direct-scanout path, whose frames the DWM
+        // compositor (and therefore GDI capture) never sees — the games
+        // render at 600+ fps while screen capture sits on a stale frame.
+        // A vsynced swapchain stays composed and capturable.
+        QualitySettings.vSyncCount = 1;
+        Application.targetFrameRate = 60;
         Debug.Log($"[TPTEST] harness active, role={_role}, simDelay={_simDelayMs}ms, quality={QualitySettings.names[QualitySettings.GetQualityLevel()]}");
 
         if (_simDelayMs > 0f)

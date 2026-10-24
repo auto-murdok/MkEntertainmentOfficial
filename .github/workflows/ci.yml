@@ -1,0 +1,77 @@
+name: CI
+
+# Unity test suite on a self-hosted runner (the gaming PC, where the editor
+# is installed and licensed). This repository is public, so fork pull
+# requests must never execute code on that machine: every job below is
+# guarded to same-repository branches only, and the workflow uses no
+# secrets beyond the default read-only GITHUB_TOKEN.
+#
+# Known baseline: GameCliArgsTests.IsAutomated_FalseForPlainLaunch fails
+# under ANY automated harness (it asserts a non-batchmode launch, and test
+# runs are batchmode by definition). It fails identically on unmodified
+# main; it is a suite issue to settle separately, not a CI exclusion.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One Unity instance at a time against the shared Library on the runner.
+concurrency:
+  group: unity-ci-gamingpc
+  cancel-in-progress: false
+
+jobs:
+  editmode:
+    name: EditMode tests
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, Windows, X64, unity]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Keep Library/ warm between runs on this machine.
+          clean: false
+          fetch-depth: 1
+      - name: Run EditMode tests
+        shell: powershell
+        run: |
+          $unity = Join-Path $env:LOCALAPPDATA 'Unity\bin\unity.exe'
+          & $unity test . --mode EditMode --output test-results-editmode.xml
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: editmode-test-results
+          path: test-results-editmode.xml
+          if-no-files-found: warn
+
+  playmode:
+    name: PlayMode tests
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, Windows, X64, unity]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+          fetch-depth: 1
+      - name: Run PlayMode tests
+        shell: powershell
+        run: |
+          $unity = Join-Path $env:LOCALAPPDATA 'Unity\bin\unity.exe'
+          & $unity test . --mode PlayMode --output test-results-playmode.xml
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playmode-test-results
+          path: test-results-playmode.xml
+          if-no-files-found: warn

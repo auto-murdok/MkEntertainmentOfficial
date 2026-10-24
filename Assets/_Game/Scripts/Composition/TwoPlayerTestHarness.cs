@@ -147,6 +147,15 @@ public class TwoPlayerTestHarness : MonoBehaviour
 
         float t = Time.time - _t0;
 
+        // The quit check comes FIRST: when the target dies its shooter
+        // component can despawn, and the guards below would starve this.
+        if (t >= ScenarioLength)
+        {
+            Debug.Log("[TPTEST] scenario complete, quitting");
+            Application.Quit();
+            return;
+        }
+
         if (!_spawnerDisabled)
         {
             ZombieSpawner spawner = FindFirstObjectByType<ZombieSpawner>();
@@ -180,12 +189,6 @@ public class TwoPlayerTestHarness : MonoBehaviour
             case Role.Cheater:
                 RunShooter(t, myLocomotion, theirs, theirBrain, cheater: true);
                 break;
-        }
-
-        if (t >= ScenarioLength)
-        {
-            Debug.Log("[TPTEST] scenario complete, quitting");
-            Application.Quit();
         }
     }
 

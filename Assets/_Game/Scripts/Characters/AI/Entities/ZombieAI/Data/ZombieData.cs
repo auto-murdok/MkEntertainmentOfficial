@@ -42,6 +42,14 @@ public class ZombieData : ScriptableObject
     [SerializeField] private float _walkSpeed = 1.5f;
     [SerializeField] private float _chaseSpeed = 3.5f;
 
+    [Header("Patrol (lite random wander while no survivor is detected)")]
+    [SerializeField] private bool _patrolEnabled = true;
+    [Tooltip("Patrol points are sampled within this radius of the zombie's spawn position.")]
+    [SerializeField] private float _patrolRadius = 8f;
+    [Tooltip("Idle pause between patrol legs, seconds (random in range).")]
+    [SerializeField] private float _patrolPauseMin = 2f;
+    [SerializeField] private float _patrolPauseMax = 5f;
+
     [Header("Ammo Drop (ammunition economy)")]
     [Tooltip("Pickup prefab instantiated at the corpse position on death. Null = no drop.")]
     [SerializeField] private GameObject _ammoDropPrefab;
@@ -70,5 +78,9 @@ public class ZombieData : ScriptableObject
     public float handAttackDuration => _handAttackDuration;
     public float walkSpeed => _walkSpeed;
     public float chaseSpeed => _chaseSpeed;
+    public bool patrolEnabled => _patrolEnabled;
+    public float patrolRadius => _patrolRadius;
+    public float patrolPauseMin => _patrolPauseMin;
+    public float patrolPauseMax => _patrolPauseMax;
     public GameObject ammoDropPrefab => _ammoDropPrefab;
 }

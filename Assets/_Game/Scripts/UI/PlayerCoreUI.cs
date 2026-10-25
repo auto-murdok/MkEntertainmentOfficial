@@ -8,7 +8,6 @@ public class PlayerCoreUI : MonoBehaviour, IObserver<CharacterUIElement, Charact
     [Header("Connection (wired by the PlayerSpawner at runtime)")]
     public Subject<CharacterUIElement, CharacterUIContext> _subject;
     [SerializeField] private GameObject _aimUi;
-    [SerializeField] private GameObject _aimCamera;
     public GameObject _aimTarget;
     [SerializeField] private TMP_Text _clipInfo;
     private bool _subscribed;
@@ -18,9 +17,11 @@ public class PlayerCoreUI : MonoBehaviour, IObserver<CharacterUIElement, Charact
         switch (element)
         {
             case CharacterUIElement.AimUI:
-                // The crosshair, aim camera and aim target are toggled together.
+                // The crosshair and aim target toggle together. The aim
+                // CAMERA is deliberately not toggled here: camera mode is
+                // gameplay state, owned by CameraModeController (driven by
+                // the character state machine), not a UI side effect.
                 if (_aimUi != null) _aimUi.SetActive(context.displayCrosshair);
-                if (_aimCamera != null) _aimCamera.SetActive(context.displayCrosshair);
                 if (_aimTarget != null) _aimTarget.SetActive(context.displayCrosshair);
                 break;
             case CharacterUIElement.ShootUI:

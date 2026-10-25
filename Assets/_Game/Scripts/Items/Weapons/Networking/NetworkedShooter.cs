@@ -188,10 +188,26 @@ public class NetworkedShooter : NetworkBehaviour
             return;
         }
 
-        ShotValidator.TryStartReload(_serverState, Stats, NetworkManager.LocalTime.Time);
+        if (ShotValidator.TryStartReload(_serverState, Stats, NetworkManager.LocalTime.Time))
+        {
+            ReloadStartedFxRpc();
+        }
         // The commit (and the owner's ammo sync) happens in Update when the
         // server timer elapses — an interrupted client animation can never
         // lose or duplicate the refill.
+    }
+
+    // Reload visuals for every non-owner peer: the owner already played the
+    // pistol's reload clip locally in Handgun.TriggerReload, so only remote
+    // copies animate here. Purely cosmetic — the authoritative refill still
+    // commits on the server timer above.
+    [Rpc(SendTo.ClientsAndHost)]
+    private void ReloadStartedFxRpc()
+    {
+        if (!IsOwner)
+        {
+            _handgun?.PlayReloadAnimation();
+        }
     }
 
     private void ResolveShot(ShotRequest request, Vector3 direction,
@@ -265,6 +281,7 @@ public class NetworkedShooter : NetworkBehaviour
 
         TracerView.Spawn(origin, endPoint);
         _handgun?.PlayFireAnimation();
+        _handgun?.PlayPistolFireAnimation(serverClip == 0);
     }
 
     [Rpc(SendTo.Owner)]

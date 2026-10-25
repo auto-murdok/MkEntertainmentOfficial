@@ -67,11 +67,11 @@ public static class MansionPrefabFactory
         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         EnsureFolders();
 
-        Dictionary<string, MaterialDef> materialDefs = BuildMaterialDefinitions();
-        Dictionary<string, Material> materials = ConsolidateMaterials(materialDefs);
-
         ManifestData manifest = LoadManifest();
         List<FbxSource> sources = CollectSources(manifest);
+
+        Dictionary<string, MaterialDef> materialDefs = BuildMaterialDefinitions(sources);
+        Dictionary<string, Material> materials = ConsolidateMaterials(materialDefs);
 
         // Mesh reads (vertices/indices for bounds is fine without it, but
         // triangles + mirroring need CPU access): flip Read/Write on for
@@ -216,7 +216,7 @@ public static class MansionPrefabFactory
 
     // ---------- materials ----------
 
-    private static Dictionary<string, MaterialDef> BuildMaterialDefinitions()
+    private static Dictionary<string, MaterialDef> BuildMaterialDefinitions(List<FbxSource> sources)
     {
         var defs = new Dictionary<string, MaterialDef>();
 
@@ -292,6 +292,51 @@ public static class MansionPrefabFactory
                 }
             }
         }
+
+        // Stem fallback: any material name actually used by an FBX slot
+        // but missing from matlib/CSVs gets a def from same-stem textures
+        // (MI_Stove -> T_Stove_B/_N/_ORM). Names are discovered from the
+        // FBX sub-assets, so this stays data-driven like the rest.
+        var slotNames = new HashSet<string>();
+        foreach (FbxSource source in sources)
+        {
+            foreach (Material slot in AssetDatabase.LoadAllAssetsAtPath(source.Path).OfType<Material>())
+            {
+                slotNames.Add(CanonicalMaterialName(slot.name));
+            }
+        }
+        string[] textureFolders = { SourceDir + "/PropTextures", SourceDir + "/KitTextures" };
+        foreach (string name in slotNames.OrderBy(n => n))
+        {
+            if (defs.ContainsKey(name) || (!name.StartsWith("MI_") && !name.StartsWith("M_")))
+            {
+                continue;
+            }
+            string stem = name.StartsWith("MI_") ? name.Substring(3) : name.Substring(2);
+            string albedo = null;
+            foreach (string folder in textureFolders)
+            {
+                albedo = ResolveTexture(folder, $"T_{stem}_B.png") ?? ResolveTexture(folder, $"T_{stem}_BaseColor.png");
+                if (albedo != null)
+                {
+                    break;
+                }
+            }
+            if (albedo == null)
+            {
+                continue;
+            }
+            bool isProp = albedo.Contains("/PropTextures/");
+            string normalStem = $"T_{stem}_N";
+            string normal = isProp && File.Exists(Path.GetFullPath($"{SourceDir}/PropTexturesUnity/{normalStem}_N_Unity.png"))
+                ? $"{SourceDir}/PropTexturesUnity/{normalStem}_N_Unity.png"
+                : ResolveTexture(isProp ? SourceDir + "/PropTextures" : SourceDir + "/KitTextures", normalStem + ".png");
+            string mask = isProp && File.Exists(Path.GetFullPath($"{SourceDir}/PropTexturesUnity/T_{stem}_ORM_Pack.png"))
+                ? $"{SourceDir}/PropTexturesUnity/T_{stem}_ORM_Pack.png"
+                : null;
+            defs[name] = new MaterialDef { albedoPath = albedo, normalPath = normal, maskPath = mask };
+            Debug.Log($"[MansionFactory] Stem-fallback material def: {name} (stem {stem})");
+        }
         return defs;
     }
 
@@ -340,6 +385,28 @@ public static class MansionPrefabFactory
             {
                 material.SetFloat("_Cull", 0f);
                 material.doubleSidedGI = true;
+            }
+            if (name.IndexOf("Glass", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                // Glass is a surface type, not a texture set: transparent
+                // URP Lit, no metallic/occlusion response, tinted alpha.
+                // Covers the def'd glass MIs and MI_Glass_Window_Roof,
+                // which has no textures anywhere.
+                material.SetTexture("_MetallicGlossMap", null);
+                material.SetTexture("_OcclusionMap", null);
+                material.DisableKeyword("_METALLICSPECGLOSSMAP");
+                material.DisableKeyword("_OCCLUSIONMAP");
+                material.SetFloat("_Metallic", 0f);
+                material.SetFloat("_Smoothness", 0.9f);
+                material.SetFloat("_Surface", 1f);
+                material.SetFloat("_Blend", 0f);
+                material.SetFloat("_ZWrite", 0f);
+                material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                material.SetColor("_BaseColor",
+                    def.albedoPath != null
+                        ? new Color(1f, 1f, 1f, 0.35f)
+                        : new Color(0.72f, 0.83f, 0.9f, 0.3f));
+                material.renderQueue = 3000;
             }
             EditorUtility.SetDirty(material);
             materials[name] = material;

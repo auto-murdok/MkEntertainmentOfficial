@@ -26,6 +26,8 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     [SerializeField] private float _mouseLookSensitivity = 1f;
     [SerializeField] private float _gamepadLookSensitivity = 1f;
+    private float _baseLookSensitivity;
+    private float _aimLookSensitivityScale = 1f;
     private CameraUtils _cameraUtils;
 
     [Header("Item hooks")]
@@ -180,6 +182,11 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     private void LateUpdate()
     {
+        // Re-derived every frame: while aiming, look sensitivity is scaled
+        // by the FOV ratio between the follow and aim cameras (focal-length
+        // scaling — see AimSensitivity), so the same mouse movement tracks
+        // at the same on-screen speed across the zoom.
+        _cinemachineProps.lookSensivity = _baseLookSensitivity * (_context.isAiming ? _aimLookSensitivityScale : 1f);
         _cameraUtils.HandleCameraRotation(_context, _cinemachineProps);
     }
 
@@ -201,8 +208,15 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     public void setLookInput(Vector2 lookInput, string currentControlScheme)
     {
         _context.isCurrentDeviceMouse = currentControlScheme == KeyboardAndMouseScheme;
-        _cinemachineProps.lookSensivity = _context.isCurrentDeviceMouse ? _mouseLookSensitivity : _gamepadLookSensitivity;
+        _baseLookSensitivity = _context.isCurrentDeviceMouse ? _mouseLookSensitivity : _gamepadLookSensitivity;
         _context.lookInput = lookInput;
+    }
+
+    // Wired by CameraModeController when the camera rig is composed: the
+    // FOV-ratio look-sensitivity scale to apply while aiming (1 = unscaled).
+    public void SetAimLookSensitivityScale(float scale)
+    {
+        _aimLookSensitivityScale = scale > 0f ? scale : 1f;
     }
 
     public void setIsRunning(bool isRunning)
@@ -220,6 +234,9 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     {
         if (_equippedWeapon != null && _aimTarget != null)
         {
+            // _aimTarget is the AimTarget marker, which snaps to this
+            // frame's center-screen ray hit (see AimTarget) — its position
+            // IS the live aim point, free of the old smoothing lag.
             _equippedWeapon.TriggerShoot(_aimTarget.position);
         }
     }

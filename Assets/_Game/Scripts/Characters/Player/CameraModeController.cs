@@ -57,6 +57,16 @@ public class CameraModeController : MonoBehaviour
             _aimCamera.m_StandbyUpdate = CinemachineVirtualCameraBase.StandbyUpdateMode.Always;
         }
 
+        // Gold-standard aim feel: look sensitivity scales with the FOV
+        // ratio of the two cameras (focal-length scaling — see
+        // AimSensitivity), so on-screen tracking speed is the same at hip
+        // and while aiming instead of speeding up with the zoom.
+        if (_followCamera != null && _aimCamera != null && stateMachine is CharacterLocomotion locomotion)
+        {
+            locomotion.SetAimLookSensitivityScale(
+                AimSensitivity.FovRatioScale(_followCamera.m_Lens.FieldOfView, _aimCamera.m_Lens.FieldOfView));
+        }
+
         if (_stateMachine != null)
         {
             _stateMachine.OnStateChanged += HandleStateChanged;

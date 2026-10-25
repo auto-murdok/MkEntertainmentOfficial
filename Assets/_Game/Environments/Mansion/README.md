@@ -19,8 +19,9 @@ Architecture (researched gold standard, 2026-10-24; plan page:
   - `KitTextures/` — the kit's 54 textures (UE naming: `_B` colour,
     `_N` normal, `_ORM` packed data).
   - `Props/` + `PropTextures/` — the 161 mansion prop FBX (m-authored,
-    real `FbxLODGroup`s) and their textures. 132 of the 161 are placed
-    by the manifest. (Added in the props import PR.)
+    real `FbxLODGroup`s) and their 277 textures. 132 of the 161 are
+    placed by the manifest. The two `MansionProps*_manifest.csv` files
+    are the packs' provenance manifests (mesh → texture sets).
   - `matlib_building_kit.json` — the kit material library definition
     (input to material consolidation in the prefab factory).
 - **Materials/** — consolidated URP materials, extracted once by the

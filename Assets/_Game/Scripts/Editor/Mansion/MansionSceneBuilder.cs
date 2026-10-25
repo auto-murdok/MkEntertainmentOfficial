@@ -160,6 +160,15 @@ public static class MansionSceneBuilder
         instance.name = actor.label;
         instance.transform.localPosition = position;
         instance.transform.localRotation = rotation;
+        if (actor.mesh == "Plane")
+        {
+            // UE's engine Plane is 1x1 m; Unity's primitive Plane is
+            // 10x10 m at scale 1. The manifest scale is in UE units,
+            // so the horizontal components divide by 10 or the sheet
+            // lands 10x oversize (the pond covered 357x403 m instead
+            // of 35.7x40.3 m; census-verified 2026-10-25).
+            scale = new Vector3(scale.x / 10f, scale.y, scale.z / 10f);
+        }
         instance.transform.localScale = scale;
         return instance;
     }

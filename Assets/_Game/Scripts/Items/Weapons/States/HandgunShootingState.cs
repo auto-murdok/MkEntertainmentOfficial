@@ -45,6 +45,9 @@ public class HandgunShootingState : State<HandgunState, HandgunContext>
             fireArm.fireArmEvents.onShoot?.Invoke();
             // A dry fire (missing prefab) must not consume a round.
             character._context.clipSize--;
+            // The pistol model's own parts (slide/trigger) mirror the shot;
+            // emptying the clip plays the lock-back variant.
+            fireArm.PlayPistolFireAnimation(character._context.clipSize == 0);
         }
 
         if (character._context.UIController != null)

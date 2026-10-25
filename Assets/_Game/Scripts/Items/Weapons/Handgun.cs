@@ -9,6 +9,12 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
     [Header("Transforms")]
     [SerializeField] private GameObject _bulletPrefab;
     [SerializeField] private Transform _shootPoint;
+
+    // The Blender pistol model's own Animator (child of this prefab's root):
+    // plays the model's split cycle clips (slide blowback, lock-back,
+    // magazine reload). The root Animator keeps owning the whole-gun recoil
+    // pitch (fakeGun_shoot); this one owns the moving parts.
+    [SerializeField] private Animator pistolAnimator;
     private FirearmEvents _firearmEvents; public FirearmEvents fireArmEvents { get { return _firearmEvents; } }
 
     // Networked play (see NetworkedShooter): when a session is live the shot
@@ -149,6 +155,7 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
         {
             _context.isReloading = true;
             ReloadStarted?.Invoke();
+            PlayReloadAnimation();
         }
     }
 
@@ -192,6 +199,38 @@ public class Handgun : StateMachine<HandgunState, HandgunContext>, IFirearm
     // HandgunShootingState does for the owner (same hashes, same 0f fade).
     private static readonly int ShootAnimationHash = Animator.StringToHash("fakeGun_shoot");
     private static readonly int IdleAnimationHash = Animator.StringToHash("Idle");
+    private static readonly int PistolShootHash = Animator.StringToHash("pistol_shoot");
+    private static readonly int PistolShootLastHash = Animator.StringToHash("pistol_shoot_last");
+    private static readonly int PistolReloadHash = Animator.StringToHash("pistol_reload");
+
+    // The pistol model's moving parts for one confirmed shot. lastRound
+    // plays the lock-back variant: its end pose holds the slide open until
+    // the reload clip runs, exactly like the real cycle. Called by the
+    // owner's shooting state at fire time and by NetworkedShooter on remote
+    // peers when the shot confirms (with the server's post-shot clip).
+    public void PlayPistolFireAnimation(bool lastRound)
+    {
+        if (pistolAnimator == null)
+        {
+            return;
+        }
+
+        pistolAnimator.CrossFade(lastRound ? PistolShootLastHash : PistolShootHash, 0f);
+    }
+
+    // The pistol model's magazine cycle. The clip's state speed is tuned so
+    // the motion spans the server's reload duration. Called locally by
+    // TriggerReload and on remote peers via NetworkedShooter's reload FX
+    // broadcast.
+    public void PlayReloadAnimation()
+    {
+        if (pistolAnimator == null)
+        {
+            return;
+        }
+
+        pistolAnimator.CrossFade(PistolReloadHash, 0f);
+    }
 
     public void PlayFireAnimation()
     {

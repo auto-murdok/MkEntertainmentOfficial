@@ -5,7 +5,6 @@
 - Mirrored variants baked: 30 (30 meshes have negative-determinant placements)
 - MeshCollider exceptions (Read/Write kept ON): SM_Bathtub, SM_Sink
 - Manifest actors with no mesh (UE volumes/barriers, skipped by the builder): 0
-- Unmapped material names (rendered magenta, fix the defs): 3
+- Unmapped material names (rendered magenta, fix the defs): 2
   - Fbx Default Material
   - Lit
-  - MI_Glass_Window_Roof

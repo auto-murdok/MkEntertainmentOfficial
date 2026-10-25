@@ -76,8 +76,45 @@ namespace Game.Tests.EditMode
                 "Kit meshes placed by the manifest drifted (45 of 50 kit pieces are used by this level).");
         }
 
-        // NOTE: the full-coverage test (every manifest mesh resolves to a
-        // Source FBX, 'Plane' excepted) lands with the props import PR —
-        // until then 132 prop meshes are legitimately unresolved.
+        [Test]
+        public void ManifestMeshes_AllResolveToSourceFbx()
+        {
+            Manifest manifest = LoadManifest();
+            HashSet<string> manifestMeshes = UniqueManifestMeshes(manifest);
+
+            string sourceDir = Path.Combine(Application.dataPath, MansionSourceDir);
+            var available = new HashSet<string>();
+            foreach (string folder in new[] { "Kit", "Props" })
+            {
+                string dir = Path.Combine(sourceDir, folder);
+                Assert.IsTrue(Directory.Exists(dir), $"Source folder missing: {dir}");
+                foreach (string fbx in Directory.GetFiles(dir, "*.fbx"))
+                {
+                    available.Add(Path.GetFileNameWithoutExtension(fbx));
+                }
+            }
+
+            // 'Plane' is an engine basic shape with no FBX anywhere; the
+            // scene builder recreates it natively.
+            var unresolved = manifestMeshes.Where(m => m != "Plane" && !available.Contains(m)).ToList();
+            Assert.IsEmpty(unresolved,
+                "Manifest meshes with no source FBX: " + string.Join(", ", unresolved.Take(10)));
+        }
+
+        [Test]
+        public void PropsFbx_CoverExactly132ManifestMeshes()
+        {
+            Manifest manifest = LoadManifest();
+            HashSet<string> manifestMeshes = UniqueManifestMeshes(manifest);
+
+            string propsDir = Path.Combine(Application.dataPath, MansionSourceDir, "Props");
+            string[] propFbx = Directory.GetFiles(propsDir, "*.fbx");
+            Assert.AreEqual(161, propFbx.Length, "The props pack is 161 meshes; Source/Props drifted.");
+
+            var propNames = new HashSet<string>(propFbx.Select(f => Path.GetFileNameWithoutExtension(f)));
+            int covered = propNames.Count(manifestMeshes.Contains);
+            Assert.AreEqual(132, covered,
+                "Prop meshes placed by the manifest drifted (132 of 161 props are used by this level).");
+        }
     }
 }

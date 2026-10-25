@@ -82,10 +82,12 @@ public static class MansionPrefabFactory
             var catalog = ScriptableObject.CreateInstance<MansionPartCatalog>();
             var mirrorMeshMap = new Dictionary<Mesh, Mesh>();
             var unmappedMaterials = new SortedSet<string>();
+            int strippedTotal = 0;
 
             foreach (FbxSource source in sources)
             {
                 GameObject wrapper = BuildWrapper(source, materials, unmappedMaterials, out WrapperInfo info);
+                strippedTotal += info.StrippedCollisionMeshes;
                 PrefabUtility.SaveAsPrefabAsset(wrapper, $"{PrefabsDir}/{source.Name}.prefab");
                 UnityEngine.Object.DestroyImmediate(wrapper);
 
@@ -100,10 +102,11 @@ public static class MansionPrefabFactory
             }
 
             WriteCatalogAsset(catalog);
-            WriteAudit(catalog, unmappedMaterials, manifest);
+            WriteAudit(catalog, unmappedMaterials, manifest, materials, strippedTotal);
             Debug.Log($"[MansionFactory] Done: {sources.Count} wrappers, " +
                       $"{catalog.entries.Count(e => e.mirroredVariant)} mirrored variants, " +
-                      $"{materials.Count} materials, {unmappedMaterials.Count} unmapped material names.");
+                      $"{materials.Count} materials, {unmappedMaterials.Count} unmapped material names, " +
+                      $"{strippedTotal} collision meshes stripped.");
         }
         finally
         {
@@ -229,9 +232,11 @@ public static class MansionPrefabFactory
         {
             defs[match.Groups["name"].Value] = new MaterialDef
             {
-                albedoPath = ResolveTexture(SourceDir + "/KitTextures", match.Groups["albedo"].Value),
-                normalPath = ResolveTexture(SourceDir + "/KitTexturesUnity", match.Groups["normal"].Value),
-                maskPath = ResolveTexture(SourceDir + "/KitTexturesUnity", match.Groups["orm"].Value),
+                albedoPath = ResolveTextureAny(match.Groups["albedo"].Value, RawTextureFolders),
+                normalPath = ResolveTextureAny(match.Groups["normal"].Value,
+                    UnityTextureFolders.Concat(RawTextureFolders).ToArray()),
+                maskPath = ResolveTextureAny(match.Groups["orm"].Value,
+                    UnityTextureFolders.Concat(RawTextureFolders).ToArray()),
             };
         }
 
@@ -273,22 +278,17 @@ public static class MansionPrefabFactory
                 }
                 if (param == "BaseColor" || param == "Albedo")
                 {
-                    def.albedoPath = ResolveTexture(SourceDir + "/PropTextures", texture + ".png");
+                    def.albedoPath = ResolveTextureAny(texture + ".png", RawTextureFolders);
                 }
                 else if (param == "Normal" || param == "NRM")
                 {
-                    string unityVariant = $"{SourceDir}/PropTexturesUnity/{texture}_N_Unity.png";
-                    def.normalPath = File.Exists(Path.GetFullPath(unityVariant))
-                        ? unityVariant
-                        : ResolveTexture(SourceDir + "/PropTextures", texture + ".png");
+                    def.normalPath =
+                        ResolveTextureAny($"{texture}_N_Unity.png", UnityTextureFolders)
+                        ?? ResolveTextureAny(texture + ".png", RawTextureFolders);
                 }
                 else if (param == "ORM")
                 {
-                    string pack = $"{SourceDir}/PropTexturesUnity/{texture}_ORM_Pack.png";
-                    if (File.Exists(Path.GetFullPath(pack)))
-                    {
-                        def.maskPath = pack;
-                    }
+                    def.maskPath = ResolveTextureAny($"{texture}_ORM_Pack.png", UnityTextureFolders);
                 }
             }
         }
@@ -305,7 +305,6 @@ public static class MansionPrefabFactory
                 slotNames.Add(CanonicalMaterialName(slot.name));
             }
         }
-        string[] textureFolders = { SourceDir + "/PropTextures", SourceDir + "/KitTextures" };
         foreach (string name in slotNames.OrderBy(n => n))
         {
             if (defs.ContainsKey(name) || (!name.StartsWith("MI_") && !name.StartsWith("M_")))
@@ -313,15 +312,8 @@ public static class MansionPrefabFactory
                 continue;
             }
             string stem = name.StartsWith("MI_") ? name.Substring(3) : name.Substring(2);
-            string albedo = null;
-            foreach (string folder in textureFolders)
-            {
-                albedo = ResolveTexture(folder, $"T_{stem}_B.png") ?? ResolveTexture(folder, $"T_{stem}_BaseColor.png");
-                if (albedo != null)
-                {
-                    break;
-                }
-            }
+            string albedo = ResolveTextureAny($"T_{stem}_B.png", RawTextureFolders)
+                            ?? ResolveTextureAny($"T_{stem}_BaseColor.png", RawTextureFolders);
             if (albedo == null)
             {
                 // Textureless glass (e.g. MI_Glass_Window_Roof) still gets
@@ -333,14 +325,9 @@ public static class MansionPrefabFactory
                 }
                 continue;
             }
-            bool isProp = albedo.Contains("/PropTextures/");
-            string normalStem = $"T_{stem}_N";
-            string normal = isProp && File.Exists(Path.GetFullPath($"{SourceDir}/PropTexturesUnity/{normalStem}_N_Unity.png"))
-                ? $"{SourceDir}/PropTexturesUnity/{normalStem}_N_Unity.png"
-                : ResolveTexture(isProp ? SourceDir + "/PropTextures" : SourceDir + "/KitTextures", normalStem + ".png");
-            string mask = isProp && File.Exists(Path.GetFullPath($"{SourceDir}/PropTexturesUnity/T_{stem}_ORM_Pack.png"))
-                ? $"{SourceDir}/PropTexturesUnity/T_{stem}_ORM_Pack.png"
-                : null;
+            string normal = ResolveTextureAny($"T_{stem}_N_N_Unity.png", UnityTextureFolders)
+                            ?? ResolveTextureAny($"T_{stem}_N.png", RawTextureFolders);
+            string mask = ResolveTextureAny($"T_{stem}_ORM_Pack.png", UnityTextureFolders);
             defs[name] = new MaterialDef { albedoPath = albedo, normalPath = normal, maskPath = mask };
             Debug.Log($"[MansionFactory] Stem-fallback material def: {name} (stem {stem})");
         }
@@ -353,6 +340,29 @@ public static class MansionPrefabFactory
         string candidate = $"{folder}/{fileName}";
         return File.Exists(Path.GetFullPath(candidate)) ? candidate : null;
     }
+
+    // Texture lookup searches across the packs: several kit pieces'
+    // textures physically live in the props pack (and vice versa) —
+    // resolving only within one folder left 22 materials with no base
+    // map in the first generation pass.
+    private static string ResolveTextureAny(string pathOrName, params string[] folders)
+    {
+        foreach (string folder in folders)
+        {
+            string resolved = ResolveTexture(folder, pathOrName);
+            if (resolved != null)
+            {
+                return resolved;
+            }
+        }
+        return null;
+    }
+
+    private static readonly string[] RawTextureFolders =
+        { SourceDir + "/KitTextures", SourceDir + "/PropTextures" };
+
+    private static readonly string[] UnityTextureFolders =
+        { SourceDir + "/KitTexturesUnity", SourceDir + "/PropTexturesUnity" };
 
     private static Dictionary<string, Material> ConsolidateMaterials(Dictionary<string, MaterialDef> defs)
     {
@@ -415,11 +425,50 @@ public static class MansionPrefabFactory
                         : new Color(0.72f, 0.83f, 0.9f, 0.3f));
                 material.renderQueue = 3000;
             }
+            if (IsFoliageMaterial(name))
+            {
+                // Leaf/ivy atlases are cutout cards: without alpha
+                // clipping the whole quad renders (the white trees of
+                // the first tour). Double-sided — cards have no back.
+                material.SetFloat("_AlphaClip", 1f);
+                material.SetFloat("_Cutoff", 0.4f);
+                material.EnableKeyword("_ALPHATEST_ON");
+                material.SetFloat("_Cull", 0f);
+                material.doubleSidedGI = true;
+            }
             EditorUtility.SetDirty(material);
             materials[name] = material;
         }
+
+        // Submeshes the UE export left material-less ('Fbx Default
+        // Material' — e.g. the chandelier's 54-tri second submesh)
+        // get a real neutral surface instead of the magenta flag.
+        const string defaultName = "M_DefaultSurface";
+        string defaultPath = $"{MaterialsDir}/{defaultName}.mat";
+        var defaultMaterial = AssetDatabase.LoadAssetAtPath<Material>(defaultPath);
+        if (defaultMaterial == null)
+        {
+            defaultMaterial = new Material(lit) { name = defaultName };
+            AssetDatabase.CreateAsset(defaultMaterial, defaultPath);
+        }
+        defaultMaterial.shader = lit;
+        defaultMaterial.SetColor("_BaseColor", new Color(0.82f, 0.80f, 0.76f));
+        defaultMaterial.SetFloat("_Smoothness", 0.4f);
+        defaultMaterial.SetFloat("_Metallic", 0f);
+        EditorUtility.SetDirty(defaultMaterial);
+        materials["Fbx Default Material"] = defaultMaterial;
+
         AssetDatabase.SaveAssets();
         return materials;
+    }
+
+    private static readonly string[] FoliageMaterialTokens =
+        { "Beech", "Leaf", "Ivy", "Fern", "Plant", "Tree", "Grass", "Bush", "Foliage", "Vine" };
+
+    private static bool IsFoliageMaterial(string name)
+    {
+        return FoliageMaterialTokens.Any(t =>
+            name.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
     private static void SetMap(Material material, string property, string texturePath)
@@ -440,6 +489,7 @@ public static class MansionPrefabFactory
         public string PartClass;
         public bool HasCollider;
         public bool MeshCollider;
+        public int StrippedCollisionMeshes;
 
         public MansionPartCatalog.Entry ToEntry(FbxSource source)
         {
@@ -510,6 +560,15 @@ public static class MansionPrefabFactory
         pivot.transform.SetParent(wrapper.transform, false);
         var instance = (GameObject)PrefabUtility.InstantiatePrefab(modelAsset);
         instance.transform.SetParent(pivot.transform, false);
+
+        // UE collision hulls ride inside the FBX as UCX_/UBX_/USP_/UCP_
+        // meshes wearing a dummy 'Lit' material. They are collision
+        // data, not visuals — the wrapper's proxy collider replaces
+        // them. Leaving them in renders smooth hulls over the real
+        // geometry (found by the first visual tour, 2026-10-25: the
+        // "magenta panels" on windows, banisters and bushes were UCX
+        // hulls on the UNMAPPED placeholder).
+        info.StrippedCollisionMeshes = StripCollisionMeshes(instance);
 
         // Consolidated materials, by FBX material name.
         foreach (Renderer renderer in instance.GetComponentsInChildren<Renderer>(true))
@@ -587,6 +646,23 @@ public static class MansionPrefabFactory
             GameObjectUtility.SetStaticEditorFlags(child.gameObject, flags);
         }
         return wrapper;
+    }
+
+    private static readonly string[] CollisionMeshPrefixes = { "UCX_", "UBX_", "USP_", "UCP_" };
+
+    private static int StripCollisionMeshes(GameObject instance)
+    {
+        int stripped = 0;
+        foreach (MeshFilter filter in instance.GetComponentsInChildren<MeshFilter>(true).ToArray())
+        {
+            string meshName = filter.sharedMesh != null ? filter.sharedMesh.name : filter.gameObject.name;
+            if (CollisionMeshPrefixes.Any(p => meshName.StartsWith(p, StringComparison.OrdinalIgnoreCase)))
+            {
+                UnityEngine.Object.DestroyImmediate(filter.gameObject);
+                stripped++;
+            }
+        }
+        return stripped;
     }
 
     private static string CanonicalMaterialName(string raw)
@@ -774,10 +850,23 @@ public static class MansionPrefabFactory
     }
 
     private static void WriteAudit(
-        MansionPartCatalog catalog, SortedSet<string> unmappedMaterials, ManifestData manifest)
+        MansionPartCatalog catalog, SortedSet<string> unmappedMaterials, ManifestData manifest,
+        Dictionary<string, Material> materials, int strippedCollisionMeshes)
     {
         string json = JsonUtility.ToJson(catalog, true);
         File.WriteAllText(Path.GetFullPath(AuditDir + "/part-audit.json"), json);
+
+        // Materials that still render without a base map. Glass and the
+        // neutral default surface are textureless BY DESIGN; anything
+        // else here means a def's texture failed to resolve anywhere.
+        var missingBaseMap = materials
+            .Where(kv => kv.Key != "__UNMAPPED__"
+                         && kv.Value.GetTexture("_BaseMap") == null
+                         && kv.Key.IndexOf("Glass", StringComparison.OrdinalIgnoreCase) < 0
+                         && kv.Key != "Fbx Default Material")
+            .Select(kv => kv.Key)
+            .OrderBy(n => n)
+            .ToList();
 
         var report = new StringBuilder();
         report.AppendLine("# Mansion part audit (generated by MansionPrefabFactory)");
@@ -788,11 +877,17 @@ public static class MansionPrefabFactory
         report.AppendLine($"- Total placed triangles (all LODs, per part): {catalog.entries.Sum(e => e.triangleCount):N0}");
         report.AppendLine($"- Mirrored variants baked: {catalog.entries.Count(e => e.mirroredVariant)} " +
                           $"({manifest.MirroredMeshes.Count} meshes have negative-determinant placements)");
+        report.AppendLine($"- UE collision meshes stripped (UCX_/UBX_/USP_/UCP_): {strippedCollisionMeshes}");
         report.AppendLine($"- MeshCollider exceptions (Read/Write kept ON): " +
                           $"{string.Join(", ", catalog.entries.Where(e => e.meshCollider).Select(e => e.partName))}");
         report.AppendLine($"- Manifest actors with no mesh (UE volumes/barriers, skipped by the builder): {manifest.MeshlessStaticActors}");
         report.AppendLine($"- Unmapped material names (rendered magenta, fix the defs): {unmappedMaterials.Count}");
         foreach (string name in unmappedMaterials)
+        {
+            report.AppendLine($"  - {name}");
+        }
+        report.AppendLine($"- Consolidated materials with NO base map (glass/default excluded): {missingBaseMap.Count}");
+        foreach (string name in missingBaseMap)
         {
             report.AppendLine($"  - {name}");
         }

@@ -80,7 +80,6 @@ public static class MansionPrefabFactory
         try
         {
             var catalog = ScriptableObject.CreateInstance<MansionPartCatalog>();
-            var mirrorMeshMap = new Dictionary<Mesh, Mesh>();
             var unmappedMaterials = new SortedSet<string>();
             int strippedTotal = 0;
 
@@ -96,7 +95,7 @@ public static class MansionPrefabFactory
 
                 if (source.NeedsMirror)
                 {
-                    BuildMirroredWrapper(source, info, mirrorMeshMap);
+                    BuildMirroredWrapper(source, manifest.MirrorSignByMesh[source.Name]);
                     entry.mirroredVariant = true;
                 }
             }
@@ -130,6 +129,13 @@ public static class MansionPrefabFactory
     {
         public readonly Dictionary<string, int> Placements = new Dictionary<string, int>();
         public readonly HashSet<string> MirroredMeshes = new HashSet<string>();
+
+        // Per-mesh mirror sign pattern in UNITY axes (x: UE sx,
+        // y: UE sz, z: UE sy). Verified uniform per mesh across all
+        // its negative-determinant placements (140x (-,+,+),
+        // 13x (-,-,-) — all SM_Ivy_Wall_C); LoadManifest errors if a
+        // mesh ever shows mixed patterns.
+        public readonly Dictionary<string, Vector3> MirrorSignByMesh = new Dictionary<string, Vector3>();
         public int MeshlessStaticActors;
     }
 
@@ -169,6 +175,14 @@ public static class MansionPrefabFactory
                 actor.scale[0] * actor.scale[1] * actor.scale[2] < 0f)
             {
                 data.MirroredMeshes.Add(actor.mesh);
+                var signs = new Vector3(
+                    Mathf.Sign(actor.scale[0]), Mathf.Sign(actor.scale[2]), Mathf.Sign(actor.scale[1]));
+                if (data.MirrorSignByMesh.TryGetValue(actor.mesh, out Vector3 existing) && existing != signs)
+                {
+                    Debug.LogError($"[MansionFactory] Mesh {actor.mesh} has MIXED mirror sign patterns " +
+                                   $"({existing} vs {signs}) — one _M variant cannot serve both.");
+                }
+                data.MirrorSignByMesh[actor.mesh] = signs;
             }
         }
         return data;
@@ -568,6 +582,18 @@ public static class MansionPrefabFactory
         pivot.transform.SetParent(wrapper.transform, false);
         var instance = (GameObject)PrefabUtility.InstantiatePrefab(modelAsset);
         instance.transform.SetParent(pivot.transform, false);
+        // Unpack completely: the factory restructures the model
+        // (strips hulls, swaps and bakes meshes, flattens renderers
+        // under PivotOffset). Inside a nested prefab instance none
+        // of that survives SaveAsPrefabAsset — the saved prefab
+        // keeps the model's original node hierarchy and records
+        // only property modifications, so node-composed baked
+        // geometry gets its node transform applied a second time
+        // (the double-transform bug behind the persistent gaps:
+        // in-memory bakes verified correct, saved output was
+        // L * F_x * L). Plain objects serialize literally.
+        PrefabUtility.UnpackPrefabInstance(
+            instance, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
 
         // UE collision hulls ride inside the FBX as UCX_/UBX_/USP_/UCP_
         // meshes wearing a dummy 'Lit' material. They are collision
@@ -602,8 +628,25 @@ public static class MansionPrefabFactory
             renderer.sharedMaterials = slots;
         }
 
-        // Bounds + triangle count from the imported geometry.
-        Bounds bounds = ComputeBounds(instance, out int triangles);
+        // Import-frame correction (the gap hunt's root cause,
+        // 2026-10-25): Unity's FBX importer composes the UE geometry
+        // into wrapper space X-flipped relative to the actor frame
+        // the manifest transforms assume — measured against the
+        // Blender reconstruction's mesh data (its world is the
+        // level's verified reference; AABB rule verified on 177
+        // parts). Every piece therefore sat mirrored on its pivot:
+        // straight runs still tiled, but corners, junctions and
+        // openings misaligned into visible gaps. Bake F_x x (node
+        // local matrix) into the vertices and flatten each renderer
+        // under PivotOffset, landing the geometry in the true actor
+        // frame. (An earlier RotY(180) attempt also flipped Z and
+        // inverted wall depths / window heights — the difference is
+        // pinned by the ground-truth bounds test.)
+        BakeWrapperGeometry(wrapper, pivot.transform, source.Name);
+
+        // Bounds + triangle count from the corrected geometry
+        // (renderers now live under the wrapper, post-flattening).
+        Bounds bounds = ComputeBounds(wrapper, out int triangles);
         info.Bounds = bounds;
         info.TriangleCount = triangles;
 
@@ -621,7 +664,7 @@ public static class MansionPrefabFactory
             else
             {
                 var meshColliderComponent = colliderNode.AddComponent<MeshCollider>();
-                meshColliderComponent.sharedMesh = LargestMesh(instance);
+                meshColliderComponent.sharedMesh = LargestMesh(wrapper);
                 meshColliderComponent.convex = false;
             }
             info.HasCollider = true;
@@ -637,7 +680,7 @@ public static class MansionPrefabFactory
         else
         {
             var lodGroup = wrapper.AddComponent<LODGroup>();
-            Renderer[] renderers = instance.GetComponentsInChildren<Renderer>(true);
+            Renderer[] renderers = wrapper.GetComponentsInChildren<Renderer>(true);
             lodGroup.SetLODs(new[] { new LOD(lodCullHeight, renderers) });
             lodGroup.RecalculateBounds();
             info.LodLevels = 1;
@@ -654,6 +697,56 @@ public static class MansionPrefabFactory
             GameObjectUtility.SetStaticEditorFlags(child.gameObject, flags);
         }
         return wrapper;
+    }
+
+    // Bakes the import-frame correction (see BuildWrapper) into
+    // every renderer mesh of the wrapper: new geometry =
+    // RotY(180) * (renderer local matrix in wrapper space) * source
+    // vertices, saved as assets under GeneratedMeshes, with the
+    // renderer flattened under PivotOffset at identity. Returns the
+    // source->baked map (not currently consumed; kept for callers
+    // that need to retarget mesh references).
+    private static Dictionary<Mesh, Mesh> BakeWrapperGeometry(
+        GameObject wrapper, Transform pivot, string partName)
+    {
+        string assetPath = $"{GeneratedMeshesDir}/{partName}.asset";
+        if (File.Exists(Path.GetFullPath(assetPath)))
+        {
+            AssetDatabase.DeleteAsset(assetPath);
+        }
+        bool assetCreated = false;
+        var flipX = Matrix4x4.Scale(new Vector3(-1f, 1f, 1f));
+        var bakedBySource = new Dictionary<Mesh, Mesh>();
+
+        foreach (MeshFilter filter in wrapper.GetComponentsInChildren<MeshFilter>(true).ToArray())
+        {
+            if (filter.sharedMesh == null)
+            {
+                continue;
+            }
+            if (!bakedBySource.TryGetValue(filter.sharedMesh, out Mesh baked))
+            {
+                Matrix4x4 local = LocalChainMatrix(filter.transform, wrapper.transform);
+                baked = BakeTransformedMesh(filter.sharedMesh, flipX * local, filter.sharedMesh.name);
+                if (!assetCreated)
+                {
+                    AssetDatabase.CreateAsset(baked, assetPath);
+                    assetCreated = true;
+                }
+                else
+                {
+                    AssetDatabase.AddObjectToAsset(baked, assetPath);
+                }
+                bakedBySource[filter.sharedMesh] = baked;
+            }
+            filter.transform.SetParent(pivot, false);
+            filter.transform.localPosition = Vector3.zero;
+            filter.transform.localRotation = Quaternion.identity;
+            filter.transform.localScale = Vector3.one;
+            filter.sharedMesh = baked;
+        }
+        AssetDatabase.SaveAssets();
+        return bakedBySource;
     }
 
     private static readonly string[] CollisionMeshPrefixes = { "UCX_", "UBX_", "USP_", "UCP_" };
@@ -693,6 +786,10 @@ public static class MansionPrefabFactory
         return material;
     }
 
+    // Bounds from mesh data composed through serialized local TRS
+    // chains — never renderer.bounds: in a batchmode factory run
+    // the live world matrices lag the restructuring (reparented
+    // renderers still measure under their old parents).
     private static Bounds ComputeBounds(GameObject root, out int triangleCount)
     {
         triangleCount = 0;
@@ -705,17 +802,24 @@ public static class MansionPrefabFactory
                 continue;
             }
             triangleCount += filter.sharedMesh.triangles.Length / 3;
-        }
-        foreach (Renderer renderer in root.GetComponentsInChildren<Renderer>(true))
-        {
-            if (!found)
+            Matrix4x4 matrix = LocalChainMatrix(filter.transform, root.transform);
+            Bounds meshBounds = filter.sharedMesh.bounds;
+            for (int i = 0; i < 8; i++)
             {
-                bounds = renderer.bounds;
-                found = true;
-            }
-            else
-            {
-                bounds.Encapsulate(renderer.bounds);
+                var corner = new Vector3(
+                    meshBounds.center.x + ((i & 1) == 0 ? -meshBounds.extents.x : meshBounds.extents.x),
+                    meshBounds.center.y + ((i & 2) == 0 ? -meshBounds.extents.y : meshBounds.extents.y),
+                    meshBounds.center.z + ((i & 4) == 0 ? -meshBounds.extents.z : meshBounds.extents.z));
+                Vector3 world = matrix.MultiplyPoint3x4(corner);
+                if (!found)
+                {
+                    bounds = new Bounds(world, Vector3.zero);
+                    found = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(world);
+                }
             }
         }
         return bounds;
@@ -737,45 +841,74 @@ public static class MansionPrefabFactory
 
     // ---------- mirrored variants ----------
 
-    private static void BuildMirroredWrapper(FbxSource source, WrapperInfo info, Dictionary<Mesh, Mesh> mirrorMeshMap)
+    // The mirror MUST be baked in WRAPPER space, not mesh-local
+    // space (factory v1's bug, found by the gap hunt 2026-10-25):
+    // FBX node transforms between the wrapper root and each mesh
+    // rotate the local axes, so negating mesh-local X flipped some
+    // pieces across their DEPTH instead — exterior/interior shells
+    // swapped and seams opened across the facade. Baking
+    // (mirrorSigns * rendererLocalMatrix) into the vertices and
+    // flattening the renderer under PivotOffset is frame-proof:
+    // the composed instance transform then equals the UE original
+    // exactly, for any sign pattern (single-axis or the ivy
+    // (-,-,-) full negation).
+    private static void BuildMirroredWrapper(FbxSource source, Vector3 mirrorSigns)
     {
-        // Mirror every distinct mesh of the source FBX once.
-        var localMap = new Dictionary<Mesh, Mesh>();
-        foreach (Mesh mesh in AssetDatabase.LoadAllAssetsAtPath(source.Path).OfType<Mesh>())
+        var instance = PrefabUtility.LoadPrefabContents($"{PrefabsDir}/{source.Name}.prefab");
+        instance.name = source.Name + "_M";
+        Transform root = instance.transform;
+        root.position = Vector3.zero;
+        root.rotation = Quaternion.identity;
+        root.localScale = Vector3.one;
+        Transform pivot = root.Find("PivotOffset");
+        var flip = Matrix4x4.Scale(mirrorSigns);
+
+        string assetPath = $"{GeneratedMeshesDir}/{source.Name}_M.asset";
+        // Regenerate the baked-mesh file from scratch each run so
+        // stale sub-assets from older factory versions cannot linger.
+        if (File.Exists(Path.GetFullPath(assetPath)))
         {
-            if (!mirrorMeshMap.TryGetValue(mesh, out Mesh mirrored))
+            AssetDatabase.DeleteAsset(assetPath);
+        }
+        bool assetCreated = false;
+        var bakedBySource = new Dictionary<Mesh, Mesh>();
+
+        foreach (MeshFilter filter in instance.GetComponentsInChildren<MeshFilter>(true).ToArray())
+        {
+            if (filter.sharedMesh == null)
             {
-                mirrored = CreateMirroredMesh(mesh);
-                mirrorMeshMap[mesh] = mirrored;
-                string assetPath = $"{GeneratedMeshesDir}/{source.Name}_M.asset";
-                if (!File.Exists(Path.GetFullPath(assetPath)))
+                continue;
+            }
+            if (!bakedBySource.TryGetValue(filter.sharedMesh, out Mesh baked))
+            {
+                Matrix4x4 local = LocalChainMatrix(filter.transform, root);
+                baked = BakeTransformedMesh(filter.sharedMesh, flip * local, filter.sharedMesh.name + "_M");
+                if (!assetCreated)
                 {
-                    AssetDatabase.CreateAsset(mirrored, assetPath);
+                    AssetDatabase.CreateAsset(baked, assetPath);
+                    assetCreated = true;
                 }
                 else
                 {
-                    AssetDatabase.AddObjectToAsset(mirrored, assetPath);
+                    AssetDatabase.AddObjectToAsset(baked, assetPath);
                 }
+                bakedBySource[filter.sharedMesh] = baked;
             }
-            localMap[mesh] = mirrored;
+            filter.transform.SetParent(pivot, false);
+            filter.transform.localPosition = Vector3.zero;
+            filter.transform.localRotation = Quaternion.identity;
+            filter.transform.localScale = Vector3.one;
+            filter.sharedMesh = baked;
         }
         AssetDatabase.SaveAssets();
 
-        var wrapperAsset = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabsDir}/{source.Name}.prefab");
-        var instance = (GameObject)PrefabUtility.InstantiatePrefab(wrapperAsset);
-        instance.name = source.Name + "_M";
-        foreach (MeshFilter filter in instance.GetComponentsInChildren<MeshFilter>(true))
-        {
-            if (filter.sharedMesh != null && localMap.TryGetValue(filter.sharedMesh, out Mesh mirrored))
-            {
-                filter.sharedMesh = mirrored;
-            }
-        }
+        // MeshCollider exceptions reference the LOD0 mesh — swap to
+        // its baked counterpart.
         foreach (MeshCollider collider in instance.GetComponentsInChildren<MeshCollider>(true))
         {
-            if (collider.sharedMesh != null && localMap.TryGetValue(collider.sharedMesh, out Mesh mirrored))
+            if (collider.sharedMesh != null && bakedBySource.TryGetValue(collider.sharedMesh, out Mesh baked))
             {
-                collider.sharedMesh = mirrored;
+                collider.sharedMesh = baked;
             }
         }
         // Refit the box proxy from the mirrored geometry.
@@ -787,56 +920,78 @@ public static class MansionPrefabFactory
             box.size = bounds.size;
         }
         PrefabUtility.SaveAsPrefabAsset(instance, $"{PrefabsDir}/{source.Name}_M.prefab");
-        UnityEngine.Object.DestroyImmediate(instance);
+        PrefabUtility.UnloadPrefabContents(instance);
     }
 
-    private static Mesh CreateMirroredMesh(Mesh source)
+    // Composes a node's local matrix relative to an ancestor from
+    // the serialized local TRS fields ONLY. Never use
+    // localToWorldMatrix for this in a batchmode factory run: for
+    // hierarchies whose rotation sits on the asset root (SM_Roof01)
+    // or mid-chain (SM_Window01), the live matrices are not yet
+    // settled when the bake reads them and the composed matrix
+    // silently loses the RotX(270) node — the geometry then bakes
+    // y/z-swapped. Local fields are data; they cannot be stale.
+    private static Matrix4x4 LocalChainMatrix(Transform node, Transform ancestor)
     {
-        var mirrored = new Mesh
+        Matrix4x4 matrix = Matrix4x4.identity;
+        Transform current = node;
+        while (current != null && current != ancestor)
         {
-            name = source.name + "_M",
+            matrix = Matrix4x4.TRS(current.localPosition, current.localRotation, current.localScale) * matrix;
+            current = current.parent;
+        }
+        return matrix;
+    }
+
+    private static Mesh BakeTransformedMesh(Mesh source, Matrix4x4 matrix, string name)
+    {
+        var baked = new Mesh
+        {
+            name = name,
             indexFormat = source.indexFormat,
         };
         Vector3[] vertices = source.vertices;
         for (int i = 0; i < vertices.Length; i++)
         {
-            vertices[i].x = -vertices[i].x;
+            vertices[i] = matrix.MultiplyPoint3x4(vertices[i]);
         }
-        mirrored.vertices = vertices;
+        baked.vertices = vertices;
 
-        Vector3[] normals = source.normals;
-        for (int i = 0; i < normals.Length; i++)
+        if (source.normals != null && source.normals.Length == vertices.Length)
         {
-            normals[i].x = -normals[i].x;
-        }
-        mirrored.normals = normals;
-
-        if (source.tangents != null && source.tangents.Length == vertices.Length)
-        {
-            Vector4[] tangents = source.tangents;
-            for (int i = 0; i < tangents.Length; i++)
+            Matrix4x4 normalMatrix = matrix.inverse.transpose;
+            Vector3[] normals = source.normals;
+            for (int i = 0; i < normals.Length; i++)
             {
-                tangents[i].x = -tangents[i].x;
-                tangents[i].w = -tangents[i].w;
+                normals[i] = normalMatrix.MultiplyVector(normals[i]).normalized;
             }
-            mirrored.tangents = tangents;
+            baked.normals = normals;
         }
-        mirrored.uv = source.uv;
-        mirrored.uv2 = source.uv2;
-        mirrored.colors = source.colors;
+        baked.uv = source.uv;
+        baked.uv2 = source.uv2;
+        baked.colors = source.colors;
 
-        mirrored.subMeshCount = source.subMeshCount;
+        // Reversing each submesh's whole index list flips every
+        // triangle's winding while keeping the triangles intact —
+        // required when the baked matrix has a negative determinant.
+        bool flipTriangles = matrix.determinant < 0f;
+        baked.subMeshCount = source.subMeshCount;
         for (int sub = 0; sub < source.subMeshCount; sub++)
         {
             int[] triangles = source.GetTriangles(sub);
-            for (int i = 0; i < triangles.Length; i += 3)
+            if (flipTriangles)
             {
-                (triangles[i + 1], triangles[i + 2]) = (triangles[i + 2], triangles[i + 1]);
+                Array.Reverse(triangles);
             }
-            mirrored.SetTriangles(triangles, sub);
+            baked.SetTriangles(triangles, sub);
         }
-        mirrored.RecalculateBounds();
-        return mirrored;
+        baked.RecalculateBounds();
+        if (baked.normals == null || baked.normals.Length == 0)
+        {
+            baked.RecalculateNormals();
+        }
+        baked.RecalculateTangents();
+        return baked;
     }
 
     // ---------- catalog & audit ----------

@@ -324,6 +324,13 @@ public static class MansionPrefabFactory
             }
             if (albedo == null)
             {
+                // Textureless glass (e.g. MI_Glass_Window_Roof) still gets
+                // a def so the glass surface rule in ConsolidateMaterials
+                // can build it — a plain tinted transparent material.
+                if (name.IndexOf("Glass", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    defs[name] = new MaterialDef();
+                }
                 continue;
             }
             bool isProp = albedo.Contains("/PropTextures/");

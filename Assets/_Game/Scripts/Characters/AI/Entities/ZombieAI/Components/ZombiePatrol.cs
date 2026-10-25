@@ -26,7 +26,9 @@ public class ZombiePatrol : NetworkBehaviour
     private const float DefaultPauseMin = 2f;
     private const float DefaultPauseMax = 5f;
 
-    private readonly NavMeshPath _path = new NavMeshPath();
+    // Created in Awake: NavMeshPath's constructor touches the NavMesh system
+    // and throws from a field initializer (MonoBehaviour construction).
+    private NavMeshPath _path;
 
     private ZombieBehavior _behavior;
     private bool _localMode;
@@ -53,6 +55,7 @@ public class ZombiePatrol : NetworkBehaviour
     private void Awake()
     {
         _behavior = GetComponent<ZombieBehavior>();
+        _path = new NavMeshPath();
     }
 
     private void Start()

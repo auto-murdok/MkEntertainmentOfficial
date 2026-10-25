@@ -98,6 +98,62 @@ namespace Game.Tests.EditMode
         }
 
         [Test]
+        public void WrapperPrefabs_NeverUseTheUnmappedPlaceholder()
+        {
+            // Regression pin for the first visual tour (2026-10-25):
+            // UCX collision hulls and unresolved slots put 139 wrappers
+            // on the magenta placeholder. Zero tolerance now.
+            MansionPartCatalog catalog = LoadCatalog();
+            var offenders = new List<string>();
+            foreach (MansionPartCatalog.Entry entry in catalog.entries)
+            {
+                foreach (string suffix in entry.mirroredVariant ? new[] { "", "_M" } : new[] { "" })
+                {
+                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                        $"{PrefabsDir}/{entry.partName}{suffix}.prefab");
+                    if (prefab == null)
+                    {
+                        continue;
+                    }
+                    if (prefab.GetComponentsInChildren<Renderer>(true)
+                        .SelectMany(r => r.sharedMaterials)
+                        .Any(m => m != null && m.name == "UNMAPPED"))
+                    {
+                        offenders.Add(entry.partName + suffix);
+                    }
+                }
+            }
+            Assert.IsEmpty(offenders,
+                "Wrappers rendering on the UNMAPPED placeholder: " + string.Join(", ", offenders.Take(10)));
+        }
+
+        [Test]
+        public void ConsolidatedMaterials_AllHaveBaseMaps()
+        {
+            // Glass is textureless by design; the neutral default
+            // surface and the placeholder are colour-only too.
+            string[] guids = AssetDatabase.FindAssets("t:Material", new[] { MaterialsDir });
+            var missing = new List<string>();
+            foreach (string guid in guids)
+            {
+                var material = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(guid));
+                if (material == null
+                    || material.name == "UNMAPPED"
+                    || material.name == "M_DefaultSurface"
+                    || material.name.IndexOf("Glass", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    continue;
+                }
+                if (material.GetTexture("_BaseMap") == null)
+                {
+                    missing.Add(material.name);
+                }
+            }
+            Assert.IsEmpty(missing,
+                "Consolidated materials with no base map: " + string.Join(", ", missing.Take(10)));
+        }
+
+        [Test]
         public void WrapperPrefabs_UseOnlyConsolidatedMaterials()
         {
             MansionPartCatalog catalog = LoadCatalog();

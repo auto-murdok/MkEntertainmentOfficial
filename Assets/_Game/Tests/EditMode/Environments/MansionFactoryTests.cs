@@ -84,7 +84,9 @@ namespace Game.Tests.EditMode
             MansionPartCatalog catalog = LoadCatalog();
             var catalogMirrored = new HashSet<string>(catalog.entries
                 .Where(e => e.mirroredVariant).Select(e => e.partName));
-            Assert.AreEqual(mirrored, catalogMirrored,
+            // Set equality (AreEqual on HashSet compares iteration
+            // order, not membership — wrong tool for this contract).
+            CollectionAssert.AreEquivalent(mirrored, catalogMirrored,
                 "Catalog mirrored set must equal the manifest's negative-determinant set.");
 
             foreach (string mesh in mirrored)

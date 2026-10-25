@@ -2295,6 +2295,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1235901536210335078}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: af9e72a1e4931314bb67a3da58f7ee69,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3017670618124269367}
     - targetCorrespondingSourceObject: {fileID: 1082271958561512970, guid: af9e72a1e4931314bb67a3da58f7ee69,
         type: 3}
       insertIndex: -1
@@ -3309,6 +3313,10 @@ MonoBehaviour:
       NameHash: -971615125
       Synchronize: 1
       ParameterType: 9
+    - name: Phase
+      NameHash: 1887238607
+      Synchronize: 1
+      ParameterType: 1
   AnimatorParametersExpanded: 0
 --- !u!114 &8372143109016655130
 MonoBehaviour:
@@ -3362,6 +3370,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game.Items::HitHistoryRecorder
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3017670618124269367
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5077343515872401214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4f58774f430ca44dbaa03785a850c62, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Game.Characters::ZombieAnimationVariant
+  ShowTopMostFoldoutHeaderGroup: 1
+  _baseIdleClip: {fileID: 7400000, guid: 1a70d3b240bb7bf4bbe1cda106d576a0, type: 2}
+  _baseWalkClip: {fileID: 7400000, guid: 5099807cb3329e84187b2bf08a5b4098, type: 2}
+  _walkVariants:
+  - {fileID: 5623961655361747268, guid: 693f60a14baee8d4880582b728471269, type: 3}
+  - {fileID: -5776564824540014346, guid: 09f2078bd6a0f0945a07368d4516166b, type: 3}
+  - {fileID: -6645010421924342995, guid: e84c93ad61724b040a1a54bec175d995, type: 3}
+  _idleVariants:
+  - {fileID: 7904299848534773623, guid: 2fb5e3a010012424490814651c7b1794, type: 3}
+  - {fileID: -1168882297713178569, guid: fa4b9ef2b84f05143923c8ebc878a7e1, type: 3}
 --- !u!1 &5235455099423254569 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -9070493210130169274, guid: af9e72a1e4931314bb67a3da58f7ee69,

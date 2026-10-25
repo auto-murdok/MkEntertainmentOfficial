@@ -28,6 +28,14 @@ public class ZombieSpawner : MonoBehaviour
     [SerializeField] private float _spawnInterval = 30f;
     private float _timer;
 
+    [Header("Randomization")]
+    [Tooltip("Every spawn position is offset by a random disc of this radius around the chosen point (0 = exact points). If no offset position samples onto the NavMesh, the exact point is used, so a spawn is never lost to jitter.")]
+    [SerializeField] private float _spawnPositionJitter = 2.5f;
+    [Tooltip("After each automated spawn, the next interval is re-rolled as the base interval times a random factor in this range.")]
+    [SerializeField] private float _spawnIntervalJitterMin = 0.5f;
+    [SerializeField] private float _spawnIntervalJitterMax = 1.5f;
+    private float _intervalJitterFactor = 1f;
+
     // Tracked as instances (not brains) so the cap holds for any prefab —
     // including stripped-down ones without a ZombieBrain.
     private readonly List<GameObject> _activeInstances = new List<GameObject>();
@@ -120,6 +128,8 @@ public class ZombieSpawner : MonoBehaviour
         return spawned;
     }
 
+    private bool _initialWaveSpawned;
+
     private void Start()
     {
         // Zombies are not networked yet: on networked clients skip spawning
@@ -131,6 +141,7 @@ public class ZombieSpawner : MonoBehaviour
             return;
         }
         SpawnInitialWave();
+        _initialWaveSpawned = true;
     }
 
     private void Update()
@@ -151,15 +162,33 @@ public class ZombieSpawner : MonoBehaviour
             return;
         }
 
-        // Automated timer (spawns one zombie every 30 seconds)
+        // Deferred opening wave: in the networked arena this spawner's
+        // Start can run before the session bootstrap has started the host,
+        // so the Start-time server check saw "not a server" and the wave
+        // was silently skipped for the whole session (zombies then only
+        // trickled in on the interval timer). Run the wave on the first
+        // Update where this peer actually is the server.
+        if (!_initialWaveSpawned)
+        {
+            SpawnInitialWave();
+            _initialWaveSpawned = true;
+        }
+
+        // Automated timer: the base interval is jittered per spawn (the
+        // factor re-rolls after every spawn), so arrivals feel irregular
+        // instead of metronomic. The interval itself is read live, so
+        // runtime changes apply to the very next spawn.
         if (_autoSpawnEnabled && _zombieTypes.Count > 0 && _activeInstances.Count < _maxZombies)
         {
             _timer += Time.deltaTime;
-            if (_timer >= _spawnInterval)
+            if (_timer >= _spawnInterval * _intervalJitterFactor)
             {
                 _timer = 0f;
                 int randomIndex = UnityEngine.Random.Range(0, _zombieTypes.Count);
                 SpawnZombie(_zombieTypes[randomIndex]);
+                float jitterMin = Mathf.Min(_spawnIntervalJitterMin, _spawnIntervalJitterMax);
+                float jitterMax = Mathf.Max(_spawnIntervalJitterMin, _spawnIntervalJitterMax);
+                _intervalJitterFactor = UnityEngine.Random.Range(jitterMin, jitterMax);
             }
         }
     }
@@ -255,6 +284,22 @@ public class ZombieSpawner : MonoBehaviour
             Vector2 randomCircle = UnityEngine.Random.insideUnitCircle * _spawnRadius;
             basePosition += new Vector3(randomCircle.x, 0, randomCircle.y);
             spawnRotation = Quaternion.Euler(0, UnityEngine.Random.Range(0f, 360f), 0);
+        }
+
+        // Randomize the exact spot: try a few jittered positions around the
+        // chosen point first; the un-jittered point remains the fallback.
+        if (_spawnPositionJitter > 0f)
+        {
+            for (int attempt = 0; attempt < 4; attempt++)
+            {
+                Vector2 offset = UnityEngine.Random.insideUnitCircle * _spawnPositionJitter;
+                Vector3 candidate = basePosition + new Vector3(offset.x, 0f, offset.y);
+                if (NavMesh.SamplePosition(candidate, out NavMeshHit jitterHit, 5f, NavMesh.AllAreas))
+                {
+                    spawnPosition = jitterHit.position;
+                    return true;
+                }
+            }
         }
 
         // Sample on NavMesh — failing loudly beats spawning off-mesh zombies

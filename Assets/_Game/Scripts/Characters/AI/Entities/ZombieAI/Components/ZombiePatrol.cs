@@ -120,7 +120,11 @@ public class ZombiePatrol : NetworkBehaviour
         {
             _legTimer += Time.deltaTime;
             NavMeshAgent agent = context.agent;
-            bool arrived = agent != null && agent.isOnNavMesh && !agent.pathPending
+            // Arrival is only meaningful once the move state has issued the
+            // destination and the agent holds a path: before that,
+            // remainingDistance reads 0 and would fake an instant arrival.
+            bool arrived = _legTimer > 0.5f
+                && agent != null && agent.isOnNavMesh && agent.hasPath && !agent.pathPending
                 && agent.remainingDistance <= agent.stoppingDistance + ArrivalSlack;
             if (arrived || _legTimer > LegTimeoutSeconds)
             {

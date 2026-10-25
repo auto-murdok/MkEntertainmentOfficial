@@ -64,9 +64,54 @@ public static class PlayerRigging
         rigBuilder.Build();
 
         // Both cinemachine cameras follow the player's camera hook.
-        foreach (CinemachineVirtualCamera vcam in playerCore.GetComponentsInChildren<CinemachineVirtualCamera>())
+        CinemachineVirtualCamera followCamera = null;
+        CinemachineVirtualCamera aimCamera = null;
+        foreach (CinemachineVirtualCamera vcam in playerCore.GetComponentsInChildren<CinemachineVirtualCamera>(true))
         {
             vcam.Follow = locomotion._cinemachineTarget;
+
+            // Both cameras stay active from here on: CameraModeController
+            // selects between them by priority. (The old path left the aim
+            // camera inactive and SetActive-toggled it from a UI
+            // notification, which deregistered it from the Brain's queue
+            // and froze its standby state.)
+            if (!vcam.gameObject.activeSelf)
+            {
+                vcam.gameObject.SetActive(true);
+            }
+
+            if (vcam.name.Contains("Aim"))
+            {
+                aimCamera = vcam;
+            }
+            else if (vcam.name.Contains("Follow"))
+            {
+                followCamera = vcam;
+            }
+
+            // NOTE: no OnTargetObjectWarped here. That call shifts the
+            // vcam's own transform by the supplied delta to preserve an
+            // EXISTING framing across a teleport; at spawn there is no
+            // prior framing to preserve, and passing the hook's position
+            // would displace the camera. Fresh vcams compute their pose
+            // from the follow target on their first update.
+        }
+
+        // Seed the camera yaw/pitch from the placed hook now that placement
+        // is final — otherwise the first LateUpdate writes (0, 0) over the
+        // spawn facing and the camera opens world-north until first aim.
+        locomotion.SeedCamera();
+
+        // Camera mode is driven by the character state machine (the owner
+        // of Aiming) through the mode controller — never by UI observers.
+        if (followCamera != null && aimCamera != null)
+        {
+            CameraModeController cameraModes = playerCore.AddComponent<CameraModeController>();
+            cameraModes.Wire(locomotion, followCamera, aimCamera);
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerRigging] Expected Follow + Aim virtual cameras in the player core — camera mode control disabled.");
         }
 
         // The UI observes the spawned character's UI subject.

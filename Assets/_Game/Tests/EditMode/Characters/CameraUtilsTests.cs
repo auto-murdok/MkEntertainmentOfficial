@@ -109,5 +109,79 @@ namespace Game.Tests.EditMode
             _utils.HandleCameraRotation(_context, _cine);
             Assert.AreEqual(10f, TargetYaw, 0.01f);
         }
+
+        // --- Seeding (the camera initial-state fix) ---
+        // Regression shape: at spawn the accumulators sat at (0, 0) and the
+        // first write snapped the camera target to world-north/level
+        // whatever the character faced, until the first aim rotated the
+        // CHARACTER to the camera and masked it.
+
+        [Test]
+        public void HandleCameraRotation_Unseeded_SeedsFromTargetInsteadOfSnappingToZero()
+        {
+            _cameraTargetHost.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+            _context.lookInput = Vector2.zero;
+            _utils.HandleCameraRotation(_context, _cine);
+            Assert.AreEqual(90f, TargetYaw, 0.01f);
+            Assert.IsTrue(_utils.IsSeeded);
+        }
+
+        [Test]
+        public void SeedFrom_SeedsYawAndPitch_FirstWriteKeepsSpawnFacing()
+        {
+            // Authored pitch -10 reads back from eulerAngles as 350: the
+            // seed must normalise it, not clamp it to the top clamp (60).
+            _cameraTargetHost.transform.rotation = Quaternion.Euler(-10f, 180f, 0f);
+            _utils.SeedFrom(_cameraTargetHost.transform);
+            _context.lookInput = Vector2.zero;
+            _utils.HandleCameraRotation(_context, _cine);
+            Assert.AreEqual(180f, TargetYaw, 0.01f);
+            Assert.AreEqual(-10f, TargetPitch, 0.01f);
+        }
+
+        [Test]
+        public void SeedFrom_PitchBeyondClamp_IsClampedOnWrite()
+        {
+            _cameraTargetHost.transform.rotation = Quaternion.Euler(80f, 0f, 0f);
+            _utils.SeedFrom(_cameraTargetHost.transform);
+            _context.lookInput = Vector2.zero;
+            _utils.HandleCameraRotation(_context, _cine);
+            Assert.AreEqual(60f, TargetPitch, 0.01f);
+        }
+
+        [Test]
+        public void SeedFrom_Reseed_OverridesAccumulatedRotation()
+        {
+            // Respawn/teleport semantics: re-seeding discards whatever the
+            // accumulators picked up since the last placement.
+            _cameraTargetHost.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+            _utils.SeedFrom(_cameraTargetHost.transform);
+            _context.lookInput = new Vector2(10f, 0f);
+            _utils.HandleCameraRotation(_context, _cine);
+            Assert.AreEqual(190f, TargetYaw, 0.01f);
+
+            _cameraTargetHost.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+            _utils.SeedFrom(_cameraTargetHost.transform);
+            _context.lookInput = Vector2.zero;
+            _utils.HandleCameraRotation(_context, _cine);
+            Assert.AreEqual(180f, TargetYaw, 0.01f);
+        }
+
+        [Test]
+        public void SeedFrom_NullTarget_DoesNotThrowAndStaysUnseeded()
+        {
+            Assert.DoesNotThrow(() => _utils.SeedFrom(null));
+            Assert.IsFalse(_utils.IsSeeded);
+        }
+
+        [Test]
+        public void SeedFrom_ThenMouseInput_AccumulatesFromSeed()
+        {
+            _cameraTargetHost.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+            _utils.SeedFrom(_cameraTargetHost.transform);
+            _context.lookInput = new Vector2(10f, 0f);
+            _utils.HandleCameraRotation(_context, _cine);
+            Assert.AreEqual(100f, TargetYaw, 0.01f);
+        }
     }
 }

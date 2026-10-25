@@ -22,7 +22,10 @@ public class CharacterStateContext : ActorBlackboard
 
 public struct CinemachineContext
 {
-    public float targetYaw;
+    // NOTE: no targetYaw field — an earlier version stored
+    // Transform.rotation.y here (the quaternion's Y component, sin(yaw/2),
+    // not an angle) and nothing ever consumed it. Camera seeding lives in
+    // CameraUtils.SeedFrom, which reads eulerAngles at placement time.
     public float topClamp;
     public float bottomClamp;
     public float lookSensivity;

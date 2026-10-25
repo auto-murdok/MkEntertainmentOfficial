@@ -95,7 +95,6 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     {
         _cinemachineProps = new CinemachineContext
         {
-            targetYaw = _cinemachineTarget.transform.rotation.y,
             topClamp = _topClamp,
             bottomClamp = _bottomClamp,
         };
@@ -182,6 +181,16 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     private void LateUpdate()
     {
         _cameraUtils.HandleCameraRotation(_context, _cinemachineProps);
+    }
+
+    // Seed the camera yaw/pitch from the placed camera target. The
+    // composition root (PlayerRigging.WireLocalRig) calls this once spawn
+    // placement and rig wiring are final, so the first rendered frame
+    // already matches the spawn facing instead of snapping to (0, 0).
+    // Re-call after any discontinuous move (respawn, teleport).
+    public void SeedCamera()
+    {
+        _cameraUtils.SeedFrom(_cinemachineTarget);
     }
 
     public void setMovementInput(Vector2 movementInput)

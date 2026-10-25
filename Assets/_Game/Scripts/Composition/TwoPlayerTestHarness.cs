@@ -267,6 +267,22 @@ public class TwoPlayerTestHarness : MonoBehaviour
             Debug.Log($"[TPTEST] target teleported to {mine.transform.position}");
         }
 
+        // Take sole control of our own player. The human CharacterBrain is
+        // still enabled in the build and POLLS its input actions every
+        // frame: with no human at the keyboard it writes
+        // setIsAiming(false) / setIsRunning(false) over the harness's
+        // values, so the bot fired from a relaxed stance and never held
+        // the aim (movement/look are event-driven in the brain, which is
+        // why strafing and facing worked while aiming did not). Disabling
+        // it makes the harness the only writer on the production input
+        // surface. Production code is untouched.
+        CharacterBrain humanBrain = mine.GetComponent<CharacterBrain>();
+        if (humanBrain != null && humanBrain.enabled)
+        {
+            humanBrain.enabled = false;
+            Debug.Log("[TPTEST] local CharacterBrain disabled (harness has sole input control)");
+        }
+
         ActorBrainBase theirBrain = theirs.GetComponent<ActorBrainBase>();
         if (theirBrain != null)
         {

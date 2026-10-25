@@ -116,8 +116,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1.4496968, y: 0.8812393, z: 0.83551514}
-  m_Center: {x: -0.00035500526, y: -0.28028685, z: -0.0033189058}
+  m_Size: {x: 1.4496968, y: 0.8802409, z: 0.833689}
+  m_Center: {x: -0.00035500526, y: -0.28078604, z: -0.0033176243}
 --- !u!1001 &4543550611800288068
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -196,11 +196,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bf57d9afdcdcaf941bcb800426866ada, type: 2}
-    - target: {fileID: -5820668062319212616, guid: 7bf03956780c209419bce86c3d68ee30,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
-      objectReference: {fileID: 0}
     - target: {fileID: -4430100900687889873, guid: 7bf03956780c209419bce86c3d68ee30,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -241,16 +236,16 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
+    - target: {fileID: 4742473837712756890, guid: 7bf03956780c209419bce86c3d68ee30,
+        type: 3}
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 5462038108011214462, guid: 7bf03956780c209419bce86c3d68ee30,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: bf57d9afdcdcaf941bcb800426866ada, type: 2}
-    - target: {fileID: 7233174915852281613, guid: 7bf03956780c209419bce86c3d68ee30,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: 8139650600507523088, guid: 7bf03956780c209419bce86c3d68ee30,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -262,7 +257,8 @@ PrefabInstance:
       value: 123
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: -5820668062319212616, guid: 7bf03956780c209419bce86c3d68ee30, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7bf03956780c209419bce86c3d68ee30, type: 3}

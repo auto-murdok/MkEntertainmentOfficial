@@ -116,8 +116,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.82339287, y: 0.08370472, z: 1.083528}
-  m_Center: {x: 0.1788843, y: 0.04066423, z: -0.10835308}
+  m_Size: {x: 0.8214273, y: 0.08102801, z: 1.0815281}
+  m_Center: {x: 0.17880633, y: 0.040488396, z: -0.10835308}
 --- !u!1001 &95881414465352033
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -201,11 +201,6 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
-    - target: {fileID: -2186855818072237239, guid: d01729907318ce24e9994bad46e4fcdc,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
-      objectReference: {fileID: 0}
     - target: {fileID: 286708846605085146, guid: d01729907318ce24e9994bad46e4fcdc,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -236,11 +231,11 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
-    - target: {fileID: 3625757033514634653, guid: d01729907318ce24e9994bad46e4fcdc,
+    - target: {fileID: 4742473837712756890, guid: d01729907318ce24e9994bad46e4fcdc,
         type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
       value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
+      objectReference: {fileID: 0}
     - target: {fileID: 6099731758615622410, guid: d01729907318ce24e9994bad46e4fcdc,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -262,7 +257,8 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: 98fb5b75043cffe4993a9b2f835300e3, type: 2}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: -2186855818072237239, guid: d01729907318ce24e9994bad46e4fcdc, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d01729907318ce24e9994bad46e4fcdc, type: 3}

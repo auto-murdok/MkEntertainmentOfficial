@@ -116,8 +116,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 2.5666735, y: 3.9504895, z: 1.2665967}
-  m_Center: {x: 0.013323188, y: 1.975167, z: 0.021889031}
+  m_Size: {x: 2.543064, y: 3.9504895, z: 1.2665967}
+  m_Center: {x: 0.0015184879, y: 1.975167, z: 0.021889031}
 --- !u!1001 &5862224634515542317
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -211,11 +211,6 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
-    - target: {fileID: -1627226229331475902, guid: ce5c794ef4d318249a56a825fe80a053,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
-      objectReference: {fileID: 0}
     - target: {fileID: 475792782575925604, guid: ce5c794ef4d318249a56a825fe80a053,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -261,6 +256,11 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 424ef13fa0688cc4696f76f289ec6aab, type: 2}
+    - target: {fileID: 4742473837712756890, guid: ce5c794ef4d318249a56a825fe80a053,
+        type: 3}
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 4908009044998295592, guid: ce5c794ef4d318249a56a825fe80a053,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -271,18 +271,14 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
-    - target: {fileID: 6737914032866769286, guid: ce5c794ef4d318249a56a825fe80a053,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: 8112346771299540664, guid: ce5c794ef4d318249a56a825fe80a053,
         type: 3}
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: -1627226229331475902, guid: ce5c794ef4d318249a56a825fe80a053, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ce5c794ef4d318249a56a825fe80a053, type: 3}

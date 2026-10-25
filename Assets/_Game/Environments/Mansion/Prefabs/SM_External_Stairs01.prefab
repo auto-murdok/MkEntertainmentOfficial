@@ -84,8 +84,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 7.6751804, y: 2.0909138, z: 5.53164}
-  m_Center: {x: -3.6930075, y: 1.043832, z: -2.6402822}
+  m_Size: {x: 7.6751804, y: 2.090027, z: 5.53164}
+  m_Center: {x: -3.6930075, y: 1.0442754, z: -2.6402822}
 --- !u!1 &5483623476514773374
 GameObject:
   m_ObjectHideFlags: 0
@@ -286,20 +286,15 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
-    - target: {fileID: 1053946127013027658, guid: b779728c12fe7844a878493b3c1f7406,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: 4236903632110689930, guid: b779728c12fe7844a878493b3c1f7406,
         type: 3}
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
-    - target: {fileID: 4622622284363651384, guid: b779728c12fe7844a878493b3c1f7406,
+    - target: {fileID: 4742473837712756890, guid: b779728c12fe7844a878493b3c1f7406,
         type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 5021507901672771758, guid: b779728c12fe7844a878493b3c1f7406,
         type: 3}
@@ -322,7 +317,8 @@ PrefabInstance:
       value: 123
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 4622622284363651384, guid: b779728c12fe7844a878493b3c1f7406, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b779728c12fe7844a878493b3c1f7406, type: 3}

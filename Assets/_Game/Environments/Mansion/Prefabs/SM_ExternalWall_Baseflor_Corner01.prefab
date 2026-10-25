@@ -51,8 +51,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1.0430834, y: 7.5344977, z: 1.0273249}
-  m_Center: {x: -0.48413455, y: 3.764664, z: -0.4876877}
+  m_Size: {x: 1.0425822, y: 7.5344977, z: 1.0267787}
+  m_Center: {x: -0.48438516, y: 3.764664, z: -0.48796082}
 --- !u!1 &8544545965278252939
 GameObject:
   m_ObjectHideFlags: 0
@@ -95,7 +95,7 @@ LODGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8544545965278252939}
   serializedVersion: 2
-  m_LocalReferencePoint: {x: -0.48413455, y: 3.764665, z: -0.48768783}
+  m_LocalReferencePoint: {x: -0.4843852, y: 3.764665, z: -0.48796093}
   m_Size: 7.5344996
   m_FadeMode: 0
   m_AnimateCrossFading: 0
@@ -105,7 +105,6 @@ LODGroup:
     fadeTransitionWidth: 0
     renderers:
     - renderer: {fileID: 7478361973944340824}
-    - renderer: {fileID: 87737546065090072}
   m_Enabled: 1
 --- !u!1 &8985093830125028722
 GameObject:
@@ -227,11 +226,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[4]'
       value: 
       objectReference: {fileID: 2100000, guid: 5c3cb395e9b32e24dbe8bf9dbb5af536, type: 2}
-    - target: {fileID: 611802412782621449, guid: 9405edd0b37d1164ba4c38b121d66115,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: 919132149155446097, guid: 9405edd0b37d1164ba4c38b121d66115,
         type: 3}
       propertyPath: m_Name
@@ -242,22 +236,12 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
-    - target: {fileID: 7643683151815529508, guid: 9405edd0b37d1164ba4c38b121d66115,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 7643683151815529508, guid: 9405edd0b37d1164ba4c38b121d66115, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9405edd0b37d1164ba4c38b121d66115, type: 3}
---- !u!23 &87737546065090072 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 611802412782621449, guid: 9405edd0b37d1164ba4c38b121d66115,
-    type: 3}
-  m_PrefabInstance: {fileID: 669413297208821009}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1062993159970317050 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 9405edd0b37d1164ba4c38b121d66115,

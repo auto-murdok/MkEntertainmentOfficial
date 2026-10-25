@@ -83,8 +83,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.27882612, y: 0.710416, z: 0.27939817}
-  m_Center: {x: -0.0008048117, y: 0.3538976, z: -0.003436163}
+  m_Size: {x: 0.2776047, y: 0.709747, z: 0.27730238}
+  m_Center: {x: -0.0009085238, y: 0.3542321, z: -0.003043741}
 --- !u!1 &5368752104621029619
 GameObject:
   m_ObjectHideFlags: 0
@@ -196,11 +196,6 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
-    - target: {fileID: -2963961430480041272, guid: b04102640887e4f4caf6ca0851d95795,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: -2035863142495505148, guid: b04102640887e4f4caf6ca0851d95795,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -221,6 +216,11 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
+    - target: {fileID: 4742473837712756890, guid: b04102640887e4f4caf6ca0851d95795,
+        type: 3}
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 4945145642562379013, guid: b04102640887e4f4caf6ca0851d95795,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -236,11 +236,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 5516afad641e88a4fbac2ccfe13c8ebd, type: 2}
-    - target: {fileID: 6049634269733052708, guid: b04102640887e4f4caf6ca0851d95795,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
-      objectReference: {fileID: 0}
     - target: {fileID: 6108716110790071988, guid: b04102640887e4f4caf6ca0851d95795,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -262,7 +257,8 @@ PrefabInstance:
       value: 123
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 6049634269733052708, guid: b04102640887e4f4caf6ca0851d95795, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b04102640887e4f4caf6ca0851d95795, type: 3}

@@ -84,8 +84,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.20089665, y: 1.005174, z: 0.2111631}
-  m_Center: {x: -0.0028700456, y: 0.4978324, z: -0.0010136738}
+  m_Size: {x: 0.20089665, y: 1.0006218, z: 0.2111631}
+  m_Center: {x: -0.0028700456, y: 0.50010854, z: -0.0010136738}
 --- !u!1 &8841593092440528454
 GameObject:
   m_ObjectHideFlags: 0
@@ -181,11 +181,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 237a9b02b354cc347a97cc820067e37c, type: 2}
-    - target: {fileID: -5836072066422716026, guid: 225a96a7e43850d44925cef69798f07c,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: -5707942993669317789, guid: 225a96a7e43850d44925cef69798f07c,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -197,11 +192,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: 237a9b02b354cc347a97cc820067e37c, type: 2}
     - target: {fileID: -4961664819035876306, guid: 225a96a7e43850d44925cef69798f07c,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
-      objectReference: {fileID: 0}
-    - target: {fileID: 321944003852491831, guid: 225a96a7e43850d44925cef69798f07c,
         type: 3}
       propertyPath: m_StaticEditorFlags
       value: 123
@@ -246,6 +236,11 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 237a9b02b354cc347a97cc820067e37c, type: 2}
+    - target: {fileID: 4742473837712756890, guid: 225a96a7e43850d44925cef69798f07c,
+        type: 3}
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 5241511567628455640, guid: 225a96a7e43850d44925cef69798f07c,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -262,7 +257,8 @@ PrefabInstance:
       value: 123
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 321944003852491831, guid: 225a96a7e43850d44925cef69798f07c, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 225a96a7e43850d44925cef69798f07c, type: 3}

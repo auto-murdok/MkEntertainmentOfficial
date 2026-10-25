@@ -261,7 +261,11 @@ public static class MansionPrefabFactory
                     continue;
                 }
                 string materialName = cols[2].Trim();
-                string param = cols[3].Trim();
+                // Param names arrive in two dialects: 'BaseColor' and
+                // the numbered '00_BaseColor' (the dialect of exactly
+                // the materials that failed to resolve in pass 1/2).
+                // Normalise by stripping the numeric prefix.
+                string param = Regex.Replace(cols[3].Trim(), @"^\d+_", string.Empty);
                 string texture = cols[4].Trim();
                 if (string.IsNullOrEmpty(materialName) || string.IsNullOrEmpty(texture))
                 {
@@ -276,19 +280,23 @@ public static class MansionPrefabFactory
                 {
                     def.twoSided = true;
                 }
+                // First non-empty wins per slot: the CSVs repeat a
+                // material once per mesh that uses it (and layered
+                // materials list a generic T_Base_* after their
+                // specific map) — the specific map is listed first.
                 if (param == "BaseColor" || param == "Albedo")
                 {
-                    def.albedoPath = ResolveTextureAny(texture + ".png", RawTextureFolders);
+                    def.albedoPath ??= ResolveTextureAny(texture + ".png", RawTextureFolders);
                 }
                 else if (param == "Normal" || param == "NRM")
                 {
-                    def.normalPath =
+                    def.normalPath ??=
                         ResolveTextureAny($"{texture}_N_Unity.png", UnityTextureFolders)
                         ?? ResolveTextureAny(texture + ".png", RawTextureFolders);
                 }
                 else if (param == "ORM")
                 {
-                    def.maskPath = ResolveTextureAny($"{texture}_ORM_Pack.png", UnityTextureFolders);
+                    def.maskPath ??= ResolveTextureAny($"{texture}_ORM_Pack.png", UnityTextureFolders);
                 }
             }
         }

@@ -74,7 +74,7 @@ LODGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5709194189889928652}
   serializedVersion: 2
-  m_LocalReferencePoint: {x: -3.0010931, y: 2.7509856, z: -0.23162161}
+  m_LocalReferencePoint: {x: -3.0010931, y: 2.7514842, z: -0.23126642}
   m_Size: 6.0052667
   m_FadeMode: 0
   m_AnimateCrossFading: 0
@@ -84,7 +84,6 @@ LODGroup:
     fadeTransitionWidth: 0
     renderers:
     - renderer: {fileID: 2094222522430172308}
-    - renderer: {fileID: 5611474760075912226}
   m_Enabled: 1
 --- !u!1 &8130790831763352959
 GameObject:
@@ -137,8 +136,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 6.0052667, y: 5.504765, z: 0.464422}
-  m_Center: {x: -3.0010931, y: 2.750985, z: -0.23162156}
+  m_Size: {x: 6.0052667, y: 5.503768, z: 0.46316147}
+  m_Center: {x: -3.0010931, y: 2.7514834, z: -0.23126636}
 --- !u!1001 &5783546804910579018
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -197,11 +196,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -7089580894701258392, guid: 3c39391b1a081294b8807cabddd84203,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: -5703393015401743258, guid: 3c39391b1a081294b8807cabddd84203,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -232,25 +226,15 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[2]'
       value: 
       objectReference: {fileID: 2100000, guid: a8c3cd9b6568ecf45b65874afad9d573, type: 2}
-    - target: {fileID: 8072739343868867541, guid: 3c39391b1a081294b8807cabddd84203,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 8072739343868867541, guid: 3c39391b1a081294b8807cabddd84203, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3c39391b1a081294b8807cabddd84203, type: 3}
 --- !u!23 &2094222522430172308 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 5571908648094462430, guid: 3c39391b1a081294b8807cabddd84203,
-    type: 3}
-  m_PrefabInstance: {fileID: 5783546804910579018}
-  m_PrefabAsset: {fileID: 0}
---- !u!23 &5611474760075912226 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -7089580894701258392, guid: 3c39391b1a081294b8807cabddd84203,
     type: 3}
   m_PrefabInstance: {fileID: 5783546804910579018}
   m_PrefabAsset: {fileID: 0}

@@ -51,8 +51,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 4.5597525, y: 0.09592062, z: 0.24638918}
-  m_Center: {x: -0.0061306953, y: 0.0003616847, z: -0.0006249994}
+  m_Size: {x: 4.5574207, y: 0.09545417, z: 0.24525192}
+  m_Center: {x: -0.005842924, y: 0.0005949065, z: -0.0011739358}
 --- !u!1 &3828828985020107113
 GameObject:
   m_ObjectHideFlags: 0
@@ -201,11 +201,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 7b8ed1605cc421f46bc47d11204dddd5, type: 2}
-    - target: {fileID: -214250864112022188, guid: 1049d11f8f4104b4d87e59bdee2b43f7,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: 479772914905366544, guid: 1049d11f8f4104b4d87e59bdee2b43f7,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -241,6 +236,11 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 7b8ed1605cc421f46bc47d11204dddd5, type: 2}
+    - target: {fileID: 4742473837712756890, guid: 1049d11f8f4104b4d87e59bdee2b43f7,
+        type: 3}
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 5380378219404675405, guid: 1049d11f8f4104b4d87e59bdee2b43f7,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -251,18 +251,14 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
-    - target: {fileID: 8436777701362469193, guid: 1049d11f8f4104b4d87e59bdee2b43f7,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
-      objectReference: {fileID: 0}
     - target: {fileID: 8731203119871872289, guid: 1049d11f8f4104b4d87e59bdee2b43f7,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 7b8ed1605cc421f46bc47d11204dddd5, type: 2}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 8436777701362469193, guid: 1049d11f8f4104b4d87e59bdee2b43f7, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1049d11f8f4104b4d87e59bdee2b43f7, type: 3}

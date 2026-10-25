@@ -116,8 +116,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.14254232, y: 0.037607744, z: 0.12106835}
-  m_Center: {x: -0.0037310123, y: 0.000000014901161, z: 0.0071679987}
+  m_Size: {x: 0.14033328, y: 0.035607677, z: 0.11906828}
+  m_Center: {x: -0.0035885572, y: 0.000000014901161, z: 0.007167995}
 --- !u!1001 &5106436474859439605
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -186,11 +186,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: f62379b5f8b6e86439b1d0f53e35a17d, type: 2}
-    - target: {fileID: -7784672602211185609, guid: a3aebc76d7c395640bad1ce24f01c50c,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: -3752117457394019754, guid: a3aebc76d7c395640bad1ce24f01c50c,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -202,11 +197,6 @@ PrefabInstance:
       value: 123
       objectReference: {fileID: 0}
     - target: {fileID: -1388979378775062842, guid: a3aebc76d7c395640bad1ce24f01c50c,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
-      objectReference: {fileID: 0}
-    - target: {fileID: -315529013311540337, guid: a3aebc76d7c395640bad1ce24f01c50c,
         type: 3}
       propertyPath: m_StaticEditorFlags
       value: 123
@@ -251,6 +241,11 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: f62379b5f8b6e86439b1d0f53e35a17d, type: 2}
+    - target: {fileID: 4742473837712756890, guid: a3aebc76d7c395640bad1ce24f01c50c,
+        type: 3}
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 5344913114361206405, guid: a3aebc76d7c395640bad1ce24f01c50c,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -262,7 +257,8 @@ PrefabInstance:
       value: 123
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: -315529013311540337, guid: a3aebc76d7c395640bad1ce24f01c50c, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a3aebc76d7c395640bad1ce24f01c50c, type: 3}

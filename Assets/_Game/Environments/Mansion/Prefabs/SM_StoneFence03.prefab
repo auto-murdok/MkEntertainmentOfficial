@@ -84,8 +84,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 3.6510327, y: 3.0810728, z: 0.7618332}
-  m_Center: {x: 1.7989212, y: 1.5085384, z: 0.30693805}
+  m_Size: {x: 3.6104527, y: 3.049737, z: 0.7427242}
+  m_Center: {x: 1.7929775, y: 1.524206, z: 0.3164926}
 --- !u!1 &8228485787777624704
 GameObject:
   m_ObjectHideFlags: 0
@@ -196,11 +196,6 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
-    - target: {fileID: -3011893689840212754, guid: 1a35ea5a8357a234fa67791a0deb4e7e,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: -2149938484809020287, guid: 1a35ea5a8357a234fa67791a0deb4e7e,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -246,10 +241,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 756aac89b39df0247a112be7d288efb6, type: 2}
-    - target: {fileID: 6353435358495752552, guid: 1a35ea5a8357a234fa67791a0deb4e7e,
+    - target: {fileID: 4742473837712756890, guid: 1a35ea5a8357a234fa67791a0deb4e7e,
         type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 7703907347385613402, guid: 1a35ea5a8357a234fa67791a0deb4e7e,
         type: 3}
@@ -262,7 +257,8 @@ PrefabInstance:
       value: 123
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 6353435358495752552, guid: 1a35ea5a8357a234fa67791a0deb4e7e, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1a35ea5a8357a234fa67791a0deb4e7e, type: 3}

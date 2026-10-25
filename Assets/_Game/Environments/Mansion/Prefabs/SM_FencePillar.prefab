@@ -83,8 +83,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.71856767, y: 3.051899, z: 0.7383132}
-  m_Center: {x: 0.026121795, y: 1.5246477, z: 0.010845959}
+  m_Size: {x: 0.71856767, y: 3.050767, z: 0.7383132}
+  m_Center: {x: 0.026121795, y: 1.5252136, z: 0.010845959}
 --- !u!1 &3477144664506364168
 GameObject:
   m_ObjectHideFlags: 0
@@ -127,11 +127,6 @@ PrefabInstance:
     m_TransformParent: {fileID: 5335889495515018150}
     m_Modifications:
     - target: {fileID: -8907105331712124751, guid: 81fcce45d42eda44a9ec6017cf1cb51f,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
-      objectReference: {fileID: 0}
-    - target: {fileID: -8744499359405374986, guid: 81fcce45d42eda44a9ec6017cf1cb51f,
         type: 3}
       propertyPath: m_StaticEditorFlags
       value: 123
@@ -251,18 +246,19 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 2c29da1b66c840149b5983e01c1b31a7, type: 2}
-    - target: {fileID: 1314605395676758378, guid: 81fcce45d42eda44a9ec6017cf1cb51f,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: 1812853417885792695, guid: 81fcce45d42eda44a9ec6017cf1cb51f,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 2c29da1b66c840149b5983e01c1b31a7, type: 2}
+    - target: {fileID: 4742473837712756890, guid: 81fcce45d42eda44a9ec6017cf1cb51f,
+        type: 3}
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: -8744499359405374986, guid: 81fcce45d42eda44a9ec6017cf1cb51f, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 81fcce45d42eda44a9ec6017cf1cb51f, type: 3}

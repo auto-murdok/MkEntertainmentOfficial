@@ -116,8 +116,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1.5441965, y: 1.0614433, z: 1.5150348}
-  m_Center: {x: -0.3171633, y: 0.50465655, z: -0.3115645}
+  m_Size: {x: 1.5364594, y: 1.0614433, z: 1.5150348}
+  m_Center: {x: -0.3210318, y: 0.50465655, z: -0.3115645}
 --- !u!1001 &8989300173092471221
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -206,11 +206,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: cba40a43662ac90449ad12852af87022, type: 2}
-    - target: {fileID: -505156424360293123, guid: 5e7e53e016965e74389151102889f2a7,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: 919132149155446097, guid: 5e7e53e016965e74389151102889f2a7,
         type: 3}
       propertyPath: m_Name
@@ -236,16 +231,16 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
+    - target: {fileID: 4742473837712756890, guid: 5e7e53e016965e74389151102889f2a7,
+        type: 3}
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 5238720244866633530, guid: 5e7e53e016965e74389151102889f2a7,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: cba40a43662ac90449ad12852af87022, type: 2}
-    - target: {fileID: 5361552331682317306, guid: 5e7e53e016965e74389151102889f2a7,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
-      objectReference: {fileID: 0}
     - target: {fileID: 5585669105299490112, guid: 5e7e53e016965e74389151102889f2a7,
         type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -262,7 +257,8 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: cba40a43662ac90449ad12852af87022, type: 2}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 5361552331682317306, guid: 5e7e53e016965e74389151102889f2a7, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5e7e53e016965e74389151102889f2a7, type: 3}

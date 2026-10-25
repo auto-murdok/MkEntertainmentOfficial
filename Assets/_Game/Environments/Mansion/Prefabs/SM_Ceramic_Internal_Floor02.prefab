@@ -116,8 +116,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 6.684162, y: 0.50714177, z: 6.3828278}
-  m_Center: {x: -3.3407574, y: 0.23152955, z: -3.16882}
+  m_Size: {x: 6.6751547, y: 0.32440007, z: 6.3604326}
+  m_Center: {x: -3.337339, y: 0.3229004, z: -3.1800175}
 --- !u!1001 &6796257036738067180
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -271,15 +271,10 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
-    - target: {fileID: 6773146064886322041, guid: de926274ef099d348b4406592dc4f9cd,
+    - target: {fileID: 4742473837712756890, guid: de926274ef099d348b4406592dc4f9cd,
         type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
       value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
-    - target: {fileID: 6847378924688348330, guid: de926274ef099d348b4406592dc4f9cd,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
       objectReference: {fileID: 0}
     - target: {fileID: 7184660948989159009, guid: de926274ef099d348b4406592dc4f9cd,
         type: 3}
@@ -292,7 +287,8 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: 373a6f1b95ff05646b0d2f260c5c08dc, type: 2}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 6847378924688348330, guid: de926274ef099d348b4406592dc4f9cd, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: de926274ef099d348b4406592dc4f9cd, type: 3}

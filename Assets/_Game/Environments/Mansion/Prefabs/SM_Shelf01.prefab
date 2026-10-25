@@ -83,8 +83,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1.2099732, y: 3.6321864, z: 1.3826114}
-  m_Center: {x: 0.00011777878, y: 0.6169019, z: -0.000000059604645}
+  m_Size: {x: 1.2099732, y: 2.4294033, z: 1.3813498}
+  m_Center: {x: 0.00011777878, y: 1.2173916, z: -0.000020802021}
 --- !u!1 &8522948375453494948
 GameObject:
   m_ObjectHideFlags: 0
@@ -206,11 +206,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 924eb7c9c0a10f945a016dd2eae3b460, type: 2}
-    - target: {fileID: -3519822882536789947, guid: 7c49e10ed89fdba48a0f33d0b16af949,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: -3052222674081079739, guid: 7c49e10ed89fdba48a0f33d0b16af949,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -246,10 +241,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 924eb7c9c0a10f945a016dd2eae3b460, type: 2}
-    - target: {fileID: 5430784542194085195, guid: 7c49e10ed89fdba48a0f33d0b16af949,
+    - target: {fileID: 4742473837712756890, guid: 7c49e10ed89fdba48a0f33d0b16af949,
         type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 6356990362833432126, guid: 7c49e10ed89fdba48a0f33d0b16af949,
         type: 3}
@@ -262,7 +257,8 @@ PrefabInstance:
       value: 123
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 5430784542194085195, guid: 7c49e10ed89fdba48a0f33d0b16af949, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7c49e10ed89fdba48a0f33d0b16af949, type: 3}

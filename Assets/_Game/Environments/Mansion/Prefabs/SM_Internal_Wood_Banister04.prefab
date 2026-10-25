@@ -51,8 +51,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.20326868, y: 1.0051736, z: 0.2311702}
-  m_Center: {x: -0.0040560365, y: 0.49783215, z: -0.011018053}
+  m_Size: {x: 0.20326868, y: 1.0006211, z: 0.2311702}
+  m_Center: {x: -0.0040560365, y: 0.5001083, z: -0.011018053}
 --- !u!1 &6652970465232109972
 GameObject:
   m_ObjectHideFlags: 0
@@ -201,16 +201,6 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 123
       objectReference: {fileID: 0}
-    - target: {fileID: -5420151040405401776, guid: 4eb37a449c237ef4faa9a55bda6607e8,
-        type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 123
-      objectReference: {fileID: 0}
-    - target: {fileID: -4054233299490370827, guid: 4eb37a449c237ef4faa9a55bda6607e8,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: f14c2dcf62d924840874bd22c220fb49, type: 2}
     - target: {fileID: -2368994374463129788, guid: 4eb37a449c237ef4faa9a55bda6607e8,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -241,6 +231,11 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 237a9b02b354cc347a97cc820067e37c, type: 2}
+    - target: {fileID: 4742473837712756890, guid: 4eb37a449c237ef4faa9a55bda6607e8,
+        type: 3}
+      propertyPath: m_LODs.Array.data[0].renderers.Array.data[1].renderer
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 5374469356194159762, guid: 4eb37a449c237ef4faa9a55bda6607e8,
         type: 3}
       propertyPath: m_StaticEditorFlags
@@ -262,7 +257,8 @@ PrefabInstance:
       value: 123
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: -5420151040405401776, guid: 4eb37a449c237ef4faa9a55bda6607e8, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4eb37a449c237ef4faa9a55bda6607e8, type: 3}

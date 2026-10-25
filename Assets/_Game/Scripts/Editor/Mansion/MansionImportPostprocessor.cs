@@ -55,18 +55,19 @@ public class MansionImportPostprocessor : AssetPostprocessor
 
         TextureImporter importer = (TextureImporter)assetImporter;
         string fileName = Path.GetFileNameWithoutExtension(assetPath);
-        bool isKitTexture = assetPath.Contains("/KitTextures/");
+        bool isKitTexture = assetPath.Contains("KitTextures");
 
         importer.mipmapEnabled = true;
         importer.streamingMipmaps = true;
         importer.maxTextureSize = MaxTextureSize;
         importer.wrapMode = isKitTexture ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;
 
-        if (fileName.EndsWith("_N") || fileName.Contains("_Normal"))
+        if (fileName.EndsWith("_N") || fileName.Contains("_Normal") || fileName.Contains("_N_Unity"))
         {
             importer.textureType = TextureImporterType.NormalMap;
         }
         else if (fileName.EndsWith("_ORM")
+                 || fileName.Contains("_ORM_Pack")
                  || fileName.StartsWith("T_AO")
                  || fileName.Contains("_Grayscale")
                  || fileName.Contains("Grunge"))

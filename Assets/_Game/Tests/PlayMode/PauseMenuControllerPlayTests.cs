@@ -65,7 +65,15 @@ namespace Game.Tests.PlayMode
             Assert.IsFalse(controller.isOpen);
             Assert.AreEqual(0f, group.alpha);
             Assert.IsFalse(group.blocksRaycasts);
-            Assert.AreEqual(CursorLockMode.Locked, Cursor.lockState, "Closing the menu must re-lock the cursor.");
+            // Cursor lock is mediated by window focus (Unity docs: the OS or
+            // the Editor can change cursor state): in batchmode there is no
+            // window to lock, the request is discarded, and lockState reads
+            // back None no matter what the code sets. The re-lock is only
+            // observable in a windowed run, where this assertion still runs.
+            if (!Application.isBatchMode)
+            {
+                Assert.AreEqual(CursorLockMode.Locked, Cursor.lockState, "Closing the menu must re-lock the cursor.");
+            }
         }
 
         [Test]

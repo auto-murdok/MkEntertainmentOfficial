@@ -67,7 +67,6 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
 
         OnCommonUpdate += RelieveMovement;
         OnCommonUpdate += SearchForSurvivors;
-        OnCommonUpdate += SyncBitingAnimatorParam;
 
         // Global guard: force transition to the reusable Dead state on death.
         CheckGlobalTransition = (current) => _context.isAlive ? current : ZombieStates.Dead;
@@ -148,22 +147,6 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
     }
 
     // While not chasing, ease the animator's root motion back to zero.
-    private bool _animatorBiting;
-
-    // Mirrors the FSM's bite flag into the Animator: zombie_neck_bite's
-    // decoupled exit transition keys off IsBiting, so the clip ends on the
-    // gameplay clock (blended) instead of playing out to its authored exit
-    // time while the FSM has already moved on.
-    private void SyncBitingAnimatorParam(ZombieStates currentState)
-    {
-        if (_context.animator == null || _animatorBiting == _context.isBiting)
-        {
-            return;
-        }
-        _animatorBiting = _context.isBiting;
-        _context.animator.SetBool(AnimatorUtils.IsBitingHash, _animatorBiting);
-    }
-
     private void RelieveMovement(ZombieStates currentState)
     {
         if (currentState != ZombieStates.Chasing)

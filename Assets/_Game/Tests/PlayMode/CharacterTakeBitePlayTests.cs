@@ -5,11 +5,12 @@ using UnityEngine.TestTools;
 
 namespace Game.Tests.PlayMode
 {
-    // Victim side of the bite phase fix: the take-bite ends when the
-    // attacker's bite ends (asymmetric release), not only when the flat
-    // takeBiteDuration timer elapses. Drives CharacterTakeBiteState through a
-    // bare state machine with a fake attacker whose phase flags are set by
-    // hand (the FakePinnedVictim double from ZombieHandAttackPlayTests).
+    // Victim side of the bite timeline: the take-bite ends when her own
+    // push completes — takeBiteDuration, authored to her clip — NOT when
+    // the attacker's shorter FSM bite ends. Drives CharacterTakeBiteState
+    // through a bare state machine with a fake attacker whose phase flags
+    // are set by hand (the FakePinnedVictim double from
+    // ZombieHandAttackPlayTests).
     public class CharacterTakeBitePlayTests
     {
         private class NoOpState : State<CharacterState, CharacterStateContext>
@@ -61,7 +62,7 @@ namespace Game.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator VictimFreedWhenAttackerBiteEnds_LongBeforeDurationCap()
+        public IEnumerator VictimFreedAtPushCompletion_WhenDurationElapses()
         {
             // Start enters Idle; request TakingBite and let the deferred
             // transition land, then tick the state once.
@@ -87,11 +88,17 @@ namespace Game.Tests.PlayMode
             yield return null;
             Assert.IsTrue(_machine._context.isBeingAttacked);
 
-            // Bite over: the victim breaks free immediately — nowhere near the
-            // 3s takeBiteDuration cap — while the zombie would still be in its
-            // recovery / attack cooldown.
+            // The attacker's bite is over — but she is NOT free yet: her
+            // release is her push, which completes on her clip's clock
+            // (takeBiteDuration), not on his FSM clock.
             _attacker.IsBiting = false;
             yield return null;
+            Assert.IsTrue(_machine._context.isBeingAttacked,
+                "victim stays in take-bite after the attacker's bite ends; her push has not completed");
+
+            // Duration elapsed (3s from entry; ~0.5s already spent above):
+            // the push is done and she is free again.
+            yield return new WaitForSeconds(2.8f);
             Assert.IsFalse(_machine._context.isBeingAttacked);
         }
     }

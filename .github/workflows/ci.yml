@@ -12,10 +12,13 @@ name: CI
 # - EditMode 107/108: GameCliArgsTests.IsAutomated_FalseForPlainLaunch
 #   asserts a non-batchmode launch; automated runs are batchmode by
 #   definition.
-# - PlayMode 134/136: BulletProjectilePlayTests
-#   .MaxTravelDistance_BulletIsReleasedIntoEmptySpace and
+# - PlayMode: previously 134/136 with
+#   BulletProjectilePlayTests.MaxTravelDistance_BulletIsReleasedIntoEmptySpace
+#   (frame-count wait vs unthrottled batchmode frames) and
 #   PauseMenuControllerPlayTests.SetOpen_TogglesVisibilityAndCursor
-#   (the latter asserts cursor re-lock, impossible headless).
+#   (cursor re-lock, unobservable headless). Both test harnesses were
+#   fixed in 2026-10 (assertions unchanged); the suite is expected
+#   fully green. Any new failure is a real regression.
 
 on:
   pull_request:

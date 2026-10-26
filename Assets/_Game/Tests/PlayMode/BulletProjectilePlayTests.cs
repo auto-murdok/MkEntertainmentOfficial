@@ -112,8 +112,14 @@ namespace Game.Tests.PlayMode
             BuildBulletAt(new Vector3(0f, 800f, 0f), Vector3.forward);
             _bullet.GetComponent<BulletProjectile>().Launch(new Vector3(0f, 800f, 0f), Quaternion.LookRotation(Vector3.forward), null);
 
-            int guard = 0;
-            while (_bullet != null && guard++ < 600) yield return null;
+            // Wait in physics steps, not render frames: the release condition
+            // is simulated distance (30 m at 50 m/s = 30 fixed steps), while a
+            // frame-count budget is meaningless in batchmode CI, where frames
+            // are unthrottled (600 frames there elapse in ~0.14 s of simulated
+            // time, so the bullet has only travelled ~7 m when the guard
+            // expires). 300 fixed steps = 6 simulated seconds of headroom.
+            int fixedSteps = 0;
+            while (_bullet != null && fixedSteps++ < 300) yield return new WaitForFixedUpdate();
             Assert.IsTrue(_bullet == null, "Bullet should be released after travelling 30m.");
         }
 

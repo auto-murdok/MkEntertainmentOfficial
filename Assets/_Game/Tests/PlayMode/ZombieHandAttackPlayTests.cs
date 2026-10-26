@@ -194,12 +194,14 @@ namespace Game.Tests.PlayMode
             Assert.IsFalse(_behavior._context.isHandAttacking);
 
             // The grab itself deals no damage: the bite lands at the contact
-            // moment (the prepare -> release transition, ~65% through the bite).
+            // moment (the prepare -> release transition, the clip's 0.97s
+            // head-snap anchor).
             Assert.AreEqual(0, _victim.DamageCalls);
 
-            // Default bite is 1.2s (no ZombieData) -> contact at ~0.78s,
-            // attacker-driven damage 30, exactly once per bite.
-            yield return new WaitForSeconds(1.0f);
+            // The bite timeline is clip-anchored and identical with or
+            // without ZombieData: contact at 0.97s, attacker-driven damage
+            // 30, exactly once per bite.
+            yield return new WaitForSeconds(1.2f);
             Assert.AreEqual(1, _victim.DamageCalls);
             Assert.AreEqual(30f, _victim.TotalDamage, 0.001f);
 

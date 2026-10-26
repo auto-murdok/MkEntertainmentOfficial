@@ -5,10 +5,16 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
     private const float DefaultBitingRadius = 0.1f;
     private const float DefaultRadius = 0.3f;
     private const float DefaultAttackCooldown = 1.2f;
-    // TUNING: fraction of the total bite (ZombieData.biteDuration) spent in the push-off /
-    // release phase. The remaining (1 - ReleaseFraction) is the grab (victim locked). Lower
-    // = longer grab / shorter push-off. Drives isPreparing with a single transition (no flicker).
-    private const float ReleaseFraction = 0.35f; // last 35% of the bite is the push-off
+    // The bite timeline is anchored to the single paired animation
+    // (zombie_neck_bite / take_bite), measured on one shared clock: his
+    // head-snap contact lands at BiteContactTime, and the victim's push
+    // completes at BiteReleaseTime - the same moment PlayerData's
+    // takeBiteDuration frees her, and the two must agree. There is
+    // deliberately no per-zombie duration: one animation means one
+    // timeline for every archetype. A future archetype that needs a
+    // faster bite scales the clip and both anchors together.
+    private const float BiteContactTime = 0.97f; // head-snap contact
+    private const float BiteReleaseTime = 3.0f; // her push completes; FSM lets go
     private const float DefaultBiteDamage = 30f;
 
     private enum BitePhase { Prepare, Release }
@@ -44,12 +50,13 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
             }
         }
 
-        // The C# FSM owns the full bite lifecycle: the bite ends after its configured
-        // duration rather than relying on the Animator's state-exit event. The prepare /
-        // release phases are derived from this timer exactly once, so isPreparing is
-        // stable (no per-frame flicker that used to thrash the victim's lock).
-        _biteTimer = context.biteDuration > 0f ? context.biteDuration : DefaultAttackCooldown;
-        _releaseThreshold = _biteTimer * ReleaseFraction;
+        // The C# FSM owns the full bite lifecycle: it runs the clip-anchored
+        // timeline (contact, then release at her push) rather than relying on
+        // the Animator's state-exit event. The prepare / release phases are
+        // derived from this timer exactly once, so isPreparing is stable
+        // (no per-frame flicker that used to thrash the victim's lock).
+        _biteTimer = BiteReleaseTime;
+        _releaseThreshold = BiteReleaseTime - BiteContactTime;
         _hasLandedBite = false;
 
         context.recentlyBitten = true;
@@ -92,9 +99,10 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
             _subState.EnterState(character);
 
             // The prepare -> release transition IS the animation's contact
-            // moment (the head snap at ~65% of the bite): the bite lands here,
-            // not at grab start. Exactly one damage event per bite; a zombie
-            // killed mid-grab never reaches this and deals no bite damage.
+            // moment (the head snap at BiteContactTime on the clip's clock):
+            // the bite lands here, not at grab start. Exactly one damage
+            // event per bite; a zombie killed mid-grab never reaches this
+            // and deals no bite damage.
             if (desired == BitePhase.Release && !_hasLandedBite)
             {
                 _hasLandedBite = true;

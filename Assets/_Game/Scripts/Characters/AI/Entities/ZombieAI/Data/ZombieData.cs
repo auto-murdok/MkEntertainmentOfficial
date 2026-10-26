@@ -23,8 +23,6 @@ public class ZombieData : ScriptableObject
     [Header("Combat & Sizing")]
     [Tooltip("Distance at which the zombie bites. ALSO the separation threshold for re-biting: once the victim is farther than this after a push-off, recentlyBitten clears and a new bite can start after the cooldown.")]
     [SerializeField] private float _biteRange = 1.2f;
-    [Tooltip("Length of the bite in seconds (zombie side). The grab/push-off split is ReleaseFraction in ZombieBitingState.")]
-    [SerializeField] private float _biteDuration = 1.5f;
     [Tooltip("NavMeshAgent radius used while roaming / chasing.")]
     [SerializeField] private float _defaultAgentRadius = 0.3f;
     [Tooltip("NavMeshAgent radius while biting (kept small so the zombie hugs the victim).")]
@@ -70,7 +68,6 @@ public class ZombieData : ScriptableObject
     public LayerMask detectionLayerMask => _detectionLayerMask;
     public LayerMask obstacleLayerMask => _obstacleLayerMask;
     public float biteRange => _biteRange;
-    public float biteDuration => _biteDuration;
     public float defaultAgentRadius => _defaultAgentRadius;
     public float bittingAgentRadius => _bittingAgentRadius;
     public float handAttackDamage => _handAttackDamage;

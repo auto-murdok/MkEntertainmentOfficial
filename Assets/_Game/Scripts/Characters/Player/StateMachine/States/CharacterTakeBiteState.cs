@@ -71,6 +71,11 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
             context.agent.ResetPath();
         }
 
+        // The grapple owns her displacement from here: the motor stands
+        // down (ScriptedPin) so its gravity/snap can never fight the pin,
+        // and the push-off phase runs the clip verbatim (AuthoredY).
+        context.motorMode = MotorMode.ScriptedPin;
+
         _biteTimer = context.data.takeBiteDuration;
         _sawGrab = false;
         _clipStarted = false;
@@ -109,6 +114,12 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
             stateMachine._context.agent.radius = _originalAgentRadius;
             _agentRadiusCaptured = false;
         }
+
+        // Hand displacement back to the motor with a clean vertical
+        // channel: whatever the grapple did, she must not inherit fall
+        // speed or a stale grounded flag from before the grab.
+        stateMachine._context.motorMode = MotorMode.Locomotion;
+        stateMachine._context.motorResetRequested = true;
     }
 
     // The pin must move her through the CharacterController when she has
@@ -138,6 +149,13 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
             stateMachine.ChangeState(CharacterState.Idle);
             return;
         }
+
+        // Motor mode follows the grab phase: pinned while the attacker
+        // prepares (the pin's Move is the frame's only motor action),
+        // authored-clip-verbatim once the push-off takes over.
+        stateMachine._context.motorMode = stateMachine._context.attacker.isPreparing
+            ? MotorMode.ScriptedPin
+            : MotorMode.AuthoredY;
 
         // Only lock position and rotation while the attacker is in the initial grab/prepare phase.
         // Once isPreparing is false (bite & push-off phase), release the transform to let the

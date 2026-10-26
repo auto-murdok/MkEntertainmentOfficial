@@ -114,6 +114,13 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
     }
 
     // --- Ragdoll / death lifecycle ---
+    // A settled corpse stops simulating: once every bone sleeps (or the
+    // cap elapses — a pile on a slope may never fully sleep) the bones go
+    // kinematic, so a field of corpses costs no physics and can never be
+    // re-awakened into a jittering pile.
+    private const float CorpseFreezeMaxSeconds = 4f;
+    private const float CorpseFreezePollSeconds = 0.25f;
+
     private bool _deathTeardownRun;
     protected void SetupDeathHook() => Context.onDeath = HandleDeath;
     private void HandleDeath()
@@ -124,6 +131,39 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
         }
         _deathTeardownRun = true;
         RagdollUtils.EnableRagdoll(transform, OnRagdollEnabled);
+        StartCoroutine(FreezeCorpseRoutine());
+    }
+
+    private System.Collections.IEnumerator FreezeCorpseRoutine()
+    {
+        Rigidbody[] bodies = GetComponentsInChildren<Rigidbody>();
+        float waited = 0f;
+        while (waited < CorpseFreezeMaxSeconds)
+        {
+            bool allSleeping = true;
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                if (bodies[i] != null && !bodies[i].isKinematic && !bodies[i].IsSleeping())
+                {
+                    allSleeping = false;
+                    break;
+                }
+            }
+            if (allSleeping)
+            {
+                break;
+            }
+            yield return new WaitForSeconds(CorpseFreezePollSeconds);
+            waited += CorpseFreezePollSeconds;
+        }
+
+        for (int i = 0; i < bodies.Length; i++)
+        {
+            if (bodies[i] != null)
+            {
+                bodies[i].isKinematic = true;
+            }
+        }
     }
 
     // Networking: remote copies run no FSM (it would fight replication), so
@@ -135,12 +175,43 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
     protected virtual void OnRagdollEnabled()
     {
         _registry?.Unregister(this);
-        // Corpse stealth: the AI scan (AIDetectionUtils) is layer-based — a
-        // corpse left on the LocalPlayer layer stays scannable forever, so
-        // zombies would keep chasing/biting it. Move it off the detection
-        // layer; the registry unregistration above already stops
-        // registry-driven interactions.
-        LayerUtils.SetLayer(transform, "Default");
+        // Corpse stealth + solidity: the AI scan (AIDetectionUtils) is
+        // layer-based — a corpse left on the LocalPlayer layer stays
+        // scannable forever, so zombies would keep chasing/biting it. The
+        // dedicated Corpse layer keeps that stealth AND takes the body
+        // out of character collision (the collision matrix has Corpse off
+        // against LocalPlayer and Zombie): the pile still collides with
+        // the world and itself, but no character can stand on it, be
+        // blocked by it, or be ground-probed onto it — see
+        // docs/grounded_motor_and_corpse_layer.md. The registry
+        // unregistration above already stops registry-driven interactions.
+        LayerUtils.SetLayer(transform, LayerUtils.CorpseLayerName);
+
+        // The motor's own body stops colliding the moment the ragdoll
+        // takes over. The zombie's root capsule would otherwise stay a
+        // live 1.8 m obstacle at the death spot — with its rigidbody
+        // flipped dynamic by the ragdoll enable above, free to roll —
+        // and the player's CharacterController would keep blocking the
+        // other controllers. The bones are the corpse now; the root
+        // stays exactly where the actor died. A root rigidbody paired
+        // with that motor capsule is part of the motor body; a lone root
+        // rigidbody is a ragdoll body and stays dynamic.
+        CapsuleCollider rootCapsule = GetComponent<CapsuleCollider>();
+        Rigidbody rootBody = GetComponent<Rigidbody>();
+        if (rootBody != null && rootCapsule != null)
+        {
+            rootBody.isKinematic = true;
+        }
+        if (rootCapsule != null)
+        {
+            rootCapsule.enabled = false;
+        }
+        CharacterController controller = GetComponent<CharacterController>();
+        if (controller != null)
+        {
+            controller.enabled = false;
+        }
+
         DestroyActorCore(); // NavMeshAgent + Animator are torn down for every actor
     }
 

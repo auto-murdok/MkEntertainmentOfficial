@@ -3,6 +3,8 @@ using UnityEngine;
 public class LayerUtils
 {
     public const string LocalPlayerLayerName = "LocalPlayer";
+    public const string ZombieLayerName = "Zombie";
+    public const string CorpseLayerName = "Corpse";
 
     public static void SetLayer(Transform rootTransform, string layerName)
     {

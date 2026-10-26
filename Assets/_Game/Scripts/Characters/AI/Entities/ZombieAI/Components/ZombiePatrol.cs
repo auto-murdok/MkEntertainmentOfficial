@@ -15,7 +15,11 @@ using UnityEngine.AI;
 // target, the patrol destination is cleared and the FSM routes
 // Idle -> Chasing as usual. Destinations set by anyone else (e.g.
 // click-to-move) are left untouched: the patrol only clears its own legs.
-[RequireComponent(typeof(ZombieBehavior))]
+//
+// No [RequireComponent(typeof(ZombieBehavior))]: the death teardown
+// (ZombieBrain) deliberately Destroys the ZombieBehavior component, and a
+// RequireComponent dependency makes Unity refuse that destroy. The behavior
+// reference is resolved in Awake and null-guarded everywhere instead.
 public class ZombiePatrol : NetworkBehaviour
 {
     private const int MaxPickAttempts = 8;

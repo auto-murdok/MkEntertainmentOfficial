@@ -16,7 +16,11 @@ using UnityEngine.Animations.Rigging;
 // Animator, so the look layers on top of whatever locomotion/attack pose the
 // state machine produced; during bite / hand-attack poses the weight is
 // forced to zero so those clips own the head.
-[RequireComponent(typeof(ZombieBehavior))]
+//
+// No [RequireComponent(typeof(ZombieBehavior))]: the death teardown
+// (ZombieBrain) deliberately Destroys the ZombieBehavior component, and a
+// RequireComponent dependency makes Unity refuse that destroy. The behavior
+// reference is resolved in Awake and null-guarded everywhere instead.
 public class ZombieHeadLook : NetworkBehaviour
 {
     [Header("Rig (authored on the prefab)")]

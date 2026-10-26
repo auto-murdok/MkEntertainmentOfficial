@@ -122,9 +122,26 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
 
     private void RegisterCommonUpdateEffects()
     {
+        OnCommonUpdate += SyncTakingBiteAnimatorParam;
         OnCommonUpdate += RelieveAimEffect;
         OnCommonUpdate += RelieveMovementEffect;
         OnCommonUpdate += RelieveRecoilEffect;
+    }
+
+    private bool _animatorTakingBite;
+
+    // Mirrors the take-bite flag into the Animator: take_bite's decoupled
+    // exit transition keys off isTakingBite, so the victim clip ends on the
+    // gameplay clock (blended) when she is freed, instead of playing out to
+    // its authored exit time while she already has control back.
+    private void SyncTakingBiteAnimatorParam(CharacterState currentState)
+    {
+        if (_context.animator == null || _animatorTakingBite == _context.isBeingAttacked)
+        {
+            return;
+        }
+        _animatorTakingBite = _context.isBeingAttacked;
+        _context.animator.SetBool(AnimatorUtils.IsTakingBiteHash, _animatorTakingBite);
     }
 
     private void RelieveRecoilEffect(CharacterState currentStateEnum)
@@ -253,7 +270,9 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     {
         _context.attacker = attacker;
         _context.isBeingAttacked = true;
-        SetAnimatorTrigger(AnimatorUtils.TakeBiteHash);
+        // The TakeBite clip is NOT started here: it is authored to begin at
+        // the attacker's contact moment, so CharacterTakeBiteState fires the
+        // trigger when the grab phase ends (see StartClip there).
     }
 
     // Animator triggers are not synced by value like bools/floats/integers:

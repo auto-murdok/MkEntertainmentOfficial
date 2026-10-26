@@ -108,6 +108,7 @@ public class ZombieAnimationVariant : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         _animator = GetComponent<Animator>();
+        PublishNaturalSpeed(_baseWalkNaturalSpeed);
 
         if (IsServer && _seed.Value == 0)
         {
@@ -177,8 +178,24 @@ public class ZombieAnimationVariant : NetworkBehaviour
         _animator.runtimeAnimatorController = overrideController;
         _animator.SetFloat(PhaseHash, phase);
         _naturalSpeed = NaturalSpeedFor(walkIndex, _walkNaturalSpeeds, _baseWalkNaturalSpeed);
+        PublishNaturalSpeed(_naturalSpeed);
         _lastPosition = transform.position;
         _applied = true;
+    }
+
+    // The chase state caps the agent's speed by the active gait's natural
+    // speed; publish it into the shared context (base speed until a variant
+    // is applied). Peers that never run the FSM simply never read it.
+    private void PublishNaturalSpeed(float naturalSpeed)
+    {
+        if (_behavior == null)
+        {
+            _behavior = GetComponent<ZombieBehavior>();
+        }
+        if (_behavior != null && _behavior._context != null)
+        {
+            _behavior._context.locomotionNaturalSpeed = naturalSpeed;
+        }
     }
 
     private void Update()

@@ -14,6 +14,12 @@ public class ZombieContext : ActorBlackboard
     public ZombieBrain brain;
     public ZombieHand[] hands;
     public float biteDuration;
+    // Natural (authored root-motion) speed of the walk clip this zombie is
+    // currently playing, written by ZombieAnimationVariant when it applies
+    // the variant (base clip speed until then, 0 = unknown). The chase state
+    // caps the agent's speed with it so the body never outruns what the
+    // active gait can honestly play.
+    public float locomotionNaturalSpeed;
     // Set when a bite starts; cleared once the victim leaves bite range so the
     // zombie only bites once per contact (re-arms after the push-off separates them).
     public bool recentlyBitten;

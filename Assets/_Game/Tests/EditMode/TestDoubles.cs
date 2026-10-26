@@ -59,6 +59,7 @@ namespace Game.Tests.EditMode
         public Vector3 position => _transform != null ? _transform.position : Vector3.zero;
         public Transform victimHook => _transform;
         public bool isPreparing => false;
+        public bool isBiting { get; set; }
         public IInteractable LastInteractionPartner { get; private set; }
         public int InteractionCount { get; set; }
 

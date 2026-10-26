@@ -22,6 +22,9 @@ public abstract class ActorBrainBase : MonoBehaviour, IInteractable, IDamageable
     public Vector3 position => transform.position;
     public abstract Transform victimHook { get; }
     public abstract bool isPreparing { get; }
+    // Only a zombie's bite grab is ever "biting"; every other actor inherits
+    // false. ZombieBrain overrides with the FSM / network-mirrored value.
+    public virtual bool isBiting => false;
     public abstract void OnExternalInteraction(IInteractable interactable);
 
     // --- Health helpers ---

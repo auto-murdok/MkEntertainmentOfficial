@@ -23,6 +23,7 @@ public class CharacterBrain : ActorBrainBase, ISurvivor, IBiteTarget, IObserver<
     Vector3 ISurvivor.TargetPosition => transform.position;
     public override Transform victimHook => transform;
     public override bool isPreparing => false;
+    public override bool isBiting => false;
 
     // A bite is an exclusive grab: while already pinned by one zombie's bite,
     // other attackers must fall back to non-grab attacks (right-hand swing).

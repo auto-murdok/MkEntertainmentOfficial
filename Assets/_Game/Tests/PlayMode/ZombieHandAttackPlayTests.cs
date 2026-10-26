@@ -13,13 +13,16 @@ namespace Game.Tests.PlayMode
         public int DamageCalls;
         public float TotalDamage;
         public bool CanBeBitten;
+        public bool IsPreparing;
+        public bool IsBiting;
         public IInteractable CurrentBiter;
 
         public Vector3 TargetPosition => transform.position;
         public int id => gameObject.GetInstanceID();
         public Vector3 position => transform.position;
         public Transform victimHook => transform;
-        public bool isPreparing => false;
+        public bool isPreparing => IsPreparing;
+        public bool isBiting => IsBiting;
         public bool canBeBitten => CanBeBitten;
         public IInteractable currentBiter => CurrentBiter;
         public float remainingHitPoints => 0f;
@@ -163,9 +166,18 @@ namespace Game.Tests.PlayMode
             Assert.IsTrue(_behavior._context.isBiting);
             Assert.IsFalse(_behavior._context.isHandAttacking);
 
-            // Bite damage is attacker-driven and immediate (default bite 30).
+            // The grab itself deals no damage: the bite lands at the contact
+            // moment (the prepare -> release transition, ~65% through the bite).
+            Assert.AreEqual(0, _victim.DamageCalls);
+
+            // Default bite is 1.2s (no ZombieData) -> contact at ~0.78s,
+            // attacker-driven damage 30, exactly once per bite.
+            yield return new WaitForSeconds(1.0f);
             Assert.AreEqual(1, _victim.DamageCalls);
             Assert.AreEqual(30f, _victim.TotalDamage, 0.001f);
+
+            yield return new WaitForSeconds(0.6f);
+            Assert.AreEqual(1, _victim.DamageCalls);
         }
     }
 }

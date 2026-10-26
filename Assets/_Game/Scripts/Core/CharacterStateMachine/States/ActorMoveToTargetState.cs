@@ -11,7 +11,15 @@ public class ActorMoveToTargetState<TKey, TContext> : State<TKey, TContext>
 {
     private const float DestinationUpdateInterval = 0.15f;
     private const float TurnSpeedDegreesPerSecond = 180f;
-    private const float RootMotionSmoothing = 0.5f;
+    // Matches the chase blend's responsiveness (ZombieAnimatorUtils):
+    // at 0.5 s a commanded move took seconds to reach or leave a stride.
+    private const float RootMotionSmoothing = 0.12f;
+    // The zombie locomotion blend tree's walk clip sits at magnitude
+    // 0.5: feeding a unit direction doubled the gait through blend
+    // extrapolation. Cap the feed at the clip's home magnitude so a
+    // commanded move strides at the clip's authored pace (x the state's
+    // SpeedMul playback rate), like the chase feed.
+    private const float LocomotionHomeMagnitude = 0.5f;
 
     private static readonly int HorizontalHash = Animator.StringToHash("Horizontal");
     private static readonly int VerticalHash = Animator.StringToHash("Vertical");
@@ -50,8 +58,13 @@ public class ActorMoveToTargetState<TKey, TContext> : State<TKey, TContext>
                 Vector3 local = character.transform.InverseTransformDirection(direction);
                 if (context.animator != null)
                 {
-                    context.animator.SetFloat(HorizontalHash, local.x, RootMotionSmoothing, Time.deltaTime);
-                    context.animator.SetFloat(VerticalHash, local.z, RootMotionSmoothing, Time.deltaTime);
+                    Vector2 feed = new Vector2(local.x, local.z);
+                    if (feed.magnitude > LocomotionHomeMagnitude)
+                    {
+                        feed = feed.normalized * LocomotionHomeMagnitude;
+                    }
+                    context.animator.SetFloat(HorizontalHash, feed.x, RootMotionSmoothing, Time.deltaTime);
+                    context.animator.SetFloat(VerticalHash, feed.y, RootMotionSmoothing, Time.deltaTime);
                 }
             }
         }

@@ -23,6 +23,17 @@ public class ZombieContext : ActorBlackboard
     public bool isPreparing;
     public float attackCooldownTimer;
 
+    // Displacement-measured locomotion (AITransformUtils): the chase
+    // blend is fed from the body's real velocity, tracked across frames.
+    // The NavMeshAgent cannot supply it — its speed is 0 in this project
+    // (root motion is the only mover), so agent.velocity reads zero for
+    // the entire chase.
+    public Vector3 measuredPosition;
+    public Vector3 measuredVelocity;
+    public float measuredTimestamp;
+    public float measuredEpisodeStart;
+    public bool hasMeasuredPosition;
+
     // Networking: triggers must go through the NetworkAnimator on the zombie's
     // authority (the host/server) to replicate; everything else falls back to
     // the raw animator (single-player, tests, non-authority copies).

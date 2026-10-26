@@ -20,6 +20,12 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
     public const float DefaultFieldOfViewAngle = AIDetectionUtils.DefaultFieldOfViewAngle;
 
     private ZombieSockets _sockets;
+    private ZombieAnimationVariant _animationVariant;
+
+    // Authored ground speed of the walk clip currently in the blend
+    // tree (base clip or applied variant); 1 when no variant component
+    // is present, which leaves speed matching at a neutral rate.
+    public float CurrentWalkAuthoredSpeed => _animationVariant != null ? _animationVariant.CurrentWalkAuthoredSpeed : 1f;
 
     public ZombieData zombieData => _zombieData;
     public Transform visionHook => _sockets != null ? _sockets.visionHook : (_visionHook != null ? _visionHook : transform);
@@ -47,6 +53,7 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
         _context.brain = GetComponent<ZombieBrain>();
         _context.networkAnimator = GetComponent<Unity.Netcode.Components.NetworkAnimator>();
         _context.hands = GetComponentsInChildren<ZombieHand>(true);
+        _animationVariant = GetComponent<ZombieAnimationVariant>();
         _sockets = GetComponentInChildren<ZombieSockets>();
 
         if (_sockets == null)
@@ -66,6 +73,7 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
         Assert.IsNotNull(_context.agent, $"{gameObject.name} needs a NavMeshAgent attached to it");
 
         OnCommonUpdate += RelieveMovement;
+        OnCommonUpdate += UpdateLocomotionSpeed;
         OnCommonUpdate += SearchForSurvivors;
         OnCommonUpdate += EnforceBodySeparation;
 
@@ -253,6 +261,22 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
             fovAngle
         );
         SetTarget(survivor);
+    }
+
+    // Speed matching: the locomotion state's playback rate (the SpeedMul
+    // parameter AC_Zombie binds as its state speed) makes the current
+    // walk clip — base or variant — cover ground at the data-intended
+    // pace for the active state. Set centrally here so chase, patrol and
+    // commanded moves all agree on the same clip math.
+    private void UpdateLocomotionSpeed(ZombieStates currentState)
+    {
+        if (_context.animator == null || _context.data == null)
+        {
+            return;
+        }
+        float mul = ZombieAnimatorUtils.ComputeSpeedMul(
+            _context.data, currentState == ZombieStates.Chasing, CurrentWalkAuthoredSpeed);
+        _context.animator.SetFloat(ZombieAnimatorUtils.SpeedMulHash, mul);
     }
 
     // While not chasing, ease the animator's root motion back to zero.

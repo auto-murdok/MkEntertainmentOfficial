@@ -30,6 +30,11 @@ public class ZombieChasingState : State<ZombieStates, ZombieContext>
         _destinationUpdateTimer = 0f;
         _lastDestination = Vector3.positiveInfinity;
 
+        // A fresh movement episode: the velocity measurement restarts
+        // (and with it the blend feed's startup window) on every chase
+        // entry instead of inheriting a stale sample from the last one.
+        character._context.hasMeasuredPosition = false;
+
         _zombieHands = character._context.hands != null ? character._context.hands : character.GetComponentsInChildren<ZombieHand>(true);
         for (int i = 0; i < _zombieHands.Length; i++)
         {
@@ -57,12 +62,15 @@ public class ZombieChasingState : State<ZombieStates, ZombieContext>
     public void UpdateState(StateMachine<ZombieStates, ZombieContext> character)
     {
         ZombieContext context = character._context;
-        Vector2 movementThreshold = AITransformUtils.GetAIMovementThreshold(character.transform, context.agent, context.animator);
 
-        if (movementThreshold != Vector2.zero)
-        {
-            ZombieAnimatorUtils.ApplyRootMotionMovement(context.animator, movementThreshold);
-        }
+        // The blend is fed every frame — including a zero feed — so a
+        // stalled zombie's stride winds down instead of the damped
+        // floats holding their last value. The pace it winds toward is
+        // the speed-matched chase pace for the current walk clip.
+        float authoredSpeed = (character as ZombieBehavior)?.CurrentWalkAuthoredSpeed ?? 1f;
+        float targetSpeed = authoredSpeed * ZombieAnimatorUtils.ComputeSpeedMul(context.data, true, authoredSpeed);
+        Vector2 movementBlend = AITransformUtils.GetAIMovementBlend(character.transform, context.agent, context, targetSpeed);
+        ZombieAnimatorUtils.ApplyRootMotionMovement(context.animator, movementBlend);
 
         if (context.target != null)
         {

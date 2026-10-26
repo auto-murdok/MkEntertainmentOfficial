@@ -41,20 +41,23 @@ targeting. Do not refactor from intuition alone — anchor every change to resea
 
 ## 🛠️ Unity CLI Quick Reference
 
-The `unity-cli` interacts directly with the live Editor instance via the `com.unity.pipeline` package (running locally over IPC/WebSocket).
+The `unity-cli` (`unity`) interacts directly with the live Editor instance via the `com.unity.pipeline` package (running locally over IPC/WebSocket). Detailed workflows and cheat sheets are also in `docs/unity_cli_workflows.md`.
 
 ### 1. Launching & Verification
 When opening or starting the Unity Editor for automated CLI workflows:
 ```bash
-# Open Editor with automated flag
-unity open --args "-automated"
-unity open . --args "-automated"
+# Accept software terms headlessly (for containers / unattended CI)
+unity terms accept 6000.0.47f1 --yes
+
+# Open Editor with automated flag and block until ready (detects modal blockers)
+unity open . --args "-automated" --until-ready --timeout 180
 
 # Check whether Editor is connected and ready
 unity status --format json
 ```
 - Look for state `"ready"`.
 - If multiple projects/editors are open, specify `--project-path .` (or absolute path).
+- To pin one Editor among multiple instances or MPPM clones, pass `--port <number>`, `--pid <number>`, or `--instance <name>` (e.g. `--instance "Player 2"`).
 
 ### 2. Tool & Command Discovery
 List what the connected Editor exposes:
@@ -72,12 +75,12 @@ unity command --format json
 
 ### 3. Executing Editor Commands
 ```bash
-# Enter / exit Play mode (NOT 'editor_play_exit' — it does not exist)
-unity command editor_play
-unity command editor_stop
+# Enter / exit Play mode (modern command groups and legacy aliases both work)
+unity command editor.playmode start     # or: unity command editor_play
+unity command editor.playmode stop      # or: unity command editor_stop
 
 # Read the Unity Console (supports --level error|warning and --tail N)
-unity command console --level error --tail 20
+unity command console get --level error --tail 20   # or: unity command console --level error --tail 20
 unity command clear_console
 
 # Force script recompilation and poll until done
@@ -85,6 +88,7 @@ unity command recompile
 unity command recompile_status
 
 # Capture Game/Scene view screenshot
+unity command capture game_view --source screen --save_path ./screenshot.png
 unity command screenshot --output ./screenshot.png --width 1920 --height 1080
 
 # Log messages to the Unity Console (command name is 'log', not 'log_editor')
@@ -95,19 +99,40 @@ Editor log output use `unity command console` (or tail
 `%LOCALAPPDATA%\Unity\Editor\Editor.log` with `FileShare.ReadWrite` — the file
 is locked while the Editor runs).
 
-### 4. Live C# Evaluation — ALWAYS use `eval_file`, not inline `eval`
+> **The `--` Flag Fence**: When passing arguments that share names with CLI options (such as `timeout`), put pipeline arguments after a `--` fence so the CLI does not swallow them:  
+> `unity command script eval -- --code 'return UnityEngine.Time.frameCount;' --timeout 15000`
+
+### 4. Play-Mode Verification Loop (MANDATORY)
+
+> **CRITICAL**: Entering Play mode and taking a screenshot is **setup, not proof**. Unity throttles `EditorApplication.update` when the Editor window is unfocused, meaning an unfocused Editor can freeze on frame 1 while `status` still reports `playing`, and a screenshot will capture the frozen frame.
+
+**Always run the verified Play-Mode loop:**
+1. Keep the Editor ticking while unfocused: `unity command editor set_auto_tick`
+2. Allow background execution: `unity command editor.playmode set_run_in_background`
+3. Enter Play mode: `unity command editor.playmode start`
+4. **Prove frame progression**: `unity command job wait -- --condition '{"member":"UnityEngine.Time.frameCount","op":"changed"}' --timeout_s 10`
+5. Capture game view: `unity command capture game_view --source screen --save_path Screenshots/verify.png` (use `--source camera` if the desktop is locked)
+6. Check console errors: `unity command console get --tail 20 --level error`
+7. Safely exit Play mode: `unity command editor.playmode stop`
+
+> **Automated Script**: Run `./Tools/playmode-loop.ps1` to execute this entire loop in one command.
+
+### 5. Live C# Evaluation — ALWAYS use `eval_file` or `./Tools/eval-cs.ps1`
 
 > **CRITICAL:** Passing C# inline through PowerShell breaks on (a) embedded
 > double quotes, (b) `-` at token starts (parsed as CLI flags), (c) char
 > literals like `' '` (PowerShell merges/mangles them), and (d) single quotes.
 > WSL does not fix this either (`wsl.exe` joins args without re-quoting).
 
-**The reliable pattern:** write the C# to a temp `.cs` file, then run it.
+**The reliable pattern:** use `./Tools/eval-cs.ps1` or write the C# to a temp `.cs` file, then run it.
 
 ```powershell
-# 1) Write the script (Write tool) to e.g. C:\Users\<user>\AppData\Local\Temp\opencode\task.cs
-# 2) Execute:
-unity command eval_file --file "C:\Users\<user>\AppData\Local\Temp\opencode\task.cs"
+# Option A: One-line safe execution using repo helper (auto-escapes via temp file):
+./Tools/eval-cs.ps1 -Code 'return UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;'
+"return UnityEngine.Time.frameCount;" | ./Tools/eval-cs.ps1
+
+# Option B: Manual temp file via eval_file:
+unity command eval_file --file "C:\Users\<user>\AppData\Local\Temp\task.cs"
 ```
 
 Rules for eval scripts:
@@ -127,7 +152,7 @@ foreach (var r in UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetR
 return sb.ToString();
 ```
 
-### 5. Comparing objects / prefabs safely
+### 6. Comparing objects / prefabs safely
 Prefer serialized-property diffs over guessing. See
 `docs/spawnable_player_rigging_fixes.md` for a reusable diff approach:
 iterate `SerializedObject.GetIterator()`, compare by `propertyPath`, and
@@ -143,6 +168,11 @@ different root names still match (compare relative paths under the root).
 When the C# codebase has compilation errors:
 1. The Unity Editor enters **Safe Mode**.
 2. In Safe Mode, custom packages including `com.unity.pipeline` are disabled, causing `unity command` to fail or time out.
+3. In `1.0.0-beta.14`, `unity status` explicitly detects and reports:
+   - `STATUS_BLOCKED_BY_DIALOG_SAFE_MODE` (quotes compile errors directly).
+   - `STATUS_BLOCKED_BY_DIALOG_GRAPHICS_API` (Auto Graphics API prompt).
+   - `STATUS_BLOCKED_BY_DIALOG_SOFTWARE_TERMS` (License Software Terms).
+   `unity open . --until-ready` reports the corresponding `OPEN_BLOCKED_BY_DIALOG_*` code.
 
 ### Recovery Workflow:
 1. **Check compilation errors** (tail the Editor log — `unity logs` reads the Hub log, not this):

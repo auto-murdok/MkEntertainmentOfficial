@@ -67,6 +67,7 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
 
         OnCommonUpdate += RelieveMovement;
         OnCommonUpdate += SearchForSurvivors;
+        OnCommonUpdate += SyncBitingAnimatorParam;
 
         // Global guard: force transition to the reusable Dead state on death.
         CheckGlobalTransition = (current) => _context.isAlive ? current : ZombieStates.Dead;
@@ -147,6 +148,22 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
     }
 
     // While not chasing, ease the animator's root motion back to zero.
+    private bool _animatorBiting;
+
+    // Mirrors the FSM's bite flag into the Animator: zombie_neck_bite's
+    // decoupled exit transition keys off IsBiting, so the clip ends on the
+    // gameplay clock (blended) instead of playing out to its authored exit
+    // time while the FSM has already moved on.
+    private void SyncBitingAnimatorParam(ZombieStates currentState)
+    {
+        if (_context.animator == null || _animatorBiting == _context.isBiting)
+        {
+            return;
+        }
+        _animatorBiting = _context.isBiting;
+        _context.animator.SetBool(AnimatorUtils.IsBitingHash, _animatorBiting);
+    }
+
     private void RelieveMovement(ZombieStates currentState)
     {
         if (currentState != ZombieStates.Chasing)
@@ -194,8 +211,10 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
 
         // The bite is an exclusive grab attack: if the victim is already pinned
         // by ANOTHER zombie's bite, fall back to the standing right-hand swing
-        // (no grab, no victim lock) instead of biting air.
-        if (!CanVictimBeBitten(interactableTarget, brain))
+        // (no grab, no victim lock) instead of biting air. The same fallback
+        // applies to a rear attack: the paired victim animation only reads
+        // for a frontal grab, and there is no synced rear bite yet.
+        if (!CanVictimBeBitten(interactableTarget, brain) || IsAttackFromBehind(interactableTarget, brain))
         {
             StartHandAttack(interactableTarget);
             return true;
@@ -222,6 +241,36 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
         if (victim is not IBiteTarget biteTarget) return true;
         if (biteTarget.canBeBitten) return true;
         return ReferenceEquals(biteTarget.currentBiter, attacker);
+    }
+
+    // TUNING: rear-hemisphere boundary for the bite gate — the attacker must
+    // stand in the victim's rear half-plane. Exactly side-on (dot 0) still
+    // counts as frontal and keeps the bite.
+    private const float BiteBehindDotThreshold = 0f;
+
+    // Pure facing rule (EditMode-testable): true when the attacker stands
+    // behind the victim — the victim's back is to the attacker, so the
+    // frontal paired bite animation cannot sync.
+    public static bool IsAttackFromBehind(Vector3 victimPosition, Vector3 victimForward, Vector3 attackerPosition)
+    {
+        Vector3 toAttacker = attackerPosition - victimPosition;
+        toAttacker.y = 0f;
+        Vector3 forward = victimForward;
+        forward.y = 0f;
+        if (toAttacker.sqrMagnitude < 0.0001f || forward.sqrMagnitude < 0.0001f)
+        {
+            return false;
+        }
+        return Vector3.Dot(forward.normalized, toAttacker.normalized) < BiteBehindDotThreshold;
+    }
+
+    public static bool IsAttackFromBehind(IInteractable victim, IInteractable attacker)
+    {
+        if (victim is not Component victimComponent || attacker == null)
+        {
+            return false;
+        }
+        return IsAttackFromBehind(victimComponent.transform.position, victimComponent.transform.forward, attacker.position);
     }
 
     // Raises the isHandAttacking flag; the FSM routes it into

@@ -85,8 +85,9 @@ public class ZombieBrain : ActorBrainBase, IZombie
         // Victim is pinned by another zombie's bite grab: the hand trigger still
         // reached it, so answer with the standing right-hand swing instead of a
         // (visually empty) bite grab. A pin held by this zombie itself is its
-        // own bite in progress and proceeds normally.
-        if (!ZombieBehavior.CanVictimBeBitten(target, this))
+        // own bite in progress and proceeds normally. An attack from behind
+        // the victim takes the same fallback — no synced rear bite exists yet.
+        if (!ZombieBehavior.CanVictimBeBitten(target, this) || ZombieBehavior.IsAttackFromBehind(target, this))
         {
             _behavior.StartHandAttack(target);
             transform.LookAt(target.position);
@@ -96,7 +97,8 @@ public class ZombieBrain : ActorBrainBase, IZombie
         _behavior.SetInteractable(target);
         _behavior.SetIsBiting(true);
         _behavior._context.SetAnimatorTrigger(AnimatorUtils.BiteHash);
-        transform.LookAt(target.position);
+        // No instant LookAt: ZombieBitingState eases the facing toward the
+        // victim across the grab, so the bite lines up without a snap.
 
         // No damage at grab start: the bite lands at the animation's contact
         // moment, scored exactly once by ZombieBitingState at the

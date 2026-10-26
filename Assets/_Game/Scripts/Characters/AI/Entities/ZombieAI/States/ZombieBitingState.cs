@@ -14,7 +14,6 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
     private enum BitePhase { Prepare, Release }
 
     private Vector3 _initialPosition;
-    private Quaternion _initialRotation;
     private State<ZombieStates, ZombieContext> _subState;
     private BitePhase _phase;
     private float _biteTimer;
@@ -32,7 +31,6 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
     public void EnterState(StateMachine<ZombieStates, ZombieContext> character)
     {
         _initialPosition = character.transform.position;
-        _initialRotation = character.transform.rotation;
         ZombieContext context = character._context;
         float bittingRadius = context.data != null ? context.data.bittingAgentRadius : DefaultBitingRadius;
         if (context.agent != null)
@@ -104,12 +102,14 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
             }
         }
 
-        // Pin the zombie to its initial grab pose during the prepare (grab) phase only;
-        // the release phase is the push-off, driven by the animation root motion.
+        // Pin the zombie's position to its initial grab pose during the prepare
+        // (grab) phase only; the release phase is the push-off, driven by the
+        // animation root motion. Rotation is not pinned: it eases toward the
+        // victim across the grab so the bite lines up without a facing snap.
         if (_phase == BitePhase.Prepare)
         {
             character.transform.position = _initialPosition;
-            character.transform.rotation = _initialRotation;
+            EaseFacingTowardVictim(character);
         }
 
         _subState.UpdateState(character);
@@ -120,6 +120,30 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         {
             character._context.isBiting = false;
         }
+    }
+
+    // TUNING: facing ease rate (per second) while the grab lines up on the
+    // victim; frame-rate independent via AnimatorUtils.DampFactor.
+    private const float FacingEaseSpeed = 6f;
+
+    private void EaseFacingTowardVictim(StateMachine<ZombieStates, ZombieContext> character)
+    {
+        IInteractable victim = character._context.interactable;
+        if (victim == null)
+        {
+            return;
+        }
+
+        Vector3 toVictim = victim.position - character.transform.position;
+        toVictim.y = 0f;
+        if (toVictim.sqrMagnitude < 0.0001f)
+        {
+            return;
+        }
+
+        Quaternion desired = Quaternion.LookRotation(toVictim.normalized);
+        character.transform.rotation = Quaternion.Slerp(
+            character.transform.rotation, desired, AnimatorUtils.DampFactor(FacingEaseSpeed, Time.deltaTime));
     }
 
     // Attacker-driven damage, scored once at the contact moment (same pattern

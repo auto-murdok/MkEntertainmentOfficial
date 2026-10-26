@@ -5,16 +5,13 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
     private const float DefaultBitingRadius = 0.1f;
     private const float DefaultRadius = 0.3f;
     private const float DefaultAttackCooldown = 1.2f;
-    // The bite timeline is anchored to the single paired animation
-    // (zombie_neck_bite / take_bite), measured on one shared clock: his
-    // head-snap contact lands at BiteContactTime, and the victim's push
-    // completes at BiteReleaseTime - the same moment PlayerData's
+    // The bite timeline lives in BiteTimeline (the paired animation's
+    // shared clock): contact at BiteTimeline.ContactTime, release at
+    // BiteTimeline.ReleaseTime - the same moment PlayerData's
     // takeBiteDuration frees her, and the two must agree. There is
     // deliberately no per-zombie duration: one animation means one
     // timeline for every archetype. A future archetype that needs a
     // faster bite scales the clip and both anchors together.
-    private const float BiteContactTime = 0.97f; // head-snap contact
-    private const float BiteReleaseTime = 3.0f; // her push completes; FSM lets go
     private const float DefaultBiteDamage = 30f;
 
     private enum BitePhase { Prepare, Release }
@@ -25,6 +22,14 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
     private float _biteTimer;
     private float _releaseThreshold;
     private bool _hasLandedBite;
+    private Collider[] _grappleColliders;
+    private CharacterController _grappleVictim;
+    private bool _grapplePairIgnored;
+
+    // Distance at which the pair counts as separated for restoring
+    // collision: past the reach of his ragdoll bones (they extend in
+    // front of his root), not just the two body radii.
+    private const float GrappleClearDistance = 0.75f;
 
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
@@ -55,14 +60,16 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         // the Animator's state-exit event. The prepare / release phases are
         // derived from this timer exactly once, so isPreparing is stable
         // (no per-frame flicker that used to thrash the victim's lock).
-        _biteTimer = BiteReleaseTime;
-        _releaseThreshold = BiteReleaseTime - BiteContactTime;
+        _biteTimer = BiteTimeline.ReleaseTime;
+        _releaseThreshold = BiteTimeline.ReleaseTime - BiteTimeline.ContactTime;
         _hasLandedBite = false;
 
         context.recentlyBitten = true;
         _phase = BitePhase.Prepare;
         _subState = new BitePrepareState();
         _subState.EnterState(character);
+
+        BeginGrappleCollisionIgnore(character);
     }
 
     public void ExitState(StateMachine<ZombieStates, ZombieContext> character)
@@ -78,6 +85,7 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         _subState = null;
 
         context.isPreparing = false;
+        EndGrappleCollisionRestore(character);
         // TUNING: delay before the zombie may bite again after a push-off. See also
         // ZombieData.biteRange (separation distance that clears recentlyBitten).
         context.attackCooldownTimer = DefaultAttackCooldown;
@@ -99,7 +107,7 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
             _subState.EnterState(character);
 
             // The prepare -> release transition IS the animation's contact
-            // moment (the head snap at BiteContactTime on the clip's clock):
+            // moment (the head snap at BiteTimeline.ContactTime):
             // the bite lands here, not at grab start. Exactly one damage
             // event per bite; a zombie killed mid-grab never reaches this
             // and deals no bite damage.
@@ -128,6 +136,97 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         {
             character._context.isBiting = false;
         }
+    }
+
+    // Grapple protocol: the paired clips pin the two roots at 0.44 m
+    // (VictimHook at 0.79 pulled in by PlayerBitePullInDistance) - closer
+    // than the sum of their body capsules, and closer than his ragdoll
+    // bone colliders reach. So for the bite's duration this pair stops
+    // colliding: her controller ignores his body capsule AND his bones.
+    // (Scoped to the root capsule alone, her pin was held at the 0.60 m
+    // capsule sum and the grapple read loose.) Every other character
+    // keeps colliding with both of them. Restored on exit once they have
+    // separated (see ZombieBehavior's deferred restore for the
+    // against-a-wall case). Plain test doubles are not Components and
+    // skip the protocol entirely.
+    private void BeginGrappleCollisionIgnore(StateMachine<ZombieStates, ZombieContext> character)
+    {
+        ZombieContext context = character._context;
+        _grappleColliders = character.transform.GetComponentsInChildren<Collider>(true);
+        _grappleVictim = ResolveVictimController(context);
+        _grapplePairIgnored = false;
+        if (_grappleColliders.Length == 0 || _grappleVictim == null)
+        {
+            _grappleColliders = null;
+            return;
+        }
+
+        if (character is ZombieBehavior behavior)
+        {
+            behavior.CancelPendingCollisionRestore();
+        }
+
+        foreach (Collider collider in _grappleColliders)
+        {
+            Physics.IgnoreCollision(collider, _grappleVictim, true);
+        }
+        _grapplePairIgnored = true;
+    }
+
+    private void EndGrappleCollisionRestore(StateMachine<ZombieStates, ZombieContext> character)
+    {
+        if (!_grapplePairIgnored)
+        {
+            return;
+        }
+        _grapplePairIgnored = false;
+
+        if (_grappleColliders != null && _grappleVictim != null)
+        {
+            Vector3 a = character.transform.position;
+            Vector3 b = _grappleVictim.transform.position;
+            a.y = 0f;
+            b.y = 0f;
+            if (Vector3.Distance(a, b) >= GrappleClearDistance)
+            {
+                RestoreGrappleCollision();
+            }
+            else if (character is ZombieBehavior behavior)
+            {
+                behavior.RestoreCollisionWhenSeparated(_grappleColliders, _grappleVictim, GrappleClearDistance);
+            }
+            else
+            {
+                RestoreGrappleCollision();
+            }
+        }
+
+        _grappleColliders = null;
+        _grappleVictim = null;
+    }
+
+    private void RestoreGrappleCollision()
+    {
+        foreach (Collider collider in _grappleColliders)
+        {
+            if (collider != null)
+            {
+                Physics.IgnoreCollision(collider, _grappleVictim, false);
+            }
+        }
+    }
+
+    private static CharacterController ResolveVictimController(ZombieContext context)
+    {
+        if (context.interactable is Component victimComponent)
+        {
+            CharacterController controller = victimComponent.GetComponent<CharacterController>();
+            return controller != null
+                ? controller
+                : victimComponent.GetComponentInChildren<CharacterController>();
+        }
+
+        return null;
     }
 
     // TUNING: facing ease rate (per second) while the grab lines up on the

@@ -18,6 +18,16 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
     // pulled in, short enough to finish well before the contact moment.
     private const float GrabBlendSeconds = 0.3f;
 
+    // TUNING: how far ahead of the contact anchor her clip starts.
+    // A field rather than a const so the value can be tuned live while
+    // playtesting the grab (see the comparison captures); the shipped
+    // default is set here. 0.85 s is the calculated value: her final
+    // shove peaks at clip-local 2.78 s and his recoil peaks at 2.90 s
+    // on the shared clock, so starting her at 0.97 - 0.85 = 0.12 s
+    // into the grab lands her push exactly on his recoil - while her
+    // reaction still begins almost a full second before the bite.
+    public static float ClipLeadSeconds = 0.85f;
+
     private float _biteTimer;
     // Latched once the attacker's grab phase has actually been observed, so
     // the clip start below can never fire on the entry frames before the
@@ -101,6 +111,25 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
         }
     }
 
+    // The pin must move her through the CharacterController when she has
+    // one: a direct transform write does not rebase the controller (this
+    // project does not auto-sync transforms), so the next root-motion
+    // step would snap her back to where the grab started. Move() also
+    // keeps the pin collision-honest against the world; the biting pair
+    // itself is collision-ignored by the grapple protocol.
+    private static void SetPinnedPosition(StateMachine<CharacterState, CharacterStateContext> stateMachine, Vector3 target)
+    {
+        CharacterController controller = stateMachine._context.characterController;
+        if (controller != null && controller.enabled)
+        {
+            controller.Move(target - stateMachine.transform.position);
+        }
+        else
+        {
+            stateMachine.transform.position = target;
+        }
+    }
+
     public void UpdateState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
     {
         // If the attacker is gone (e.g. killed mid-bite), bail out safely.
@@ -130,22 +159,32 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
                 _blendElapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(_blendElapsed / GrabBlendSeconds);
                 t = t * t * (3f - 2f * t);
-                stateMachine.transform.position = Vector3.Lerp(_blendStartPosition, lockedPos, t);
+                SetPinnedPosition(stateMachine, Vector3.Lerp(_blendStartPosition, lockedPos, t));
                 stateMachine.transform.rotation = Quaternion.Slerp(_blendStartRotation, lockedRot, t);
             }
             else
             {
-                stateMachine.transform.position = lockedPos;
+                SetPinnedPosition(stateMachine, lockedPos);
                 stateMachine.transform.rotation = lockedRot;
             }
         }
 
-        // The victim clip is authored to start at the attacker's contact
-        // moment (its frame 0 is already mid-impact): fire it when the grab
-        // phase ends, not when the grab begins.
-        if (!_clipStarted && _sawGrab && !stateMachine._context.attacker.isPreparing)
+        // The victim clip's frame 0 is already mid-impact, so it must not
+        // start at the grab - but starting it AT the contact leaves her
+        // standing idle through the whole grab, waiting to be bitten.
+        // ClipLeadSeconds ahead of the contact anchor splits the
+        // difference: early enough that her reaction plays through the
+        // grab instead of after it, and calculated (see the field) so
+        // her final shove lands exactly on his recoil peak. The phase
+        // flip stays as the fallback for late entries.
+        if (!_clipStarted && _sawGrab)
         {
-            StartClip(stateMachine);
+            float elapsed = stateMachine._context.data.takeBiteDuration - _biteTimer;
+            if (!stateMachine._context.attacker.isPreparing ||
+                elapsed >= BiteTimeline.ContactTime - ClipLeadSeconds)
+            {
+                StartClip(stateMachine);
+            }
         }
 
         // No early release at the attacker's bite end: the victim's freedom

@@ -4,9 +4,25 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Animations.Rigging;
 
+// How the locomotion motor may move the character this frame. Written by
+// the active FSM state on the shared blackboard, consumed only by
+// CharacterLocomotion.OnAnimatorMove — exactly one owner of displacement
+// per mode (see docs/grounded_motor_and_corpse_layer.md).
+public enum MotorMode
+{
+    Locomotion,  // clip root motion on the ground plane + grounded vertical channel
+    ScriptedPin, // a scripted interaction (bite grapple) owns displacement; motor stands down
+    AuthoredY,   // clip root motion verbatim, authored Y included (bite push-off)
+    Disabled     // motor never moves the character
+}
+
 public class CharacterStateContext : ActorBlackboard
 {
     public Rig rig;
+    public MotorMode motorMode;
+    // Set by a state that hands control back to the motor (bite exit,
+    // respawn): the motor clears its vertical state before the next Move.
+    public bool motorResetRequested;
     public Vector2 lookInput;
     public Vector2 movementInput;
     public bool isRunning;

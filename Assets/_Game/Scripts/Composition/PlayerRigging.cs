@@ -102,6 +102,11 @@ public static class PlayerRigging
         // spawn facing and the camera opens world-north until first aim.
         locomotion.SeedCamera();
 
+        // Spawn placement is a discontinuous move: the grounded motor
+        // must not carry stale fall speed or a stale grounded flag into
+        // the first frames of the new position.
+        locomotion.ResetMotorState();
+
         // Camera mode is driven by the character state machine (the owner
         // of Aiming) through the mode controller — never by UI observers.
         if (followCamera != null && aimCamera != null)

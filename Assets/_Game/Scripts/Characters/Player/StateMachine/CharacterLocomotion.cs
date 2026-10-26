@@ -48,6 +48,26 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     private Unity.Netcode.Components.NetworkAnimator _networkAnimator;
     private CharacterController _characterController;
 
+    // Grounded vertical channel (docs/grounded_motor_and_corpse_layer.md):
+    // the clip owns the ground plane, this channel owns Y. Without it the
+    // motor had no way down: whatever the controller stepped up onto
+    // (a corpse pile, a crate) became her new floor height forever.
+    private const float GravityAcceleration = -20f;
+    // Assigned (never accumulated) while grounded, and never 0: 0 lets
+    // PhysX depenetration flicker the grounded state frame to frame.
+    private const float GroundedStickSpeed = -2f;
+    private const float TerminalFallSpeed = -50f;
+    private const float GroundProbeRadius = 0.24f; // ~0.8x the controller radius
+    private const float GroundProbeOriginHeight = 0.35f;
+    private const float GroundProbeLength = 0.85f;
+    private const float GroundSnapMaxDistance = 0.5f;
+    private const int SnapGraceFramesAfterReset = 2;
+
+    private float _verticalVelocity = GroundedStickSpeed;
+    private bool _groundedPrev;
+    private int _snapGraceFrames;
+    private int _groundProbeMask;
+
     private CinemachineContext _cinemachineProps;
 
     private void Awake()
@@ -71,23 +91,122 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     // the CharacterController so locomotion is collision-swept - it
     // stops at walls and at the zombies' body capsules instead of
     // teleporting through them. Rotation keeps the built-in behavior.
+    //
+    // Exactly ONE Move per frame happens here, in the mode the active
+    // state selected on the blackboard (CharacterStateContext.motorMode):
+    // scripted interactions own their frames outright, so the grounded
+    // channel can never compose sink or snap on top of a grapple pin.
     private void OnAnimatorMove()
     {
         Animator animator = _context.animator;
-        if (animator == null)
+        if (animator == null || !_context.isAlive)
         {
             return;
         }
 
-        transform.rotation *= animator.deltaRotation;
-        if (_characterController != null && _characterController.enabled)
+        // Remote copies are driven by NetworkTransform; running the motor
+        // there too would double-drive the transform and burn the ground
+        // probe on every peer. Unspawned (offline / tests) runs the motor.
+        if (_networkAnimator != null && _networkAnimator.IsSpawned && !_networkAnimator.IsOwner)
         {
-            _characterController.Move(animator.deltaPosition);
+            return;
+        }
+
+        if (_context.motorResetRequested)
+        {
+            _context.motorResetRequested = false;
+            ResetMotorState();
+        }
+
+        switch (_context.motorMode)
+        {
+            case MotorMode.ScriptedPin:
+            case MotorMode.Disabled:
+                // The interaction's own Move already ran in the FSM
+                // update; the motor adds nothing this frame.
+                return;
+            case MotorMode.AuthoredY:
+                transform.rotation *= animator.deltaRotation;
+                MoveByRootMotion(animator.deltaPosition);
+                _groundedPrev = false;
+                return;
+        }
+
+        transform.rotation *= animator.deltaRotation;
+        if (_characterController == null || !_characterController.enabled)
+        {
+            transform.position += animator.deltaPosition;
+            return;
+        }
+
+        float deltaTime = Time.deltaTime;
+
+        // Probe BEFORE the Move: the snap needs the current-frame gap to
+        // the ground under the capsule. isGrounded cannot supply it — it
+        // only reports the last Move and carries no distance. The mask
+        // excludes actors and corpses, so the probe always measures the
+        // floor itself, never the pile she is standing in.
+        Vector3 probeOrigin = transform.position + Vector3.up * GroundProbeOriginHeight;
+        bool probeHit = Physics.SphereCast(probeOrigin, GroundProbeRadius, Vector3.down,
+            out RaycastHit groundHit, GroundProbeLength, _groundProbeMask, QueryTriggerInteraction.Ignore);
+
+        // The clip's authored Y is discarded in this mode on purpose:
+        // the vertical channel below is its only owner.
+        Vector3 motion = animator.deltaPosition;
+        motion.y = _verticalVelocity * deltaTime;
+
+        if (_snapGraceFrames > 0)
+        {
+            _snapGraceFrames--;
+        }
+        else if (_groundedPrev && _verticalVelocity <= 0f && probeHit &&
+                 groundHit.normal.y >= Mathf.Cos(_characterController.slopeLimit * Mathf.Deg2Rad))
+        {
+            // Grounded last frame and the floor fell away by a step (not
+            // a ledge): fold the drop into this same Move so she stays
+            // glued down stairs instead of floating off each tread.
+            float gap = groundHit.distance - (GroundProbeOriginHeight - GroundProbeRadius);
+            if (gap > _characterController.skinWidth && gap <= GroundSnapMaxDistance)
+            {
+                motion.y -= gap;
+            }
+        }
+
+        CollisionFlags flags = _characterController.Move(motion);
+        bool groundedNow = (flags & CollisionFlags.Below) != 0;
+        if (groundedNow)
+        {
+            _verticalVelocity = GroundedStickSpeed;
         }
         else
         {
-            transform.position += animator.deltaPosition;
+            _verticalVelocity = Mathf.Max(_verticalVelocity + GravityAcceleration * deltaTime, TerminalFallSpeed);
         }
+        _groundedPrev = groundedNow;
+    }
+
+    private void MoveByRootMotion(Vector3 deltaPosition)
+    {
+        if (_characterController != null && _characterController.enabled)
+        {
+            _characterController.Move(deltaPosition);
+        }
+        else
+        {
+            transform.position += deltaPosition;
+        }
+    }
+
+    // Clears the vertical channel after any discontinuous move (spawn,
+    // respawn, teleport) or scripted control (bite exit): stale fall
+    // speed and a stale grounded flag must never carry across them. The
+    // snap stays disarmed for the first frames until grounding is
+    // re-confirmed by a real Move.
+    public void ResetMotorState()
+    {
+        _verticalVelocity = GroundedStickSpeed;
+        _groundedPrev = false;
+        _snapGraceFrames = SnapGraceFramesAfterReset;
     }
 
     private void PopulateStates()
@@ -133,6 +252,15 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         _context.animator = GetComponent<Animator>();
         _characterController = GetComponent<CharacterController>();
         _context.characterController = _characterController;
+
+        // The ground probe measures floors, not bodies: exclude every
+        // actor layer (herself, zombies) and corpses, so standing in a
+        // ragdoll pile can never read as "grounded on the pile".
+        int excluded = 0;
+        AddLayerBit(ref excluded, LayerUtils.LocalPlayerLayerName);
+        AddLayerBit(ref excluded, LayerUtils.ZombieLayerName);
+        AddLayerBit(ref excluded, LayerUtils.CorpseLayerName);
+        _groundProbeMask = Physics.DefaultRaycastLayers & ~excluded;
         // The NavMeshAgent is intentionally NOT used for player locomotion (movement is
         // root-motion driven, which is the gold standard for a directly-controlled,
         // animated character). It exists only to pin the actor's radius during the
@@ -141,6 +269,15 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         _context.rig = _characterRig;
         _context.mainCameraTarget = _cinemachineTarget;
         _context.UIController = GetComponent<CharacterUIController>();
+    }
+
+    private static void AddLayerBit(ref int mask, string layerName)
+    {
+        int layer = LayerMask.NameToLayer(layerName);
+        if (layer >= 0)
+        {
+            mask |= 1 << layer;
+        }
     }
 
     private void InitializeCameraUtils()

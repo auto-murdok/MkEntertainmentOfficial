@@ -3480,7 +3480,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 0
+  GlobalObjectIdHash: 1220483219
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -3594,6 +3594,10 @@ MonoBehaviour:
       NameHash: 1887238607
       Synchronize: 1
       ParameterType: 1
+    - name: SpeedMul
+      NameHash: -2126363724
+      Synchronize: 1
+      ParameterType: 1
   AnimatorParametersExpanded: 0
 --- !u!114 &8372143109016655130
 MonoBehaviour:
@@ -3669,6 +3673,11 @@ MonoBehaviour:
   _idleVariants:
   - {fileID: 7904299848534773623, guid: 2fb5e3a010012424490814651c7b1794, type: 3}
   - {fileID: -1168882297713178569, guid: fa4b9ef2b84f05143923c8ebc878a7e1, type: 3}
+  _baseWalkNaturalSpeed: 0.325
+  _walkNaturalSpeeds:
+  - 1.039
+  - 0.942
+  - 0.66
 --- !u!114 &9175523924837231563
 MonoBehaviour:
   m_ObjectHideFlags: 0

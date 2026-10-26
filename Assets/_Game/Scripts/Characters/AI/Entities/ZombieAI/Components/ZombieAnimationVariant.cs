@@ -29,6 +29,34 @@ public class ZombieAnimationVariant : NetworkBehaviour
     private bool _applied;
 
     /// <summary>
+    /// Authored ground speed (m/s) of the walk clip currently in the
+    /// locomotion blend tree — the base clip until a variant is applied.
+    /// Speed matching (ZombieAnimatorUtils.ComputeSpeedMul) divides the
+    /// data-intended pace by this so every gait covers ground at the
+    /// same intended speed instead of its own raw clip speed.
+    /// </summary>
+    public float CurrentWalkAuthoredSpeed { get; private set; } = 1f;
+
+    /// <summary>Horizontal ground speed a clip's root motion authors.</summary>
+    public static float AuthoredSpeed(AnimationClip clip)
+    {
+        if (clip == null)
+        {
+            return 0f;
+        }
+        Vector3 average = clip.averageSpeed;
+        return new Vector2(average.x, average.z).magnitude;
+    }
+
+    private void Awake()
+    {
+        if (_baseWalkClip != null)
+        {
+            CurrentWalkAuthoredSpeed = AuthoredSpeed(_baseWalkClip);
+        }
+    }
+
+    /// <summary>
     /// Pure derivation, identical on every peer: seed → variant indices
     /// and a phase in [0, 1]. An index is -1 when no variants of that kind
     /// are configured.
@@ -105,6 +133,7 @@ public class ZombieAnimationVariant : NetworkBehaviour
         if (walkIndex >= 0)
         {
             overrides.Add(new KeyValuePair<AnimationClip, AnimationClip>(_baseWalkClip, _walkVariants[walkIndex]));
+            CurrentWalkAuthoredSpeed = AuthoredSpeed(_walkVariants[walkIndex]);
         }
         if (overrides.Count == 0)
         {

@@ -60,6 +60,10 @@ namespace Game.Tests.PlayMode
             // auto-targets it, so TryTriggerAttack/OnExternalInteraction are
             // driven deterministically by the test.
             _victimGo.transform.position = new Vector3(0f, 820f, 1f);
+            // Face-to-face with the zombie at z=0 (she faces -Z): the bite
+            // gate routes rear attacks to the hand swing, so bite-path tests
+            // need her facing the attacker. The behind test turns her around.
+            _victimGo.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
             _victim = _victimGo.AddComponent<FakePinnedVictim>();
             _victim.CanBeBitten = false;
 
@@ -137,6 +141,29 @@ namespace Game.Tests.PlayMode
 
             yield return new WaitForSeconds(0.7f);
             Assert.AreEqual(1, _victim.DamageCalls);
+        }
+
+        [UnityTest]
+        public IEnumerator BehindVictim_RoutesToHandAttackNotBite()
+        {
+            yield return null;
+            ZombieBrain brain = _zombie.GetComponent<ZombieBrain>();
+
+            // Free, unpinned victim — only her facing can drive the decision.
+            _victim.CanBeBitten = true;
+            _victim.CurrentBiter = null;
+            // Back turned to the zombie (faces +Z, away from him at z=0).
+            _victimGo.transform.rotation = Quaternion.identity;
+
+            brain.OnExternalInteraction(_victim);
+            Assert.IsTrue(_behavior._context.isHandAttacking);
+            Assert.IsFalse(_behavior._context.isBiting);
+            Assert.AreEqual(0, _victim.DamageCalls);
+
+            // The swing lands its single hit (default hand damage 15).
+            yield return new WaitForSeconds(0.7f);
+            Assert.AreEqual(1, _victim.DamageCalls);
+            Assert.AreEqual(15f, _victim.TotalDamage, 0.001f);
         }
 
         [UnityTest]

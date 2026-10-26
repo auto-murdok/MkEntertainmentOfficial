@@ -12,11 +12,21 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
     // lower for more space. ~0.35 leaves the victim ~0.15m off the body.
     private const float PlayerBitePullInDistance = 0.35f;
 
+    // TUNING: seconds spent easing from the victim's entry pose into the
+    // locked socket pose at the start of the grab. Inside the 0.2-0.4s
+    // band used for interaction blend-ins: long enough to read as being
+    // pulled in, short enough to finish well before the contact moment.
+    private const float GrabBlendSeconds = 0.3f;
+
     private float _biteTimer;
     // Latched once the attacker's grab phase has actually been observed, so
     // the asymmetric release below can never fire on the entry frames before
     // the (possibly network-mirrored) attacker flags have caught up.
     private bool _sawGrab;
+    private Vector3 _blendStartPosition;
+    private Quaternion _blendStartRotation;
+    private float _blendElapsed;
+    private bool _clipStarted;
     // The player prefab's actual NavMeshAgent radius, captured on entry so the
     // exit restores the real value instead of a hardcoded default.
     private float _originalAgentRadius;
@@ -53,6 +63,33 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
 
         _biteTimer = context.data.takeBiteDuration;
         _sawGrab = false;
+        _clipStarted = false;
+        _blendElapsed = 0f;
+        _blendStartPosition = stateMachine.transform.position;
+        _blendStartRotation = stateMachine.transform.rotation;
+
+        // Late entry (the grab phase already elapsed, e.g. relay latency):
+        // the contact moment is now — start the clip immediately.
+        if (context.attacker == null || !context.attacker.isPreparing)
+        {
+            StartClip(stateMachine);
+        }
+    }
+
+    private void StartClip(StateMachine<CharacterState, CharacterStateContext> stateMachine)
+    {
+        _clipStarted = true;
+        // Production route: the NetworkAnimator-aware trigger on the
+        // locomotion (which IS the state machine). Bare state machines in
+        // tests fall back to the raw animator.
+        if (stateMachine is CharacterLocomotion locomotion)
+        {
+            locomotion.SetAnimatorTrigger(AnimatorUtils.TakeBiteHash);
+        }
+        else if (stateMachine._context.animator != null)
+        {
+            stateMachine._context.animator.SetTrigger(AnimatorUtils.TakeBiteHash);
+        }
     }
 
     public void ExitState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
@@ -79,12 +116,36 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
         if (stateMachine._context.attacker.isPreparing)
         {
             _sawGrab = true;
-            // Snap to the victimHook, then pull the victim toward the zombie body to remove the
+            // Target pose: the victimHook, pulled toward the zombie body to remove the
             // ~0.5m socket gap (see PlayerBitePullInDistance).
             Vector3 lockedPos = stateMachine._context.attacker.victimHook.position;
             lockedPos = Vector3.MoveTowards(lockedPos, stateMachine._context.attacker.position, PlayerBitePullInDistance);
-            stateMachine.transform.position = lockedPos;
-            stateMachine.transform.rotation = stateMachine._context.attacker.victimHook.rotation;
+            Quaternion lockedRot = stateMachine._context.attacker.victimHook.rotation;
+
+            // Ease from the entry pose into the locked pose over the opening
+            // of the grab (smoothstep) instead of teleporting on the first
+            // frame; once the blend completes, follow the socket exactly.
+            if (_blendElapsed < GrabBlendSeconds)
+            {
+                _blendElapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(_blendElapsed / GrabBlendSeconds);
+                t = t * t * (3f - 2f * t);
+                stateMachine.transform.position = Vector3.Lerp(_blendStartPosition, lockedPos, t);
+                stateMachine.transform.rotation = Quaternion.Slerp(_blendStartRotation, lockedRot, t);
+            }
+            else
+            {
+                stateMachine.transform.position = lockedPos;
+                stateMachine.transform.rotation = lockedRot;
+            }
+        }
+
+        // The victim clip is authored to start at the attacker's contact
+        // moment (its frame 0 is already mid-impact): fire it when the grab
+        // phase ends, not when the grab begins.
+        if (!_clipStarted && _sawGrab && !stateMachine._context.attacker.isPreparing)
+        {
+            StartClip(stateMachine);
         }
 
         // Asymmetric release: once the grab has happened and the attacker's

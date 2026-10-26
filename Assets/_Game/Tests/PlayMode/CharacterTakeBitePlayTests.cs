@@ -70,10 +70,17 @@ namespace Game.Tests.PlayMode
             yield return null;
             yield return null;
 
-            // Grab phase: victim is pinned at the hook and still attacked.
+            // Grab phase, blend just started: she is being pulled toward the
+            // hook (z=1) but must NOT be teleported there on the first frames.
+            Assert.IsTrue(_machine._context.isBeingAttacked);
+            Assert.Less(_victimGo.transform.position.z, 0.5f,
+                "victim should ease into the hook, not snap to it");
+
+            // Blend complete (0.3s): locked at the hook, still in the grab.
+            yield return new WaitForSeconds(0.45f);
             Assert.IsTrue(_machine._context.isBeingAttacked);
             Assert.Greater(_victimGo.transform.position.z, 0.9f,
-                "victim should be snapped to the attacker's hook during the grab");
+                "victim should be locked to the attacker's hook once the blend completes");
 
             // Release phase (push-off): bite still in progress, victim held.
             _attacker.IsPreparing = false;

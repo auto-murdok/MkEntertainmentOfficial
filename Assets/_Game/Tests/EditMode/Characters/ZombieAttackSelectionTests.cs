@@ -54,6 +54,49 @@ namespace Game.Tests.EditMode
         }
 
         [Test]
+        public void IsAttackFromBehind_AttackerInFront_IsFalse()
+        {
+            Assert.IsFalse(ZombieBehavior.IsAttackFromBehind(
+                new Vector3(0f, 0f, 0f), new Vector3(0f, 0f, 1f), new Vector3(0f, 0f, 2f)));
+        }
+
+        [Test]
+        public void IsAttackFromBehind_AttackerBehind_IsTrue()
+        {
+            Assert.IsTrue(ZombieBehavior.IsAttackFromBehind(
+                new Vector3(0f, 0f, 0f), new Vector3(0f, 0f, 1f), new Vector3(0f, 0f, -2f)));
+        }
+
+        [Test]
+        public void IsAttackFromBehind_AttackerExactlySide_IsFalse()
+        {
+            // Boundary: exactly side-on (dot 0) still counts as frontal.
+            Assert.IsFalse(ZombieBehavior.IsAttackFromBehind(
+                new Vector3(0f, 0f, 0f), new Vector3(0f, 0f, 1f), new Vector3(2f, 0f, 0f)));
+        }
+
+        [Test]
+        public void IsAttackFromBehind_RearDiagonal_IsTrue()
+        {
+            Assert.IsTrue(ZombieBehavior.IsAttackFromBehind(
+                new Vector3(0f, 0f, 0f), new Vector3(0f, 0f, 1f), new Vector3(1f, 0f, -1f)));
+        }
+
+        [Test]
+        public void IsAttackFromBehind_HeightIsIgnored()
+        {
+            Assert.IsTrue(ZombieBehavior.IsAttackFromBehind(
+                new Vector3(0f, 0f, 0f), new Vector3(0f, 0f, 1f), new Vector3(0f, 5f, -2f)));
+        }
+
+        [Test]
+        public void IsAttackFromBehind_SamePosition_IsFalse()
+        {
+            Assert.IsFalse(ZombieBehavior.IsAttackFromBehind(
+                new Vector3(1f, 0f, 1f), new Vector3(0f, 0f, 1f), new Vector3(1f, 0f, 1f)));
+        }
+
+        [Test]
         public void ZombieData_HandAttackDefaults_AreNonZero()
         {
             ZombieData data = ScriptableObject.CreateInstance<ZombieData>();

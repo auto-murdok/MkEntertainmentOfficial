@@ -67,6 +67,7 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
 
         OnCommonUpdate += RelieveMovement;
         OnCommonUpdate += SearchForSurvivors;
+        OnCommonUpdate += EnforceBodySeparation;
 
         // Global guard: force transition to the reusable Dead state on death.
         CheckGlobalTransition = (current) => _context.isAlive ? current : ZombieStates.Dead;
@@ -76,6 +77,115 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
     {
         _zombieData = data;
         ApplyZombieData(data);
+    }
+
+    // Soft body separation: NavMeshAgent steering ignores physics, so a
+    // chasing zombie would otherwise end his approach inside the victim's
+    // capsule - her CharacterController can only block HER movement, not
+    // his. Push the zombie out of the combined body radii along the
+    // ground plane. Skipped while biting: the grapple protocol owns the
+    // pair's spacing there.
+    private const float BodySeparationRadius = 0.6f; // his capsule + her controller radius
+
+    private void EnforceBodySeparation(ZombieStates currentState)
+    {
+        if (currentState == ZombieStates.Dead || _context.isBiting ||
+            !(_context.target is Component targetComponent))
+        {
+            return;
+        }
+
+        Vector3 self = transform.position;
+        Vector3 other = targetComponent.transform.position;
+        Vector3 delta = self - other;
+        delta.y = 0f;
+        float distance = delta.magnitude;
+        if (distance <= 0.0001f || distance >= BodySeparationRadius)
+        {
+            return;
+        }
+
+        Vector3 push = delta.normalized * (BodySeparationRadius - distance);
+        if (_context.agent != null && _context.agent.enabled && _context.agent.isOnNavMesh)
+        {
+            _context.agent.Move(push);
+        }
+        else
+        {
+            transform.position += push;
+        }
+    }
+
+    // --- Bite grapple collision restore --------------------------------
+    // While a bite pins the pair inside their combined capsule radii,
+    // ZombieBitingState ignores collisions between exactly those two
+    // colliders. When the bite ends before they have separated (a grab
+    // against a wall), the restore waits here until the push has carried
+    // them clear, so re-enabling collision never pops them apart.
+    private Coroutine _restoreCollisionRoutine;
+    private Collider[] _restoreBodies;
+    private Transform _restoreAnchor;
+    private CharacterController _restoreVictim;
+
+    public void CancelPendingCollisionRestore()
+    {
+        if (_restoreCollisionRoutine != null)
+        {
+            StopCoroutine(_restoreCollisionRoutine);
+            _restoreCollisionRoutine = null;
+        }
+        _restoreBodies = null;
+        _restoreAnchor = null;
+        _restoreVictim = null;
+    }
+
+    public void RestoreCollisionWhenSeparated(Collider[] bodyColliders, CharacterController victim, float clearDistance)
+    {
+        CancelPendingCollisionRestore();
+        if (bodyColliders == null || bodyColliders.Length == 0 || victim == null)
+        {
+            return;
+        }
+
+        _restoreBodies = bodyColliders;
+        _restoreAnchor = transform;
+        _restoreVictim = victim;
+        _restoreCollisionRoutine = StartCoroutine(RestoreCollisionRoutine(clearDistance));
+    }
+
+    private System.Collections.IEnumerator RestoreCollisionRoutine(float clearDistance)
+    {
+        float waited = 0f;
+        while (_restoreBodies != null && _restoreVictim != null && waited < 3f)
+        {
+            Vector3 a = _restoreAnchor.position;
+            Vector3 b = _restoreVictim.transform.position;
+            a.y = 0f;
+            b.y = 0f;
+            if (Vector3.Distance(a, b) >= clearDistance)
+            {
+                break;
+            }
+
+            yield return null;
+            waited += Time.deltaTime;
+        }
+
+        if (_restoreBodies != null && _restoreVictim != null)
+        {
+            foreach (Collider collider in _restoreBodies)
+            {
+                if (collider != null)
+                {
+                    Physics.IgnoreCollision(collider, _restoreVictim, false);
+                }
+            }
+        }
+
+        _restoreCollisionRoutine = null;
+        _restoreBodies = null;
+        _restoreAnchor = null;
+        _restoreVictim = null;
     }
 
     private void ApplyZombieData(ZombieData data)

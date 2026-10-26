@@ -46,6 +46,7 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     // Networked animation sync (docs/networking_notes.md): triggers must be
     // routed through the NetworkAnimator on the owning peer to replicate.
     private Unity.Netcode.Components.NetworkAnimator _networkAnimator;
+    private CharacterController _characterController;
 
     private CinemachineContext _cinemachineProps;
 
@@ -62,6 +63,31 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
         EquipWeapon(EquippedWeaponPrefabName);
         RegisterCommonUpdateEffects();
         RegisterGlobalTransitions();
+    }
+
+    // Once this exists on the Animator's GameObject, Unity hands root
+    // motion to the script instead of applying it to the transform
+    // itself ("Handled by Script"). Route the clip displacement through
+    // the CharacterController so locomotion is collision-swept - it
+    // stops at walls and at the zombies' body capsules instead of
+    // teleporting through them. Rotation keeps the built-in behavior.
+    private void OnAnimatorMove()
+    {
+        Animator animator = _context.animator;
+        if (animator == null)
+        {
+            return;
+        }
+
+        transform.rotation *= animator.deltaRotation;
+        if (_characterController != null && _characterController.enabled)
+        {
+            _characterController.Move(animator.deltaPosition);
+        }
+        else
+        {
+            transform.position += animator.deltaPosition;
+        }
     }
 
     private void PopulateStates()
@@ -105,6 +131,8 @@ public class CharacterLocomotion : StateMachine<CharacterState, CharacterStateCo
     private void InitializeAnimatorAndAgent()
     {
         _context.animator = GetComponent<Animator>();
+        _characterController = GetComponent<CharacterController>();
+        _context.characterController = _characterController;
         // The NavMeshAgent is intentionally NOT used for player locomotion (movement is
         // root-motion driven, which is the gold standard for a directly-controlled,
         // animated character). It exists only to pin the actor's radius during the

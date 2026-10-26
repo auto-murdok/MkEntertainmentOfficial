@@ -3658,6 +3658,7 @@ GameObject:
   - component: {fileID: 4320653987908449626}
   - component: {fileID: 3098269015774702771}
   - component: {fileID: 3541466781731205577}
+  - component: {fileID: 2758910066776752905}
   m_Layer: 6
   m_Name: FemaleCharacter
   m_TagString: Untagged
@@ -4007,6 +4008,10 @@ MonoBehaviour:
       NameHash: -1426183268
       Synchronize: 1
       ParameterType: 9
+    - name: isTakingBite
+      NameHash: -656789951
+      Synchronize: 1
+      ParameterType: 4
   AnimatorParametersExpanded: 0
 --- !u!114 &6763533979837517273
 MonoBehaviour:
@@ -4062,6 +4067,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Game.Items::HitHistoryRecorder
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!143 &2758910066776752905
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7637503201366498390}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 1.8
+  m_Radius: 0.3
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.03
+  m_MinMoveDistance: 0
+  m_Center: {x: 0, y: 0.9, z: 0}
 --- !u!1 &7654349148853518093
 GameObject:
   m_ObjectHideFlags: 0

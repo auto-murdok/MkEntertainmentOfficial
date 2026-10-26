@@ -15,6 +15,7 @@ public class CharacterStateContext : ActorBlackboard
     public bool isReloading;
     public bool isBeingAttacked;
     public IInteractable attacker;
+    public CharacterController characterController;
     public Transform mainCameraTarget;
     public CharacterUIController UIController;
     public PlayerData data;

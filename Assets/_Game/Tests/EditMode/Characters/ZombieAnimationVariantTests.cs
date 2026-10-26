@@ -65,5 +65,55 @@ namespace Game.Tests.EditMode
             Assert.AreEqual(-1, idle);
             Assert.That(phase, Is.InRange(0f, 1f));
         }
+
+        [Test]
+        public void ComputeRate_MatchingSpeedIsNeutral()
+        {
+            Assert.AreEqual(1f, ZombieAnimationVariant.ComputeRate(1.039f, 1.039f), 1e-4f);
+        }
+
+        [Test]
+        public void ComputeRate_ScalesPlaybackToBodySpeed()
+        {
+            // Design speeds against the measured gaits: walk 1.5 over the
+            // creep gait (1.039) sits mid-band; over the stiff gait (0.66)
+            // and at chase speed it clamps at the 2x ceiling.
+            Assert.AreEqual(1.5f / 1.039f, ZombieAnimationVariant.ComputeRate(1.5f, 1.039f), 1e-4f);
+            Assert.AreEqual(ZombieAnimationVariant.MaxRate, ZombieAnimationVariant.ComputeRate(1.5f, 0.66f), 1e-4f);
+            Assert.AreEqual(ZombieAnimationVariant.MaxRate, ZombieAnimationVariant.ComputeRate(3.5f, 1.039f), 1e-4f);
+        }
+
+        [Test]
+        public void ComputeRate_StationaryOrUnknownNaturalIsNeutral()
+        {
+            Assert.AreEqual(1f, ZombieAnimationVariant.ComputeRate(0f, 1.039f), 1e-4f);
+            Assert.AreEqual(1f, ZombieAnimationVariant.ComputeRate(0.02f, 1.039f), 1e-4f);
+            Assert.AreEqual(1f, ZombieAnimationVariant.ComputeRate(1.5f, 0f), 1e-4f);
+        }
+
+        [Test]
+        public void ComputeRate_NeverBelowFloor()
+        {
+            Assert.AreEqual(ZombieAnimationVariant.MinRate, ZombieAnimationVariant.ComputeRate(0.2f, 1.039f), 1e-4f);
+        }
+
+        [Test]
+        public void NaturalSpeedFor_UsesTableEntry()
+        {
+            var table = new[] { 1.039f, 0.942f, 0.66f };
+
+            Assert.AreEqual(0.942f, ZombieAnimationVariant.NaturalSpeedFor(1, table, 0.325f), 1e-4f);
+        }
+
+        [Test]
+        public void NaturalSpeedFor_FallsBackToBase()
+        {
+            var table = new[] { 1.039f, 0.942f, 0.66f };
+
+            Assert.AreEqual(0.325f, ZombieAnimationVariant.NaturalSpeedFor(-1, table, 0.325f), 1e-4f);
+            Assert.AreEqual(0.325f, ZombieAnimationVariant.NaturalSpeedFor(7, table, 0.325f), 1e-4f);
+            Assert.AreEqual(0.325f, ZombieAnimationVariant.NaturalSpeedFor(0, null, 0.325f), 1e-4f);
+            Assert.AreEqual(0.325f, ZombieAnimationVariant.NaturalSpeedFor(0, new[] { 0f }, 0.325f), 1e-4f);
+        }
     }
 }

@@ -12,6 +12,15 @@ using UnityEngine;
 /// and bite states keep their original clips. The phase offset feeds the
 /// controller's Phase parameter, which the blend tree state binds as its
 /// cycle offset.
+///
+/// Each walk variant also carries its measured natural (authored root-motion)
+/// speed. A per-peer driver keeps the locomotion state's SpeedMul parameter
+/// at intendedSpeed / naturalSpeed for the active variant, so every gait's
+/// cadence matches the zombie's actual travel instead of one shared rate:
+/// the host/local peer reads intent from the FSM context (chase vs commanded
+/// walk), remote clients derive the rate from the replicated position delta.
+/// Nothing about the rate is replicated — it is recomputed locally from data
+/// every peer already has (variant seed, data speeds, replicated motion).
 /// </summary>
 public class ZombieAnimationVariant : NetworkBehaviour
 {
@@ -23,10 +32,32 @@ public class ZombieAnimationVariant : NetworkBehaviour
     [SerializeField] private AnimationClip[] _walkVariants;
     [SerializeField] private AnimationClip[] _idleVariants;
 
+    [Header("Natural (authored root-motion) speeds, m/s — measured per clip")]
+    [Tooltip("Natural travel speed of the base walk clip.")]
+    [SerializeField] private float _baseWalkNaturalSpeed = 0.325f;
+    [Tooltip("Parallel to the walk variants: each clip's measured natural travel speed.")]
+    [SerializeField] private float[] _walkNaturalSpeeds;
+
+    public const float MinRate = 0.5f;
+    public const float MaxRate = 2.0f;
+    private const float IdleSpeedThreshold = 0.05f;
+    private const float RateDeadband = 0.03f;
+    private const float RateWriteInterval = 0.1f;
+
+    private static readonly int SpeedMulHash = Animator.StringToHash("SpeedMul");
+    private static readonly int PhaseHash = Animator.StringToHash("Phase");
+
     private readonly NetworkVariable<int> _seed = new NetworkVariable<int>(0);
 
     private Animator _animator;
+    private ZombieBehavior _behavior;
     private bool _applied;
+    private float _naturalSpeed;
+    private float _currentRate = 1f;
+    private float _lastWrittenRate = -1f;
+    private float _writeTimer;
+    private Vector3 _lastPosition;
+    private float _smoothedSpeed;
 
     /// <summary>
     /// Pure derivation, identical on every peer: seed → variant indices
@@ -42,6 +73,36 @@ public class ZombieAnimationVariant : NetworkBehaviour
             idleIndex = idleCount > 0 ? (int)((hash >> 8) % (uint)idleCount) : -1;
             phase = ((hash >> 16) & 0xFFFF) / 65535f;
         }
+    }
+
+    /// <summary>
+    /// Pure rate computation: the playback rate that makes a clip authored
+    /// at <paramref name="naturalSpeed"/> match <paramref name="speed"/>.
+    /// A (near-)stationary zombie gets the neutral rate so its idle plays at
+    /// its authored cadence; the rate is clamped so no gait is ever played
+    /// slower than half or faster than double its authored speed.
+    /// </summary>
+    public static float ComputeRate(float speed, float naturalSpeed)
+    {
+        if (naturalSpeed <= 0f || speed < IdleSpeedThreshold)
+        {
+            return 1f;
+        }
+        return Mathf.Clamp(speed / naturalSpeed, MinRate, MaxRate);
+    }
+
+    /// <summary>
+    /// Pure lookup: the natural speed of a walk variant index, falling back
+    /// to the base clip's speed for the no-variant case or a table that is
+    /// missing/mismatched (a misconfigured table must never zero the rate).
+    /// </summary>
+    public static float NaturalSpeedFor(int walkIndex, float[] naturalSpeeds, float baseNaturalSpeed)
+    {
+        if (walkIndex >= 0 && naturalSpeeds != null && walkIndex < naturalSpeeds.Length && naturalSpeeds[walkIndex] > 0f)
+        {
+            return naturalSpeeds[walkIndex];
+        }
+        return baseNaturalSpeed;
     }
 
     public override void OnNetworkSpawn()
@@ -114,7 +175,73 @@ public class ZombieAnimationVariant : NetworkBehaviour
         var overrideController = new AnimatorOverrideController(_animator.runtimeAnimatorController);
         overrideController.ApplyOverrides(overrides);
         _animator.runtimeAnimatorController = overrideController;
-        _animator.SetFloat("Phase", phase);
+        _animator.SetFloat(PhaseHash, phase);
+        _naturalSpeed = NaturalSpeedFor(walkIndex, _walkNaturalSpeeds, _baseWalkNaturalSpeed);
+        _lastPosition = transform.position;
         _applied = true;
+    }
+
+    private void Update()
+    {
+        if (!_applied || _animator == null || !_animator.isActiveAndEnabled)
+        {
+            return;
+        }
+
+        if (_behavior == null)
+        {
+            _behavior = GetComponent<ZombieBehavior>();
+        }
+
+        // This peer's rendered velocity from position deltas (works on every
+        // peer; on clients it is the velocity of the replicated motion).
+        float deltaTime = Time.deltaTime;
+        Vector3 position = transform.position;
+        if (deltaTime > 0f)
+        {
+            Vector3 delta = position - _lastPosition;
+            delta.y = 0f;
+            float instantSpeed = delta.magnitude / deltaTime;
+            _smoothedSpeed = Mathf.Lerp(_smoothedSpeed, instantSpeed, 1f - Mathf.Exp(-deltaTime / 0.15f));
+        }
+        _lastPosition = position;
+
+        float targetRate = ComputeTargetRate();
+        _currentRate = Mathf.MoveTowards(_currentRate, targetRate, deltaTime * 4f);
+
+        // Gated writes: the value is a per-frame float, so only push it into
+        // the animator when it actually moved — NetworkAnimator syncs changed
+        // parameters, and a churned float would tax every zombie each tick.
+        _writeTimer -= deltaTime;
+        if (_writeTimer <= 0f && Mathf.Abs(_currentRate - _lastWrittenRate) > RateDeadband)
+        {
+            _animator.SetFloat(SpeedMulHash, _currentRate);
+            _lastWrittenRate = _currentRate;
+            _writeTimer = RateWriteInterval;
+        }
+    }
+
+    private float ComputeTargetRate()
+    {
+        // Authority/local peer: intent comes from the live FSM context — a
+        // detected target means the chase speed, a commanded destination the
+        // walk speed, neither means idle (neutral rate).
+        if (_behavior != null && _behavior.enabled && _behavior.zombieData != null)
+        {
+            var context = _behavior._context;
+            if (context.target != null)
+            {
+                return ComputeRate(_behavior.zombieData.chaseSpeed, _naturalSpeed);
+            }
+            if (context.moveDestination != null)
+            {
+                return ComputeRate(_behavior.zombieData.walkSpeed, _naturalSpeed);
+            }
+            return 1f;
+        }
+
+        // Remote client: the behavior is disabled there, so match the rate
+        // to the velocity the replicated motion actually renders at.
+        return ComputeRate(_smoothedSpeed, _naturalSpeed);
     }
 }

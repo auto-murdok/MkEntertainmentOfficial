@@ -4,6 +4,19 @@ This guide provides instructions and standards for AI agents working in this rep
 
 ---
 
+## 🛡️ Contribution Workflow — Hard Rules (owner-directed, 2026-10-25)
+
+These rules are the pre-flight gate and operating contract for **any** contribution to this repo — human or AI agent. Rules 1–3 are checked before any work starts; if a gate fails, stop and report it to the repo owner. Do not work around a failed gate in another folder, another editor, or another clone.
+
+1. **Main folder on the gaming PC, verified via SSH.** The canonical source of truth is GitHub; the ONE working checkout is `C:\murdokdev\MKEntertainmentOfficial` on the gaming PC, with branches switched in place. Before anything, verify over SSH that `git rev-parse --show-toplevel` in that folder returns exactly that path, and report branch, HEAD, and `git status`. Pre-existing changes in the checkout are the owner's — never clean them up silently. No per-task worktrees or extra clones; any other clone is a git-ops mirror only and must never hold unique unpushed state.
+2. **No other Unity processes.** Every session, before any Unity work: list the running `Unity.exe` processes on the gaming PC, close ALL stale editors (any editor not actively needed for the task at hand), then open only the ONE editor the work needs, for the main folder. If a remaining Unity process is not a stale editor (e.g. the session-0 self-hosted CI runner batch process), do not kill it blind and do not silently proceed — stop and report it.
+3. **Unity CLI, the proper way.** Drive the live Editor only over SSH straight to the gaming PC, using the PC's `unity.exe` CLI targeted at the main folder's Editor. Verify the chain every time: `unity status` → `ready`, `unity pipeline list` reachable, plus one real command. Follow the detail sections below: live-Editor work instead of hand-editing Unity YAML, C# via `eval_file` (never inline `eval`), no single wait longer than ~60 s, and restart a wedged Editor instead of debugging the hang.
+4. **Gold-standard research before any implementation.** Before implementing, auditing, or refactoring, research the current gold standard for the pattern (see *Research Standard* below: context7 + web sources, under 1 month old preferred, max 3 months, undated sources labeled) and state the pattern being targeted. The ONLY exception is a direct owner order for a straightforward action — then execute exactly that action, with no scope expansion.
+5. **Tests: 10-minute hard cap.** Run the test suite after every behaviour change (see *Testing* below) and keep it green: the suite is the specification of record — a failure counts against the change, and tests are never edited to bless new code. If a test run exceeds **10 minutes total**, stop waiting/polling/retrying, notify the repo owner immediately with the status so far, and hand it over for manual testing. Do not grind past 10 minutes without the owner's word.
+6. **GitHub via the `gh` CLI, always.** All GitHub reads and writes for this repo — PR creation, merges, branch cleanup, CI/artifact reads — go through the `gh` CLI, never the GitHub MCP connector, so the owner is not prompted to approve GitHub actions. Changes land only through PRs (never a direct push to `main`), and PRs are merged via rebase (linear history) only on the owner's word.
+
+---
+
 ## 🚀 Core Directive: Prefer Live Unity Editor via `unity-cli`
 
 > **CRITICAL:** Whenever the Unity Editor is running, **always use `unity-cli` to inspect, create, modify, and test scene objects, prefabs, components, and assets**.

@@ -7,4 +7,5 @@ public interface IInteractable
     public Transform victimHook { get; }
     public void OnExternalInteraction(IInteractable interactable);
     public bool isPreparing { get; }
+    public bool isBiting { get; }
 }

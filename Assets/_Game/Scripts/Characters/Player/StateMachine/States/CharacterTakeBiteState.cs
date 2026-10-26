@@ -13,6 +13,10 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
     private const float PlayerBitePullInDistance = 0.35f;
 
     private float _biteTimer;
+    // Latched once the attacker's grab phase has actually been observed, so
+    // the asymmetric release below can never fire on the entry frames before
+    // the (possibly network-mirrored) attacker flags have caught up.
+    private bool _sawGrab;
     // The player prefab's actual NavMeshAgent radius, captured on entry so the
     // exit restores the real value instead of a hardcoded default.
     private float _originalAgentRadius;
@@ -48,6 +52,7 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
         }
 
         _biteTimer = context.data.takeBiteDuration;
+        _sawGrab = false;
     }
 
     public void ExitState(StateMachine<CharacterState, CharacterStateContext> stateMachine)
@@ -73,12 +78,26 @@ public class CharacterTakeBiteState : State<CharacterState, CharacterStateContex
         // pushback animation/root motion execute naturally.
         if (stateMachine._context.attacker.isPreparing)
         {
+            _sawGrab = true;
             // Snap to the victimHook, then pull the victim toward the zombie body to remove the
             // ~0.5m socket gap (see PlayerBitePullInDistance).
             Vector3 lockedPos = stateMachine._context.attacker.victimHook.position;
             lockedPos = Vector3.MoveTowards(lockedPos, stateMachine._context.attacker.position, PlayerBitePullInDistance);
             stateMachine.transform.position = lockedPos;
             stateMachine.transform.rotation = stateMachine._context.attacker.victimHook.rotation;
+        }
+
+        // Asymmetric release: once the grab has happened and the attacker's
+        // bite has fully ended (push-off complete), the victim breaks free —
+        // while the zombie is still in its recovery / attack cooldown, she is
+        // already moving again. The duration timer below stays as a safety cap
+        // for a stuck or destroyed attacker whose flags never clear.
+        if (_sawGrab
+            && !stateMachine._context.attacker.isPreparing
+            && !stateMachine._context.attacker.isBiting)
+        {
+            stateMachine._context.isBeingAttacked = false;
+            return;
         }
 
         // End the take-bite from the C# side once the duration elapses.

@@ -22,7 +22,21 @@ public class ZombieBrain : ActorBrainBase, IZombie
             return _behavior != null && _behavior._context != null && _behavior._context.isPreparing;
         }
     }
-    public bool isBiting => _behavior != null && _behavior._context != null && _behavior._context.isBiting;
+    public override bool isBiting
+    {
+        get
+        {
+            // Remote copies have their FSM disabled — the bite-in-progress flag
+            // arrives via the server-write NetworkVariable instead. The victim
+            // reads it to know when the push-off has completed (see
+            // CharacterTakeBiteState's asymmetric release).
+            if (_zombieNet != null && _zombieNet.SimulatesRemotely)
+            {
+                return _zombieNet.MirroredIsBiting;
+            }
+            return _behavior != null && _behavior._context != null && _behavior._context.isBiting;
+        }
+    }
     public bool isHandAttacking => _behavior != null && _behavior._context != null && _behavior._context.isHandAttacking;
 
     // Default Fallback Stats (used if ZombieData is not assigned on ZombieBehavior)
@@ -84,15 +98,9 @@ public class ZombieBrain : ActorBrainBase, IZombie
         _behavior._context.SetAnimatorTrigger(AnimatorUtils.BiteHash);
         transform.LookAt(target.position);
 
-        // Gold-standard, attacker-driven damage: the zombie applies its own bite
-        // damage to the victim. The isBiting guard prevents re-firing per bite.
-        if (target is IDamageable damageable)
-        {
-            using (CombatLog.BeginSource("ZombieBite"))
-            {
-                damageable.TakeDamage(biteDamage);
-            }
-        }
+        // No damage at grab start: the bite lands at the animation's contact
+        // moment, scored exactly once by ZombieBitingState at the
+        // prepare -> release transition (the head snap, ~65% through the bite).
     }
 
     protected override void OnRagdollEnabled()

@@ -9,6 +9,7 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
     // release phase. The remaining (1 - ReleaseFraction) is the grab (victim locked). Lower
     // = longer grab / shorter push-off. Drives isPreparing with a single transition (no flicker).
     private const float ReleaseFraction = 0.35f; // last 35% of the bite is the push-off
+    private const float DefaultBiteDamage = 30f;
 
     private enum BitePhase { Prepare, Release }
 
@@ -18,6 +19,7 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
     private BitePhase _phase;
     private float _biteTimer;
     private float _releaseThreshold;
+    private bool _hasLandedBite;
 
     public void CheckTransitions(StateMachine<ZombieStates, ZombieContext> character)
     {
@@ -36,7 +38,12 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         if (context.agent != null)
         {
             context.agent.radius = bittingRadius;
-            context.agent.ResetPath();
+            // Guarded like ZombieHandAttackState: ResetPath on an agent that has
+            // not been placed on a NavMesh logs an error.
+            if (context.agent.isOnNavMesh)
+            {
+                context.agent.ResetPath();
+            }
         }
 
         // The C# FSM owns the full bite lifecycle: the bite ends after its configured
@@ -45,6 +52,7 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         // stable (no per-frame flicker that used to thrash the victim's lock).
         _biteTimer = context.biteDuration > 0f ? context.biteDuration : DefaultAttackCooldown;
         _releaseThreshold = _biteTimer * ReleaseFraction;
+        _hasLandedBite = false;
 
         context.recentlyBitten = true;
         _phase = BitePhase.Prepare;
@@ -84,6 +92,16 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
                 ? (State<ZombieStates, ZombieContext>)new BitePrepareState()
                 : new BiteReleaseState();
             _subState.EnterState(character);
+
+            // The prepare -> release transition IS the animation's contact
+            // moment (the head snap at ~65% of the bite): the bite lands here,
+            // not at grab start. Exactly one damage event per bite; a zombie
+            // killed mid-grab never reaches this and deals no bite damage.
+            if (desired == BitePhase.Release && !_hasLandedBite)
+            {
+                _hasLandedBite = true;
+                LandBiteDamage(character);
+            }
         }
 
         // Pin the zombie to its initial grab pose during the prepare (grab) phase only;
@@ -101,6 +119,25 @@ public class ZombieBitingState : State<ZombieStates, ZombieContext>
         if (_biteTimer <= 0f && character._context.isBiting)
         {
             character._context.isBiting = false;
+        }
+    }
+
+    // Attacker-driven damage, scored once at the contact moment (same pattern
+    // as ZombieHandAttackState.ApplyDamage). No range check: the victim is
+    // pinned to the bite socket by construction for the whole grab.
+    private void LandBiteDamage(StateMachine<ZombieStates, ZombieContext> character)
+    {
+        ZombieContext context = character._context;
+        IInteractable victim = context.interactable != null ? context.interactable : context.target as IInteractable;
+        if (victim is not IDamageable damageable)
+        {
+            return;
+        }
+
+        float damage = context.data != null ? context.data.biteDamage : DefaultBiteDamage;
+        using (CombatLog.BeginSource("ZombieBite"))
+        {
+            damageable.TakeDamage(damage);
         }
     }
 }

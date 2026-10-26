@@ -20,11 +20,18 @@ public class NetworkedZombieController : NetworkBehaviour
     private readonly NetworkVariable<bool> _isPreparing = new NetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    // Server-write mirror of the FSM's bite-in-progress flag: the victim's
+    // owner reads it to know when the bite (and its push-off) has fully ended
+    // so it can free the victim while the zombie still recovers.
+    private readonly NetworkVariable<bool> _isBiting = new NetworkVariable<bool>(
+        false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     private ZombieBehavior _behavior;
 
     public bool SimulatesRemotely => IsSpawned && !IsServer;
 
     public bool MirroredIsPreparing => _isPreparing.Value;
+    public bool MirroredIsBiting => _isBiting.Value;
 
     public override void OnNetworkSpawn()
     {
@@ -43,6 +50,10 @@ public class NetworkedZombieController : NetworkBehaviour
         if (IsServer && _behavior != null && _behavior._context != null && _isPreparing.Value != _behavior._context.isPreparing)
         {
             _isPreparing.Value = _behavior._context.isPreparing;
+        }
+        if (IsServer && _behavior != null && _behavior._context != null && _isBiting.Value != _behavior._context.isBiting)
+        {
+            _isBiting.Value = _behavior._context.isBiting;
         }
     }
 

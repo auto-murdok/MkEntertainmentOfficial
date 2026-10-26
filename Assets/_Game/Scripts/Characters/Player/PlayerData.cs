@@ -13,6 +13,7 @@ public class PlayerData : ScriptableObject
     [Header("Combat")]
     [SerializeField] private float _aimTurnSpeed = 1f;
     [SerializeField] private float _reloadDuration = 2f;
+    [Tooltip("Victim-side bite lock in seconds, anchored to the paired bite clips: her push completes at this moment. Must equal ZombieBitingState's release anchor - one animation, one shared timeline.")]
     [SerializeField] private float _takeBiteDuration = 3f;
 
     [Header("Health")]

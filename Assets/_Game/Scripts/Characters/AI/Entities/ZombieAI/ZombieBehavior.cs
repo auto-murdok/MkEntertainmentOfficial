@@ -86,7 +86,6 @@ public class ZombieBehavior : StateMachine<ZombieStates, ZombieContext>, IComman
         {
             _context.detectionLayerMask = data.detectionLayerMask.value != 0 ? data.detectionLayerMask : _detectionLayerMask;
             _context.obstacleLayerMask = data.obstacleLayerMask;
-            _context.biteDuration = data.biteDuration;
 
             if (_context.agent != null)
             {
